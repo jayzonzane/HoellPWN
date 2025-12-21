@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self';">
+  <title>ALTTP SNI Controller - FULL VERSION</title>
+  <link rel="stylesheet" href="styles-full.css">
+</head>
+<body>
+  <!-- Menu Bar - removed, tabs replace this -->
+  <!-- <div class="menu-bar">
+    <div class="menu-item">
+      <span class="menu-label">View</span>
+      <div class="menu-dropdown">
+        <div class="menu-option" id="menu-gift-settings">🎁 Gift Settings</div>
+      </div>
+    </div>
+  </div> -->
+
+  <div class="container">
+    <h1>🎮 ALTTP SNI Controller - COMPLETE</h1>
+
+    <!-- Connection Section -->
+    <div class="section connection-section">
+      <h2>Connection</h2>
+      <div class="connection-controls">
+        <input type="text" id="host" placeholder="localhost" value="localhost">
+        <input type="text" id="port" placeholder="8191" value="8191">
+        <button id="connect-btn">Connect to SNI</button>
+      </div>
+      <div id="status" class="status disconnected">Disconnected</div>
+      <select id="device-select" style="display: none;">
+        <option value="">Select a device...</option>
+      </select>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+      <button class="tab-btn active" data-tab="controls-tab">🎮 Controls</button>
+      <button class="tab-btn" data-tab="gift-settings-tab">🎁 Gift Settings</button>
+    </div>
+
+    <!-- Tab Content Container -->
+    <div class="tab-content-container">
+      <!-- Gift Settings Tab -->
+      <div id="gift-settings-tab" class="tab-content">
+        <div class="tab-header">
+          <h2>🎁 Gift Settings</h2>
+          <button class="btn-save" id="save-gift-settings" style="margin-top: 10px;">💾 Save Settings</button>
+        </div>
+
+        <!-- Subtab Navigation -->
+        <div class="subtab-navigation">
+          <button class="subtab-btn active" data-subtab="gift-mappings-subtab">📝 Gift Mappings</button>
+          <button class="subtab-btn" data-subtab="overlay-builder-subtab">🖼️ Overlay Builder</button>
+          <button class="subtab-btn" data-subtab="gift-database-subtab">📚 Gift Database</button>
+          <button class="subtab-btn" data-subtab="gift-images-subtab">🖼️ Gift Images</button>
+        </div>
+
+        <!-- Subtab Content Container -->
+        <div class="subtab-content-container">
+
+          <!-- Gift Mappings Subtab -->
+          <div id="gift-mappings-subtab" class="subtab-content active">
+            <!-- Mappings Actions at Top -->
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <button class="btn-reset" id="reset-all-gift-mappings" style="background: #ef4444;">🗑️ Reset All Gifts</button>
+            </div>
+
+        <div class="tab-body">
+          <div class="settings-container">
+            <!-- Left Column: Actions -->
+            <div class="settings-column">
+              <h3>Available Actions</h3>
+              <div class="settings-scroll">
+                <!-- Core Actions -->
+                <div class="settings-category">
+                  <h4>Core</h4>
+                  <div class="action-item">
+                    <span class="action-name">💀 Kill Player</span>
+                    <input type="text" class="gift-input" data-action="killPlayer" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐔 Chicken Attack</span>
+                    <input type="text" class="gift-input" data-action="triggerChickenAttack" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐝 Bee Swarm (60s)</span>
+                    <input type="text" class="gift-input" data-action="triggerBeeSwarmWaves" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⚔️ Enemy Swarm (30s)</span>
+                    <input type="text" class="gift-input" data-action="triggerEnemyWaves" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🎲 Spawn Random Enemy</span>
+                    <input type="text" class="gift-input" data-action="spawnRandomEnemy" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ Add Heart Container</span>
+                    <input type="text" class="gift-input" data-action="addHeart" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💔 Remove Heart Container</span>
+                    <input type="text" class="gift-input" data-action="removeHeart" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">¼❤️ Add Heart Piece</span>
+                    <input type="text" class="gift-input" data-action="addHeartPiece" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⭐ Toggle Invincibility</span>
+                    <input type="text" class="gift-input" data-action="toggleInvincibility" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Swords -->
+                <div class="settings-category">
+                  <h4>Swords</h4>
+                  <div class="action-item">
+                    <span class="action-name">⚔️ No Sword</span>
+                    <input type="text" class="gift-input" data-action="setSword" data-params='{"level":0}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⚔️ Fighter Sword</span>
+                    <input type="text" class="gift-input" data-action="setSword" data-params='{"level":1}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⚔️ Master Sword</span>
+                    <input type="text" class="gift-input" data-action="setSword" data-params='{"level":2}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⚔️ Tempered Sword</span>
+                    <input type="text" class="gift-input" data-action="setSword" data-params='{"level":3}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⚔️ Golden Sword</span>
+                    <input type="text" class="gift-input" data-action="setSword" data-params='{"level":4}' placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Shields -->
+                <div class="settings-category">
+                  <h4>Shields</h4>
+                  <div class="action-item">
+                    <span class="action-name">🛡️ No Shield</span>
+                    <input type="text" class="gift-input" data-action="setShield" data-params='{"level":0}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🛡️ Blue Shield</span>
+                    <input type="text" class="gift-input" data-action="setShield" data-params='{"level":1}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🛡️ Red Shield</span>
+                    <input type="text" class="gift-input" data-action="setShield" data-params='{"level":2}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🛡️ Mirror Shield</span>
+                    <input type="text" class="gift-input" data-action="setShield" data-params='{"level":3}' placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Armor -->
+                <div class="settings-category">
+                  <h4>Armor</h4>
+                  <div class="action-item">
+                    <span class="action-name">👕 Green Mail</span>
+                    <input type="text" class="gift-input" data-action="setArmor" data-params='{"level":0}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">👕 Blue Mail</span>
+                    <input type="text" class="gift-input" data-action="setArmor" data-params='{"level":1}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">👕 Red Mail</span>
+                    <input type="text" class="gift-input" data-action="setArmor" data-params='{"level":2}' placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Gloves -->
+                <div class="settings-category">
+                  <h4>Gloves</h4>
+                  <div class="action-item">
+                    <span class="action-name">🧤 No Gloves</span>
+                    <input type="text" class="gift-input" data-action="setGloves" data-params='{"level":0}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🧤 Power Gloves</span>
+                    <input type="text" class="gift-input" data-action="setGloves" data-params='{"level":1}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🧤 Titan Mitts</span>
+                    <input type="text" class="gift-input" data-action="setGloves" data-params='{"level":2}' placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Toggle Items -->
+                <div class="settings-category">
+                  <h4>Toggle Items</h4>
+                  <div class="action-item">
+                    <span class="action-name">👟 Toggle Boots</span>
+                    <input type="text" class="gift-input" data-action="toggleBoots" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏊 Toggle Flippers</span>
+                    <input type="text" class="gift-input" data-action="toggleFlippers" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌙 Toggle Moon Pearl</span>
+                    <input type="text" class="gift-input" data-action="toggleMoonPearl" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🪝 Toggle Hookshot</span>
+                    <input type="text" class="gift-input" data-action="toggleHookshot" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔦 Toggle Lamp</span>
+                    <input type="text" class="gift-input" data-action="toggleLamp" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔨 Toggle Hammer</span>
+                    <input type="text" class="gift-input" data-action="toggleHammer" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">📖 Toggle Book</span>
+                    <input type="text" class="gift-input" data-action="toggleBook" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦋 Toggle Bug Net</span>
+                    <input type="text" class="gift-input" data-action="toggleBugNet" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🟥 Toggle Somaria</span>
+                    <input type="text" class="gift-input" data-action="toggleSomaria" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🟦 Toggle Byrna</span>
+                    <input type="text" class="gift-input" data-action="toggleByrna" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🪞 Toggle Mirror</span>
+                    <input type="text" class="gift-input" data-action="toggleMirror" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🪃 Toggle Boomerang</span>
+                    <input type="text" class="gift-input" data-action="toggleBoomerang" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔥 Toggle Fire Rod</span>
+                    <input type="text" class="gift-input" data-action="toggleFireRod" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❄️ Toggle Ice Rod</span>
+                    <input type="text" class="gift-input" data-action="toggleIceRod" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Medallions -->
+                <div class="settings-category">
+                  <h4>Medallions</h4>
+                  <div class="action-item">
+                    <span class="action-name">💥 Toggle Bombos</span>
+                    <input type="text" class="gift-input" data-action="toggleMedallion" data-params='{"name":"bombos"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⚡ Toggle Ether</span>
+                    <input type="text" class="gift-input" data-action="toggleMedallion" data-params='{"name":"ether"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌋 Toggle Quake</span>
+                    <input type="text" class="gift-input" data-action="toggleMedallion" data-params='{"name":"quake"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💫 Toggle All Medallions</span>
+                    <input type="text" class="gift-input" data-action="toggleAllMedallions" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Magic -->
+                <div class="settings-category">
+                  <h4>Magic</h4>
+                  <div class="action-item">
+                    <span class="action-name">✨ Enable Magic</span>
+                    <input type="text" class="gift-input" data-action="enableMagic" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔮 Normal Magic</span>
+                    <input type="text" class="gift-input" data-action="setMagicUpgrade" data-params='{"level":0}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔮 ½ Magic</span>
+                    <input type="text" class="gift-input" data-action="setMagicUpgrade" data-params='{"level":1}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔮 ¼ Magic</span>
+                    <input type="text" class="gift-input" data-action="setMagicUpgrade" data-params='{"level":2}' placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Bottles -->
+                <div class="settings-category">
+                  <h4>Bottles</h4>
+                  <div class="action-item">
+                    <span class="action-name">🍾 Add Bottle</span>
+                    <input type="text" class="gift-input" data-action="addBottle" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🍾 Remove Bottle</span>
+                    <input type="text" class="gift-input" data-action="removeBottle" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🧪 Fill Red Potion</span>
+                    <input type="text" class="gift-input" data-action="fillBottles" data-params='{"type":"red"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🧪 Fill Green Potion</span>
+                    <input type="text" class="gift-input" data-action="fillBottles" data-params='{"type":"green"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🧪 Fill Blue Potion</span>
+                    <input type="text" class="gift-input" data-action="fillBottles" data-params='{"type":"blue"}' placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Flute -->
+                <div class="settings-category">
+                  <h4>Flute</h4>
+                  <div class="action-item">
+                    <span class="action-name">🎵 Add Flute</span>
+                    <input type="text" class="gift-input" data-action="giveFlute" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🎵 Remove Flute</span>
+                    <input type="text" class="gift-input" data-action="removeFlute" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐦 Reset Bird</span>
+                    <input type="text" class="gift-input" data-action="deactivateFlute" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Pendants -->
+                <div class="settings-category">
+                  <h4>Pendants</h4>
+                  <div class="action-item">
+                    <span class="action-name">🔴 Toggle Red Pendant</span>
+                    <input type="text" class="gift-input" data-action="togglePendant" data-params='{"name":"red"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔵 Toggle Blue Pendant</span>
+                    <input type="text" class="gift-input" data-action="togglePendant" data-params='{"name":"blue"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🟢 Toggle Green Pendant</span>
+                    <input type="text" class="gift-input" data-action="togglePendant" data-params='{"name":"green"}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💎 Toggle All Pendants</span>
+                    <input type="text" class="gift-input" data-action="toggleAllPendants" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Crystals -->
+                <div class="settings-category">
+                  <h4>Crystals</h4>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle Crystal 1</span>
+                    <input type="text" class="gift-input" data-action="toggleCrystal" data-params='{"num":1}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle Crystal 2</span>
+                    <input type="text" class="gift-input" data-action="toggleCrystal" data-params='{"num":2}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle Crystal 3</span>
+                    <input type="text" class="gift-input" data-action="toggleCrystal" data-params='{"num":3}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle Crystal 4</span>
+                    <input type="text" class="gift-input" data-action="toggleCrystal" data-params='{"num":4}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle Crystal 5</span>
+                    <input type="text" class="gift-input" data-action="toggleCrystal" data-params='{"num":5}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle Crystal 6</span>
+                    <input type="text" class="gift-input" data-action="toggleCrystal" data-params='{"num":6}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle Crystal 7</span>
+                    <input type="text" class="gift-input" data-action="toggleCrystal" data-params='{"num":7}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💠 Toggle All Crystals</span>
+                    <input type="text" class="gift-input" data-action="toggleAllCrystals" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Set Hearts -->
+                <div class="settings-category">
+                  <h4>Set Hearts</h4>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 3 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":3}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 5 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":5}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 7 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":7}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 10 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":10}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 12 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":12}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 15 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":15}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 18 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":18}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">❤️ 20 Hearts</span>
+                    <input type="text" class="gift-input" data-action="setHearts" data-params='{"count":20}' placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Resources -->
+                <div class="settings-category">
+                  <h4>Resources</h4>
+                  <div class="action-item">
+                    <span class="action-name">💰 100 Rupees</span>
+                    <input type="text" class="gift-input" data-action="setRupees" data-params='{"amount":100}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💰 500 Rupees</span>
+                    <input type="text" class="gift-input" data-action="setRupees" data-params='{"amount":500}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💰 9999 Rupees</span>
+                    <input type="text" class="gift-input" data-action="setRupees" data-params='{"amount":9999}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💰 +50 Rupees</span>
+                    <input type="text" class="gift-input" data-action="addRupees" data-params='{"amount":50}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💰 +1 Rupee</span>
+                    <input type="text" class="gift-input" data-action="addRupee" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💰 -1 Rupee</span>
+                    <input type="text" class="gift-input" data-action="removeRupee" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💣 10 Bombs</span>
+                    <input type="text" class="gift-input" data-action="setBombs" data-params='{"amount":10}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💣 50 Bombs</span>
+                    <input type="text" class="gift-input" data-action="setBombs" data-params='{"amount":50}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💣 +1 Bomb</span>
+                    <input type="text" class="gift-input" data-action="addBomb" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💣 -1 Bomb</span>
+                    <input type="text" class="gift-input" data-action="removeBomb" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏹 30 Arrows</span>
+                    <input type="text" class="gift-input" data-action="setArrows" data-params='{"amount":30}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏹 70 Arrows</span>
+                    <input type="text" class="gift-input" data-action="setArrows" data-params='{"amount":70}' placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏹 +1 Arrow</span>
+                    <input type="text" class="gift-input" data-action="addArrow" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏹 -1 Arrow</span>
+                    <input type="text" class="gift-input" data-action="removeArrow" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="settings-category">
+                  <h4>Presets</h4>
+                  <div class="action-item">
+                    <span class="action-name">📦 Starter Pack</span>
+                    <input type="text" class="gift-input" data-action="giveStarterPack" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">👑 Endgame Pack</span>
+                    <input type="text" class="gift-input" data-action="giveEndgamePack" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Item Disable (Temporary) -->
+                <div class="settings-category">
+                  <h4>🚫 Item Disable (Temporary)</h4>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🏹 Disable Bow</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="bow" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="bow" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🪃 Disable Boomerang</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="boomerang" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="boomerang" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🪝 Disable Hookshot</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="hookshot" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="hookshot" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🔨 Disable Hammer</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="hammer" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="hammer" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">👟 Disable Boots</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="boots" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="boots" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🏊 Disable Flippers</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="flippers" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="flippers" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🔦 Disable Lamp</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="lamp" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="lamp" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🔥 Disable Fire Rod</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="firerod" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="firerod" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">❄️ Disable Ice Rod</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="icerod" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="icerod" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">⚔️ Disable Sword</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="sword" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="sword" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🛡️ Disable Shield</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="shield" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="shield" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🪞 Disable Mirror</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="mirror" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="mirror" value="90" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🟥 Disable Somaria</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="somaria" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="somaria" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🟦 Disable Byrna</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="byrna" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="byrna" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🌙 Disable Moon Pearl</span>
+                    <input type="text" class="gift-input" data-action="disableItem" data-item="moonpearl" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-item="moonpearl" value="120" min="5" max="600" placeholder="Sec">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+          </div>
+          <!-- End Gift Mappings Subtab -->
+
+          <!-- Overlay Builder Subtab -->
+          <div id="overlay-builder-subtab" class="subtab-content">
+            <!-- Overlay Actions at Top -->
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <button class="btn-generate" id="generate-overlay">🎨 Generate Overlay HTML</button>
+            </div>
+
+            <div class="tab-body">
+              <div class="overlay-builder-container">
+                <div class="overlay-config">
+                  <h3>Overlay Configuration</h3>
+                  <div class="config-group">
+                    <label for="overlay-width">Width (px):</label>
+                    <input type="number" id="overlay-width" value="1080" min="100" max="3840">
+                  </div>
+                  <div class="config-group">
+                    <label for="overlay-height">Height (px):</label>
+                    <input type="number" id="overlay-height" value="200" min="50" max="2160">
+                  </div>
+                  <div class="config-group">
+                    <label for="overlay-stagger">Stagger Delay (ms):</label>
+                    <input type="number" id="overlay-stagger" value="2000" min="100" max="10000" step="100">
+                    <small>Time between showing each gift</small>
+                  </div>
+                  <div class="config-group">
+                    <label for="overlay-pause">Pause After All (ms):</label>
+                    <input type="number" id="overlay-pause" value="30000" min="1000" max="120000" step="1000">
+                    <small>Wait time before repeating all gifts</small>
+                  </div>
+                  <div class="config-group">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="overlay-continuous-loop" checked>
+                      <span>Continuous Loop</span>
+                    </label>
+                    <small>Continuously cycle through gifts without stopping</small>
+                  </div>
+                </div>
+
+                <div class="overlay-gifts">
+                  <h3>Select Gifts for Overlay</h3>
+                  <div id="overlay-gift-list" class="overlay-gift-list">
+                    <!-- Gift checkboxes will be populated here by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Overlay Builder Subtab -->
+
+          <!-- Gift Database Subtab -->
+          <div id="gift-database-subtab" class="subtab-content">
+            <!-- Database Actions at Top -->
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px;">
+              <button class="btn-save" id="save-gift-database">💾 Save Database</button>
+              <button class="btn-reset" id="reset-gift-database">🔄 Reset to Defaults</button>
+            </div>
+
+            <div class="tab-body">
+              <div class="database-container">
+                <div class="database-section">
+                  <h3>Edit Gift Names</h3>
+                  <p class="section-description">Customize the display names of TikTok gifts</p>
+                  <div id="gift-database-list" class="gift-database-list">
+                    <!-- Gift name inputs will be populated here by JS -->
+                  </div>
+                </div>
+
+                <div class="database-section">
+                  <h3>Add Custom Gift</h3>
+                  <p class="section-description">Create custom gifts not in the default database</p>
+                  <div class="custom-gift-form">
+                    <div class="form-group">
+                      <label for="custom-gift-name">Gift Name:</label>
+                      <input type="text" id="custom-gift-name" placeholder="e.g., Super Rose">
+                    </div>
+                    <div class="form-group">
+                      <label for="custom-gift-coins">Coin Value:</label>
+                      <input type="number" id="custom-gift-coins" placeholder="1-50000" min="1" max="50000">
+                    </div>
+                    <div class="form-group">
+                      <label for="custom-gift-image">Image URL (optional):</label>
+                      <input type="text" id="custom-gift-image" placeholder="https://...">
+                    </div>
+                    <button class="btn-add-custom" id="add-custom-gift">➕ Add Custom Gift</button>
+                  </div>
+
+                  <h4 style="margin-top: 20px;">Custom Gifts</h4>
+                  <div id="custom-gifts-list" class="custom-gifts-list">
+                    <!-- Custom gifts will be displayed here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Gift Database Subtab -->
+
+          <!-- Gift Images Subtab -->
+          <div id="gift-images-subtab" class="subtab-content">
+            <!-- Images Actions at Top -->
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <button class="btn-save" id="save-gift-images">💾 Save Images</button>
+            </div>
+
+            <div class="tab-body">
+              <div class="images-container">
+                <h3>Gift Image URLs</h3>
+                <p class="section-description">Override gift images with custom URLs (e.g., from TikTok CDN)</p>
+
+                <!-- Download Section -->
+                <div class="download-section" style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                  <h4 style="margin-top: 0;">📥 Download All Images</h4>
+                  <p style="margin-bottom: 10px; font-size: 13px; opacity: 0.9;">
+                    If images aren't showing up, click below to download all gift images from TikTok CDN.
+                  </p>
+                  <button class="btn-download" id="download-all-images" style="background: #1da1f2; padding: 10px 20px; font-size: 14px; font-weight: bold;">
+                    🖼️ Download All Images (331 files)
+                  </button>
+                  <div id="download-progress" style="display: none; margin-top: 15px;">
+                    <div style="margin-bottom: 5px; font-size: 13px;">
+                      <span id="download-status">Downloading...</span>
+                      <span id="download-count" style="float: right; font-weight: bold;"></span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); height: 20px; border-radius: 10px; overflow: hidden;">
+                      <div id="download-progress-bar" style="background: linear-gradient(90deg, #1da1f2, #0d8bd9); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <div id="download-current" style="margin-top: 5px; font-size: 12px; opacity: 0.7;"></div>
+                  </div>
+                </div>
+
+                <div id="gift-images-list" class="gift-images-list">
+                  <!-- Gift image items will be populated here by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Gift Images Subtab -->
+
+        </div>
+        <!-- End Subtab Content Container -->
+
+      </div>
+      <!-- End Gift Settings Tab -->
+
+      <!-- Controls Tab -->
+      <div id="controls-tab" class="tab-content active">
+
+      <!-- Row 1: Core Functions & Resources -->
+      <div class="control-row">
+        <!-- Core Functions -->
+        <div class="control-group">
+          <h3>Core</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addHeart">❤️+ Add Heart</button>
+            <button class="btn-sm" data-action="removeHeart">💔 Remove Heart</button>
+            <button class="btn-sm" data-action="addHeartPiece">¼❤️ Heart Piece</button>
+            <button class="btn-sm danger" data-action="killPlayer">💀 Kill</button>
+            <button class="btn-sm" data-action="testMemory">🔍 Test Mem</button>
+            <button class="btn-sm special" data-action="toggleInvincibility">⭐ GOD MODE</button>
+          </div>
+        </div>
+
+        <!-- Resources -->
+        <div class="control-group">
+          <h3>Resources</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="setRupees" data-value="100">💰 100</button>
+            <button class="btn-sm" data-action="setRupees" data-value="500">💰 500</button>
+            <button class="btn-sm" data-action="setRupees" data-value="9999">💰 MAX</button>
+            <button class="btn-sm" data-action="setBombs" data-value="10">💣 10</button>
+            <button class="btn-sm" data-action="setBombs" data-value="50">💣 MAX</button>
+            <button class="btn-sm" data-action="setArrows" data-value="30">🏹 30</button>
+            <button class="btn-sm" data-action="setArrows" data-value="70">🏹 MAX</button>
+            <button class="btn-sm" data-action="addRupees" data-value="50">💰 +50</button>
+            <button class="btn-sm" data-action="addRupee">💰 +1</button>
+            <button class="btn-sm" data-action="removeRupee">💰 -1</button>
+            <button class="btn-sm" data-action="addBomb">💣 +1</button>
+            <button class="btn-sm" data-action="removeBomb">💣 -1</button>
+            <button class="btn-sm" data-action="addArrow">🏹 +1</button>
+            <button class="btn-sm" data-action="removeArrow">🏹 -1</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Equipment -->
+      <div class="control-row">
+        <!-- Swords -->
+        <div class="control-group">
+          <h3>Swords</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="setSword" data-value="0">❌ None</button>
+            <button class="btn-sm" data-action="setSword" data-value="1">⚔️ Fighter</button>
+            <button class="btn-sm" data-action="setSword" data-value="2">⚔️ Master</button>
+            <button class="btn-sm" data-action="setSword" data-value="3">⚔️ Tempered</button>
+            <button class="btn-sm gold" data-action="setSword" data-value="4">⚔️ Golden</button>
+          </div>
+        </div>
+
+        <!-- Shields -->
+        <div class="control-group">
+          <h3>Shields</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="setShield" data-value="0">❌ None</button>
+            <button class="btn-sm" data-action="setShield" data-value="1">🛡️ Blue</button>
+            <button class="btn-sm" data-action="setShield" data-value="2">🛡️ Red</button>
+            <button class="btn-sm" data-action="setShield" data-value="3">🛡️ Mirror</button>
+          </div>
+        </div>
+
+        <!-- Armor -->
+        <div class="control-group">
+          <h3>Armor</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="setArmor" data-value="0">👕 Green</button>
+            <button class="btn-sm" data-action="setArmor" data-value="1">👕 Blue</button>
+            <button class="btn-sm" data-action="setArmor" data-value="2">👕 Red</button>
+          </div>
+        </div>
+
+        <!-- Gloves -->
+        <div class="control-group">
+          <h3>Gloves</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="setGloves" data-value="0">❌ None</button>
+            <button class="btn-sm" data-action="setGloves" data-value="1">🧤 Power</button>
+            <button class="btn-sm" data-action="setGloves" data-value="2">🧤 Titan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Toggle Items & Medallions -->
+      <div class="control-row">
+        <div class="control-group wide">
+          <h3>Toggle Items</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="toggleBoots">👟 Boots</button>
+            <button class="btn-sm" data-action="toggleFlippers">🏊 Flippers</button>
+            <button class="btn-sm" data-action="toggleMoonPearl">🌙 Pearl</button>
+            <button class="btn-sm" data-action="toggleHookshot">🪝 Hookshot</button>
+            <button class="btn-sm" data-action="toggleLamp">🔦 Lamp</button>
+            <button class="btn-sm" data-action="toggleHammer">🔨 Hammer</button>
+            <button class="btn-sm" data-action="toggleBook">📖 Book</button>
+            <button class="btn-sm" data-action="toggleBugNet">🦋 Net</button>
+            <button class="btn-sm" data-action="toggleSomaria">🟥 Somaria</button>
+            <button class="btn-sm" data-action="toggleByrna">🟦 Byrna</button>
+            <button class="btn-sm" data-action="toggleMirror">🪞 Mirror</button>
+            <button class="btn-sm" data-action="toggleBoomerang">🪃 Boomerang</button>
+            <button class="btn-sm" data-action="toggleFireRod">🔥 Fire Rod</button>
+            <button class="btn-sm" data-action="toggleIceRod">❄️ Ice Rod</button>
+          </div>
+        </div>
+
+        <!-- Medallions -->
+        <div class="control-group">
+          <h3>Medallions</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="toggleMedallion" data-value="bombos">💥 Bombos</button>
+            <button class="btn-sm" data-action="toggleMedallion" data-value="ether">⚡ Ether</button>
+            <button class="btn-sm" data-action="toggleMedallion" data-value="quake">🌋 Quake</button>
+            <button class="btn-sm" data-action="toggleAllMedallions">💫 All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: Magic & Bottles -->
+      <div class="control-row">
+        <!-- Magic -->
+        <div class="control-group">
+          <h3>Magic</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="enableMagic">✨ Enable</button>
+            <button class="btn-sm" data-action="setMagicUpgrade" data-value="0">🔮 Normal</button>
+            <button class="btn-sm" data-action="setMagicUpgrade" data-value="1">🔮 ½ Magic</button>
+            <button class="btn-sm" data-action="setMagicUpgrade" data-value="2">🔮 ¼ Magic</button>
+          </div>
+        </div>
+
+        <!-- Bottles -->
+        <div class="control-group">
+          <h3>Bottles</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addBottle">🍾 Add</button>
+            <button class="btn-sm" data-action="removeBottle">🍾 Remove</button>
+            <button class="btn-sm" data-action="fillBottles" data-value="red">🧪 Red</button>
+            <button class="btn-sm" data-action="fillBottles" data-value="green">🧪 Green</button>
+            <button class="btn-sm" data-action="fillBottles" data-value="blue">🧪 Blue</button>
+          </div>
+        </div>
+
+        <!-- Flute -->
+        <div class="control-group">
+          <h3>Flute</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="giveFlute">🎵 Add</button>
+            <button class="btn-sm" data-action="removeFlute">🎵 Remove</button>
+            <button class="btn-sm" data-action="deactivateFlute">🐦 Reset Bird</button>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="control-group">
+          <h3>Pendants</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="togglePendant" data-value="red">🔴 Red</button>
+            <button class="btn-sm" data-action="togglePendant" data-value="blue">🔵 Blue</button>
+            <button class="btn-sm" data-action="togglePendant" data-value="green">🟢 Green</button>
+            <button class="btn-sm" data-action="toggleAllPendants">💎 All</button>
+          </div>
+        </div>
+
+        <!-- Crystals -->
+        <div class="control-group">
+          <h3>Crystals</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="toggleCrystal" data-value="1">💠 1</button>
+            <button class="btn-sm" data-action="toggleCrystal" data-value="2">💠 2</button>
+            <button class="btn-sm" data-action="toggleCrystal" data-value="3">💠 3</button>
+            <button class="btn-sm" data-action="toggleCrystal" data-value="4">💠 4</button>
+            <button class="btn-sm" data-action="toggleCrystal" data-value="5">💠 5</button>
+            <button class="btn-sm" data-action="toggleCrystal" data-value="6">💠 6</button>
+            <button class="btn-sm" data-action="toggleCrystal" data-value="7">💠 7</button>
+            <button class="btn-sm" data-action="toggleAllCrystals">💠 All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: Hearts -->
+      <div class="control-row">
+        <div class="control-group wide">
+          <h3>Set Hearts</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="setHearts" data-value="3">❤️×3</button>
+            <button class="btn-sm" data-action="setHearts" data-value="5">❤️×5</button>
+            <button class="btn-sm" data-action="setHearts" data-value="7">❤️×7</button>
+            <button class="btn-sm" data-action="setHearts" data-value="10">❤️×10</button>
+            <button class="btn-sm" data-action="setHearts" data-value="12">❤️×12</button>
+            <button class="btn-sm" data-action="setHearts" data-value="15">❤️×15</button>
+            <button class="btn-sm" data-action="setHearts" data-value="18">❤️×18</button>
+            <button class="btn-sm" data-action="setHearts" data-value="20">❤️×20</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 6: Dungeon Keys Light World -->
+      <div class="control-row">
+        <div class="control-group">
+          <h3>🏰 Eastern</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="eastern">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="eastern">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="eastern">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🏜️ Desert</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="desert">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="desert">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="desert">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>⛰️ Hera</h3>
+          <button class="btn-sm" data-action="addSmallKey" data-dungeon="hera">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="hera">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="hera">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>👑 Tower</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="tower">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="tower">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="tower">🔑</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 7: Dungeon Keys Dark World -->
+      <div class="control-row">
+        <div class="control-group">
+          <h3>🌙 Darkness</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="darkness">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="darkness">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="darkness">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🐸 Swamp</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="swamp">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="swamp">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="swamp">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>💀 Skull</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="skull">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="skull">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="skull">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🏴‍☠️ Thieves</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="thieves">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="thieves">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="thieves">🔑</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 8: More Dungeon Keys -->
+      <div class="control-row">
+        <div class="control-group">
+          <h3>❄️ Ice</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="ice">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ice">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ice">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🌫️ Misery</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="misery">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="misery">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="misery">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🐢 Turtle</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="turtle">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="turtle">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="turtle">🔑</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>👹 Ganon</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="addSmallKey" data-dungeon="ganon">🗝️+</button>
+            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ganon">🗝️-</button>
+            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ganon">🔑</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 9: Preset Loadouts -->
+      <div class="control-row">
+        <div class="control-group wide">
+          <h3>Preset Loadouts</h3>
+          <div class="button-grid-compact">
+            <button class="btn-lg special" data-action="giveStarterPack">📦 STARTER PACK</button>
+            <button class="btn-lg gold" data-action="giveEndgamePack">👑 ENDGAME PACK</button>
+            <button class="btn-lg" data-action="getInventory">📊 Show Inventory</button>
+            <button class="btn-lg danger" data-action="warpEastern">🏰 Warp Eastern</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 10: Enemy Spawning -->
+      <div class="control-row">
+        <!-- Enemy Spawning -->
+        <div class="control-group wide">
+          <h3>Enemy Spawning</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="octorok">🐙 Octorok (HP:2)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="ballandchain">⚔️ Ball & Chain (HP:16)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="snapdragon">🌺 Snapdragon (HP:12)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="octoballoon">🎈 Octoballoon (HP:2)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="cyclops">👁️ Cyclops (HP:20)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="helmasaur">🦎 Mini Helmasaur (HP:4)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="minihelmasaur">🐍 Mini Moldorm (HP:3)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="bombguy">💣 Bomb Guy (HP:8)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier">🗡️ Soldier (HP:6)</button>
+            <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier_green">🟢 Soldier (HP:4)</button>
+            <button class="btn-sm special" data-action="spawnRandomEnemy">🎲 Random Enemy</button>
+            <button class="btn-sm danger" data-action="triggerChickenAttack">🐔 Chicken Attack</button>
+            <button class="btn-sm danger" data-action="triggerEnemyWaves">⚔️ Enemy Waves (30s)</button>
+            <button class="btn-sm danger" data-action="triggerBeeSwarmWaves">🐝 Bee Swarm (60s)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 11: Item Disable Testing -->
+      <div class="control-row">
+        <div class="control-group wide">
+          <h3>⏱️ Item Disable Testing</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="testDisableItem" data-item="bow">🏹 Bow</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="boomerang">🪃 Boomerang</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="hookshot">🪝 Hookshot</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="powder">🍄 Powder</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="firerod">🔥 Fire Rod</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="icerod">❄️ Ice Rod</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="bombos">💥 Bombos</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="ether">⚡ Ether</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="quake">🌋 Quake</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="lamp">🔦 Lamp</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="hammer">🔨 Hammer</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="shovel">🪓 Shovel</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="net">🦋 Net</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="book">📖 Book</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="somaria">🟥 Somaria</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="byrna">🟦 Byrna</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="cape">🧥 Cape</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="mirror">🪞 Mirror</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="boots">👟 Boots</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="gloves">🧤 Gloves</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="flippers">🏊 Flippers</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="moonpearl">🌙 Moon Pearl</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="sword">⚔️ Sword</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="shield">🛡️ Shield</button>
+            <button class="btn-sm" data-action="testDisableItem" data-item="armor">👕 Armor</button>
+          </div>
+        </div>
+      </div>
+
+      </div>
+      <!-- End Controls Tab -->
+
+    </div>
+    <!-- End Tab Content Container -->
+
+    <!-- Log Section -->
+    <div class="section log-section">
+      <h3>Activity Log</h3>
+      <div id="log" class="log"></div>
+    </div>
+  </div>
+
+  <script src="tiktok-gifts.js"></script>
+  <script src="gift-images.js"></script>
+  <script src="toast.js"></script>
+  <script src="renderer-full.js"></script>
+  <script src="gift-settings-modal.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';">
+  <title>ALTTP SNI Controller</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 ALTTP SNI Controller POC</h1>
+
+    <!-- Connection Section -->
+    <div class="section">
+      <h2>Connection</h2>
+      <div class="connection-controls">
+        <input type="text" id="host" placeholder="localhost" value="localhost">
+        <input type="text" id="port" placeholder="8191" value="8191">
+        <button id="connect-btn">Connect to SNI</button>
+      </div>
+      <div id="status" class="status disconnected">Disconnected</div>
+      <select id="device-select" style="display: none;">
+        <option value="">Select a device...</option>
+      </select>
+    </div>
+
+    <!-- Control Section -->
+    <div class="section controls-section" id="controls" style="display: none;">
+      <h2>Game Controls</h2>
+
+      <div class="button-grid">
+        <button class="control-btn" id="add-heart-btn">
+          <span class="icon">❤️+</span>
+          <span>Add Heart Container</span>
+        </button>
+
+        <button class="control-btn" id="remove-heart-btn">
+          <span class="icon">💔</span>
+          <span>Remove Heart Container</span>
+        </button>
+
+        <button class="control-btn danger" id="kill-btn">
+          <span class="icon">💀</span>
+          <span>Kill Player</span>
+        </button>
+
+        <button class="control-btn" id="warp-btn">
+          <span class="icon">🏰</span>
+          <span>Warp to Eastern Palace</span>
+        </button>
+
+        <button class="control-btn" id="test-btn">
+          <span class="icon">🔍</span>
+          <span>Test Memory Access</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Log Section -->
+    <div class="section">
+      <h3>Activity Log</h3>
+      <div id="log" class="log"></div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
