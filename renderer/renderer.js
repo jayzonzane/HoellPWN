@@ -175,18 +175,18 @@ removeHeartBtn.addEventListener('click', async () => {
 killBtn.addEventListener('click', async () => {
   if (!selectedDevice) return;
 
-  if (!confirm('Are you sure you want to kill the player?')) return;
+  if (!confirm('Are you sure you want to KO the player?')) return;
 
   killBtn.disabled = true;
   try {
     const result = await window.sniAPI.killPlayer();
     if (result.success) {
-      log('Player killed!', 'warning');
+      log('Player KO\'d!', 'warning');
     } else {
       throw new Error(result.error || 'Operation failed');
     }
   } catch (error) {
-    log(`Failed to kill player: ${error.message}`, 'error');
+    log(`Failed to KO player: ${error.message}`, 'error');
   } finally {
     killBtn.disabled = false;
   }

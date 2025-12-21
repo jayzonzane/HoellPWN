@@ -1001,8 +1001,9 @@ async function generateOverlay() {
     // Get configuration
     const width = parseInt(document.getElementById('overlay-width').value) || 1080;
     const height = parseInt(document.getElementById('overlay-height').value) || 200;
-    const stagger = parseInt(document.getElementById('overlay-stagger').value) || 2000;
-    const pause = parseInt(document.getElementById('overlay-pause').value) || 30000;
+    // Convert seconds to milliseconds for HTML generation
+    const stagger = (parseFloat(document.getElementById('overlay-stagger').value) || 2) * 1000;
+    const pause = (parseFloat(document.getElementById('overlay-pause').value) || 30) * 1000;
     const continuousLoop = document.getElementById('overlay-continuous-loop').checked;
 
     // Get selected gifts

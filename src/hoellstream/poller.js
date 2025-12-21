@@ -5,7 +5,7 @@
 class HoellStreamPoller {
   constructor(gameOperations, basicOperations, config = {}) {
     this.gameOps = gameOperations;  // expandedOps
-    this.basicOps = basicOperations; // gameOps (has killPlayer)
+    this.basicOps = basicOperations; // gameOps (has KO player)
     this.restorationManager = null; // ItemRestorationManager (set via setRestorationManager)
     this.seenEventIds = new Set();
     this.pollInterval = null;
@@ -17,7 +17,7 @@ class HoellStreamPoller {
     this.giftMappings = {};
 
     // Configuration
-    this.apiBaseUrl = config.apiBaseUrl || 'http://localhost:3000/api/events';
+    this.apiBaseUrl = config.apiBaseUrl || 'http://localhost:3000/api/messages/stream';
     this.pollIntervalMs = config.pollIntervalMs || 2000; // 2 seconds
     this.debugMode = config.debugMode !== undefined ? config.debugMode : true;
 
@@ -82,8 +82,8 @@ class HoellStreamPoller {
    */
   async poll() {
     try {
-      // Use recent endpoint since /since/:timestamp doesn't work reliably
-      const url = `${this.apiBaseUrl}/recent/10`;
+      // Use stream endpoint for messages
+      const url = this.apiBaseUrl;
 
       this.log(`📡 Polling ${url}...`);
 

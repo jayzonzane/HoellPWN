@@ -22,7 +22,7 @@ The main polling engine that:
 Configuration file that maps TikTok gift names to game actions.
 
 **Current Mappings:**
-- `Galaxy` → `killPlayer` (Kill the player)
+- `Galaxy` → `killPlayer` (KO the player)
 
 **To Add More Gifts:**
 ```javascript
@@ -36,7 +36,7 @@ Configuration file that maps TikTok gift names to game actions.
 
 ## API Contract
 
-**Endpoint:** `http://localhost:3000/api/events/recent/10`
+**Endpoint:** `http://localhost:3000/api/messages/stream`
 
 **Expected Response:**
 ```json
@@ -69,7 +69,7 @@ Configuration file that maps TikTok gift names to game actions.
 Default configuration (can be overridden in main.js):
 ```javascript
 {
-  apiUrl: 'http://localhost:3000/api/events/recent/10',
+  apiUrl: 'http://localhost:3000/api/messages/stream',
   pollIntervalMs: 2000,  // 2 seconds
   debugMode: true        // Verbose logging
 }
@@ -80,8 +80,8 @@ Default configuration (can be overridden in main.js):
 ```
 [HH:MM:SS.mmm] 🎁 HoellStream: Polling started
 [HH:MM:SS.mmm] 🎁 HoellStream: Fetched 4 events
-[HH:MM:SS.mmm] 🌌 Galaxy received from LordHoell → Kill the player
-[HH:MM:SS.mmm] ✅ Kill the player completed successfully
+[HH:MM:SS.mmm] 🌌 Galaxy received from LordHoell → KO the player
+[HH:MM:SS.mmm] ✅ KO the player completed successfully
 [HH:MM:SS.mmm] ✋ Already processed event: tiktok_gift_XXX
 [HH:MM:SS.mmm] ❓ Unknown gift: Rose from Username
 [HH:MM:SS.mmm] ⚠️  HoellStream: API connection refused

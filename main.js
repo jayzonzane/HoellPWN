@@ -140,7 +140,7 @@ function createWindow() {
   console.log('⏱️ ItemRestorationManager initialized');
 
   // Initialize HoellStream poller (but don't start polling yet)
-  // Pass both expandedOps and gameOps (basic operations like killPlayer)
+  // Pass both expandedOps and gameOps (basic operations like KO player)
   hoellPoller = new HoellStreamPoller(expandedOps, gameOps, {
     pollIntervalMs: 2000,
     debugMode: true
@@ -224,7 +224,7 @@ ipcMain.handle('kill-player', async () => {
     }
     return await gameOps.killPlayer();
   } catch (error) {
-    console.error('Kill player error:', error);
+    console.error('KO player error:', error);
     return { success: false, error: error.message };
   }
 });

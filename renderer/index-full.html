@@ -77,7 +77,7 @@
                 <div class="settings-category">
                   <h4>Core</h4>
                   <div class="action-item">
-                    <span class="action-name">💀 Kill Player</span>
+                    <span class="action-name">💀 KO Player</span>
                     <input type="text" class="gift-input" data-action="killPlayer" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
@@ -614,13 +614,13 @@
                     <input type="number" id="overlay-height" value="200" min="50" max="2160">
                   </div>
                   <div class="config-group">
-                    <label for="overlay-stagger">Stagger Delay (ms):</label>
-                    <input type="number" id="overlay-stagger" value="2000" min="100" max="10000" step="100">
+                    <label for="overlay-stagger">Stagger Delay (seconds):</label>
+                    <input type="number" id="overlay-stagger" value="2" min="0.1" max="10" step="0.1">
                     <small>Time between showing each gift</small>
                   </div>
                   <div class="config-group">
-                    <label for="overlay-pause">Pause After All (ms):</label>
-                    <input type="number" id="overlay-pause" value="30000" min="1000" max="120000" step="1000">
+                    <label for="overlay-pause">Pause After All (seconds):</label>
+                    <input type="number" id="overlay-pause" value="30" min="1" max="120" step="1">
                     <small>Wait time before repeating all gifts</small>
                   </div>
                   <div class="config-group">
@@ -749,7 +749,7 @@
             <button class="btn-sm" data-action="addHeart">❤️+ Add Heart</button>
             <button class="btn-sm" data-action="removeHeart">💔 Remove Heart</button>
             <button class="btn-sm" data-action="addHeartPiece">¼❤️ Heart Piece</button>
-            <button class="btn-sm danger" data-action="killPlayer">💀 Kill</button>
+            <button class="btn-sm danger" data-action="killPlayer">💀 KO</button>
             <button class="btn-sm" data-action="testMemory">🔍 Test Mem</button>
             <button class="btn-sm special" data-action="toggleInvincibility">⭐ GOD MODE</button>
           </div>

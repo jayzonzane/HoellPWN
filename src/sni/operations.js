@@ -148,7 +148,7 @@ class GameOperations {
 
   async killPlayer() {
     try {
-      console.log('Killing player...');
+      console.log('KO\'ing player...');
 
       // Set health to 0
       await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_HEALTH, Buffer.from([0x00]));
@@ -156,10 +156,10 @@ class GameOperations {
       // Apply damage to trigger death animation
       await this.client.writeMemory(MEMORY_ADDRESSES.DAMAGE_TO_APPLY, Buffer.from([0x08]));
 
-      console.log('Player killed');
+      console.log('Player KO\'d');
       return { success: true };
     } catch (error) {
-      console.error('Error killing player:', error);
+      console.error('Error KO\'ing player:', error);
       throw error;
     }
   }

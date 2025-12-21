@@ -7,7 +7,7 @@ const GIFT_MAPPINGS = {
   /*
   'Rose': {
     action: 'killPlayer',
-    description: 'Kill the player',
+    description: 'KO the player',
     emoji: '🌹'
   },
   */

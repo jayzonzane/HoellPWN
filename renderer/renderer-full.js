@@ -142,11 +142,11 @@ async function addHeartPiece() {
 }
 
 async function killPlayer() {
-  if (!confirm('Kill the player?')) return;
+  if (!confirm('KO the player?')) return;
   try {
     const result = await window.sniAPI.killPlayer();
     if (result.success) {
-      log('Player killed!', 'warning');
+      log('Player KO\'d!', 'warning');
     } else {
       log(`Failed: ${result.error}`, 'error');
     }
