@@ -1287,16 +1287,41 @@ function getCurrentImageUrl(giftName, coinValue, forPreview = true) {
   if (giftImageOverrides[key]) {
     return giftImageOverrides[key];
   }
+
   // Check default gift images
   if (forPreview && typeof getGiftImageCDN !== 'undefined') {
     // Use CDN for UI preview
-    return getGiftImageCDN(giftName, coinValue);
+    const cdnUrl = getGiftImageCDN(giftName, coinValue);
+    if (cdnUrl) return cdnUrl;
   }
+
+  // Check active-gifts.json for CDN URLs from database updates
+  if (forPreview && window.activeGiftImages && window.activeGiftImages[coinValue]) {
+    const giftImageData = window.activeGiftImages[coinValue][giftName];
+    if (giftImageData && giftImageData.cdn) {
+      return giftImageData.cdn;
+    }
+  }
+
   if (typeof getGiftImageUrl !== 'undefined') {
     // Use local path for overlay generation
     return getGiftImageUrl(giftName, coinValue, !forPreview);
   }
   return null;
+}
+
+// Load active gift images from database
+async function loadActiveGiftImages() {
+  try {
+    const result = await window.sniAPI.getActiveGifts();
+    if (result && result.activeGifts && result.activeGifts.images) {
+      // Store globally so getCurrentImageUrl can access it
+      window.activeGiftImages = result.activeGifts.images;
+      console.log('Loaded active gift images from database');
+    }
+  } catch (error) {
+    console.error('Error loading active gift images:', error);
+  }
 }
 
 // Load gift image overrides
@@ -1345,9 +1370,12 @@ saveImagesBtn.addEventListener('click', async () => {
 });
 
 // Populate gift images list
-function populateGiftImagesList() {
+async function populateGiftImagesList() {
   const container = document.getElementById('gift-images-list');
   if (!container) return;
+
+  // Load active gift images from database first
+  await loadActiveGiftImages();
 
   if (typeof TIKTOK_GIFTS === 'undefined') {
     container.innerHTML = '<div class="no-gifts-message">Gift database not loaded</div>';
@@ -1600,15 +1628,78 @@ async function triggerDatabaseUpdate() {
         resultsTitle.textContent = '✅ Update Complete';
 
         const { added, removed, modified, total } = result.changes;
-        resultsSummary.innerHTML = `
+        let summaryHTML = `
           <p><strong>${total} total changes:</strong></p>
           <ul style="margin-left: 20px; margin-top: 10px;">
             <li>✅ ${added} new gift${added !== 1 ? 's' : ''} added</li>
             <li>📦 ${removed} gift${removed !== 1 ? 's' : ''} archived</li>
             <li>🔄 ${modified} gift${modified !== 1 ? 's' : ''} modified</li>
           </ul>
-          <p style="margin-top: 15px;">Database has been updated successfully!</p>
         `;
+
+        // Add detailed new gifts list
+        if (result.details && result.details.added && result.details.added.length > 0) {
+          summaryHTML += `
+            <details style="margin-top: 15px; cursor: pointer;">
+              <summary style="font-weight: 600; color: #4CAF50;">📥 New Gifts (${result.details.added.length})</summary>
+              <ul style="margin: 10px 0 0 20px; max-height: 150px; overflow-y: auto;">
+                ${result.details.added.map(g => `<li>${g.name} (${g.coins} coins)</li>`).join('')}
+              </ul>
+            </details>
+          `;
+        }
+
+        // Add detailed archived gifts list
+        if (result.details && result.details.removed && result.details.removed.length > 0) {
+          summaryHTML += `
+            <details style="margin-top: 10px; cursor: pointer;">
+              <summary style="font-weight: 600; color: #FF9800;">📦 Archived Gifts (${result.details.removed.length})</summary>
+              <ul style="margin: 10px 0 0 20px; max-height: 150px; overflow-y: auto;">
+                ${result.details.removed.map(g => `<li>${g.name} (${g.coins} coins)</li>`).join('')}
+              </ul>
+            </details>
+          `;
+        }
+
+        // Add modified gifts list
+        if (result.details && result.details.modified && result.details.modified.length > 0) {
+          summaryHTML += `
+            <details style="margin-top: 10px; cursor: pointer;">
+              <summary style="font-weight: 600; color: #2196F3;">🔄 Modified Gifts (${result.details.modified.length})</summary>
+              <ul style="margin: 10px 0 0 20px; max-height: 150px; overflow-y: auto;">
+                ${result.details.modified.map(g => `<li>${g.name}: ${g.oldCoins} → ${g.newCoins} coins</li>`).join('')}
+              </ul>
+            </details>
+          `;
+        }
+
+        // Add downloaded images list
+        if (result.imageDownloads && result.imageDownloads.downloaded && result.imageDownloads.downloaded.length > 0) {
+          summaryHTML += `
+            <details style="margin-top: 10px; cursor: pointer;">
+              <summary style="font-weight: 600; color: #9C27B0;">🖼️ Images Downloaded (${result.imageDownloads.downloaded.length})</summary>
+              <ul style="margin: 10px 0 0 20px; max-height: 150px; overflow-y: auto;">
+                ${result.imageDownloads.downloaded.map(g => `<li>${g.name} (${g.coins} coins) - ${g.filename}</li>`).join('')}
+              </ul>
+            </details>
+          `;
+        }
+
+        // Add failed downloads if any
+        if (result.imageDownloads && result.imageDownloads.failed && result.imageDownloads.failed.length > 0) {
+          summaryHTML += `
+            <details style="margin-top: 10px; cursor: pointer;">
+              <summary style="font-weight: 600; color: #f44336;">⚠️ Failed Downloads (${result.imageDownloads.failed.length})</summary>
+              <ul style="margin: 10px 0 0 20px; max-height: 150px; overflow-y: auto;">
+                ${result.imageDownloads.failed.map(g => `<li>${g.name} (${g.coins} coins) - ${g.error}</li>`).join('')}
+              </ul>
+            </details>
+          `;
+        }
+
+        summaryHTML += '<p style="margin-top: 15px;">Database has been updated successfully!</p>';
+        resultsSummary.innerHTML = summaryHTML;
+
         log(`✅ Update complete: ${total} total changes`, 'success');
 
         // Reload database status and version history
@@ -1721,12 +1812,13 @@ function updateProgress(data) {
   // Calculate progress percentage based on stage
   const stageProgress = {
     'starting': 5,
-    'loading': 15,
-    'fetching': 30,
-    'comparing': 50,
-    'backup': 60,
-    'archiving': 70,
-    'updating': 85,
+    'loading': 10,
+    'fetching': 25,
+    'comparing': 40,
+    'backup': 50,
+    'archiving': 60,
+    'downloading_images': 75,
+    'updating': 90,
     'complete': 100,
     'error': 0
   };

@@ -485,6 +485,117 @@ class GiftDatabaseManager {
       return { success: false, error: error.message };
     }
   }
+
+  /**
+   * Download images for gifts
+   * @param {Array} gifts - Array of {name, coins, imageUrl}
+   * @param {Function} progressCallback - Optional callback for progress updates
+   * @returns {Promise<Object>} Download results
+   */
+  async downloadGiftImages(gifts, progressCallback = null) {
+    try {
+      const https = require('https');
+      const fs = require('fs');
+      const giftsWithImages = gifts.filter(g => g.imageUrl);
+
+      if (giftsWithImages.length === 0) {
+        return {
+          success: true,
+          downloaded: [],
+          failed: [],
+          message: 'No images to download'
+        };
+      }
+
+      // Create gift-images directory in userData
+      const imagesDir = path.join(this.userDataPath, 'gift-images');
+      await fs.promises.mkdir(imagesDir, { recursive: true });
+
+      const downloaded = [];
+      const failed = [];
+      let count = 0;
+
+      for (const gift of giftsWithImages) {
+        count++;
+        const sanitized = gift.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filename = `${sanitized}_${gift.coins}.webp`;
+        const filepath = path.join(imagesDir, filename);
+
+        if (progressCallback) {
+          progressCallback({
+            stage: 'downloading_images',
+            message: `Downloading ${gift.name}...`,
+            current: count,
+            total: giftsWithImages.length
+          });
+        }
+
+        try {
+          await this._downloadImage(gift.imageUrl, filepath);
+          downloaded.push({
+            name: gift.name,
+            coins: gift.coins,
+            filename,
+            localPath: filepath
+          });
+          console.log(`✓ Downloaded: ${filename}`);
+        } catch (error) {
+          failed.push({
+            name: gift.name,
+            coins: gift.coins,
+            error: error.message
+          });
+          console.error(`✗ Failed to download ${gift.name}:`, error.message);
+        }
+      }
+
+      return {
+        success: true,
+        downloaded,
+        failed,
+        imagesDir
+      };
+
+    } catch (error) {
+      console.error('Failed to download images:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Download a single image file
+   * @private
+   */
+  _downloadImage(url, filepath) {
+    return new Promise((resolve, reject) => {
+      const https = require('https');
+      const fs = require('fs');
+      const file = fs.createWriteStream(filepath);
+
+      https.get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}`));
+          return;
+        }
+
+        response.pipe(file);
+
+        file.on('finish', () => {
+          file.close();
+          resolve();
+        });
+
+        file.on('error', (err) => {
+          fs.unlink(filepath, () => {});
+          reject(err);
+        });
+
+      }).on('error', (err) => {
+        fs.unlink(filepath, () => {});
+        reject(err);
+      });
+    });
+  }
 }
 
 module.exports = GiftDatabaseManager;

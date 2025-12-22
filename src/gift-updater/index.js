@@ -99,17 +99,39 @@ class GiftUpdater {
         await this.dbManager.archiveGifts(giftsToArchive);
       }
 
-      // Phase 7: Update active database
+      // Phase 7: Download images for new gifts
+      let downloadResults = { downloaded: [], failed: [] };
+      if (changes.added.length > 0) {
+        this.progressCallback({ stage: 'downloading_images', message: `Downloading images for ${changes.added.length} new gifts...` });
+
+        // Create array of gifts to download (with image URLs)
+        const giftsToDownload = changes.added.map(gift => {
+          // Find the image URL from apiResult.images
+          if (apiResult.images && apiResult.images[gift.coins] && apiResult.images[gift.coins][gift.name]) {
+            return {
+              name: gift.name,
+              coins: gift.coins,
+              imageUrl: apiResult.images[gift.coins][gift.name].cdn
+            };
+          }
+          return null;
+        }).filter(g => g !== null);
+
+        downloadResults = await this.dbManager.downloadGiftImages(giftsToDownload, this.progressCallback);
+      }
+
+      // Phase 8: Update active database
       this.progressCallback({ stage: 'updating', message: 'Updating gift database...' });
       const newActiveData = {
         version: '1.1.0',
         lastUpdated: new Date().toISOString(),
         source: 'streamtoearn.io',
-        gifts: apiResult.gifts
+        gifts: apiResult.gifts,
+        images: apiResult.images  // Include image metadata
       };
       await this.dbManager.saveActiveGifts(newActiveData);
 
-      // Phase 8: Update version history
+      // Phase 9: Update version history
       await this.dbManager.updateVersionHistory(changes, backupResult.backupPath);
 
       console.log('✅ Gift database update completed successfully');
@@ -122,8 +144,12 @@ class GiftUpdater {
           modified: changes.modified.length,
           total: totalChanges
         },
-        details: changes,
-        images: apiResult.images,
+        details: {
+          added: changes.added,      // Full list of added gifts
+          removed: changes.removed,  // Full list of removed gifts
+          modified: changes.modified // Full list of modified gifts
+        },
+        imageDownloads: downloadResults,
         timestamp: new Date().toISOString()
       };
 
