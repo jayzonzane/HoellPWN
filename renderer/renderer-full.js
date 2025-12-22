@@ -1320,6 +1320,7 @@ document.addEventListener('click', (e) => {
 let overlayGiftsPopulated = false;
 let giftDatabasePopulated = false;
 let giftImagesPopulated = false;
+let databaseUpdatesPopulated = false;
 
 document.addEventListener('click', (e) => {
   const subtabBtn = e.target.closest('.subtab-btn');
@@ -1367,5 +1368,10 @@ document.addEventListener('click', (e) => {
   if (targetSubtab === 'gift-images-subtab' && !giftImagesPopulated && typeof populateGiftImagesList === 'function') {
     populateGiftImagesList();
     giftImagesPopulated = true;
+  }
+
+  if (targetSubtab === 'database-updates-subtab' && !databaseUpdatesPopulated && typeof initDatabaseUpdatesTab === 'function') {
+    initDatabaseUpdatesTab();
+    databaseUpdatesPopulated = true;
   }
 });

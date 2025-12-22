@@ -103,6 +103,21 @@ function rangeHasGifts(min, max) {
   return false;
 }
 
+// Get all gifts within a coin range
+function getGiftsForCoinRange(minCoins, maxCoins) {
+  const gifts = [];
+  for (const [coins, giftNames] of Object.entries(TIKTOK_GIFTS)) {
+    const coinValue = parseInt(coins);
+    if (coinValue >= minCoins && coinValue <= maxCoins) {
+      giftNames.forEach(name => {
+        gifts.push({ name, coins: coinValue });
+      });
+    }
+  }
+  // Sort by coin value, then alphabetically
+  return gifts.sort((a, b) => a.coins - b.coins || a.name.localeCompare(b.name));
+}
+
 // Define coin value ranges (only including ranges with gifts)
 function getCoinRanges() {
   const potentialRanges = [];
@@ -186,7 +201,75 @@ function getCoinRanges() {
     });
   }
 
-  return ranges;
+  // Consolidate ranges with fewer than 10 gifts
+  return consolidateSmallRanges(ranges);
+}
+
+// Consolidate ranges that have fewer than 10 gifts
+function consolidateSmallRanges(ranges) {
+  if (ranges.length === 0) return ranges;
+
+  // Count gifts in each range
+  const rangesWithCounts = ranges.map(range => {
+    const gifts = getGiftsForCoinRange(range.min, range.max);
+    return {
+      min: range.min,
+      max: range.max,
+      label: range.label,
+      giftCount: gifts.length
+    };
+  });
+
+  // Keep consolidating until all ranges have >= 10 gifts or we can't consolidate anymore
+  let consolidated = true;
+  while (consolidated) {
+    consolidated = false;
+
+    // Find first range with < 10 gifts
+    for (let i = 0; i < rangesWithCounts.length; i++) {
+      if (rangesWithCounts[i].giftCount < 10) {
+        // Check if this is the only range left
+        if (rangesWithCounts.length === 1) {
+          // Only one range, can't consolidate
+          break;
+        }
+
+        // Determine which adjacent range to merge with
+        const hasPrev = i > 0;
+        const hasNext = i < rangesWithCounts.length - 1;
+
+        if (!hasPrev && !hasNext) {
+          // Only one range left, can't consolidate
+          break;
+        }
+
+        const prevCount = hasPrev ? rangesWithCounts[i - 1].giftCount : Infinity;
+        const nextCount = hasNext ? rangesWithCounts[i + 1].giftCount : Infinity;
+
+        // Merge with the adjacent range that has fewer gifts
+        if (prevCount <= nextCount && hasPrev) {
+          // Merge with previous range
+          rangesWithCounts[i - 1].max = rangesWithCounts[i].max;
+          rangesWithCounts[i - 1].giftCount += rangesWithCounts[i].giftCount;
+          rangesWithCounts[i - 1].label = `${rangesWithCounts[i - 1].min}-${rangesWithCounts[i - 1].max} 💰`;
+          rangesWithCounts.splice(i, 1);
+          consolidated = true;
+          break; // Start over from the beginning
+        } else if (hasNext) {
+          // Merge with next range
+          rangesWithCounts[i].max = rangesWithCounts[i + 1].max;
+          rangesWithCounts[i].giftCount += rangesWithCounts[i + 1].giftCount;
+          rangesWithCounts[i].label = `${rangesWithCounts[i].min}-${rangesWithCounts[i].max} 💰`;
+          rangesWithCounts.splice(i + 1, 1);
+          consolidated = true;
+          break; // Start over from the beginning
+        }
+      }
+    }
+  }
+
+  // Remove giftCount property before returning
+  return rangesWithCounts.map(({ min, max, label }) => ({ min, max, label }));
 }
 
 const COIN_RANGES = getCoinRanges();
@@ -194,21 +277,6 @@ const COIN_RANGES = getCoinRanges();
 // Get gifts for a specific coin value
 function getGiftsForCoinValue(coins) {
   return TIKTOK_GIFTS[coins] || [];
-}
-
-// Get all gifts within a coin range
-function getGiftsForCoinRange(minCoins, maxCoins) {
-  const gifts = [];
-  for (const [coins, giftNames] of Object.entries(TIKTOK_GIFTS)) {
-    const coinValue = parseInt(coins);
-    if (coinValue >= minCoins && coinValue <= maxCoins) {
-      giftNames.forEach(name => {
-        gifts.push({ name, coins: coinValue });
-      });
-    }
-  }
-  // Sort by coin value, then alphabetically
-  return gifts.sort((a, b) => a.coins - b.coins || a.name.localeCompare(b.name));
 }
 
 // Get all gifts as a flat array with their coin values

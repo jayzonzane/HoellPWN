@@ -656,6 +656,11 @@ async function loadGiftSettings() {
       });
       updateAllGiftDropdowns();
       log('Gift settings loaded', 'info');
+
+      // Check for archived gift mappings
+      setTimeout(() => {
+        checkMappingsForArchivedGifts();
+      }, 500);
     }
   } catch (error) {
     log(`Error loading gift settings: ${error.message}`, 'error');
@@ -1454,3 +1459,525 @@ function populateGiftImagesList() {
     container.appendChild(item);
   });
 }
+
+/**
+ * ========================================
+ * DATABASE UPDATES TAB FUNCTIONALITY
+ * ========================================
+ */
+
+// Initialize Database Updates tab when modal loads
+function initDatabaseUpdatesTab() {
+  loadDatabaseStatus();
+  loadVersionHistory();
+  setupDatabaseUpdateListeners();
+}
+
+// Load and display database status
+async function loadDatabaseStatus() {
+  try {
+    // Load active gifts
+    const activeResult = await window.sniAPI.getActiveGifts();
+    if (activeResult && activeResult.activeGifts) {
+      const activeGifts = activeResult.activeGifts.gifts || {};
+      const activeCount = Object.values(activeGifts).reduce((sum, arr) => sum + arr.length, 0);
+      document.getElementById('db-active-count').textContent = activeCount;
+
+      // Show last updated timestamp
+      if (activeResult.activeGifts.lastUpdated) {
+        const date = new Date(activeResult.activeGifts.lastUpdated);
+        document.getElementById('db-last-updated').textContent = date.toLocaleString();
+      }
+    }
+
+    // Load archived gifts
+    const archivedResult = await window.sniAPI.loadArchivedGifts();
+    if (archivedResult && archivedResult.archivedGifts) {
+      const archivedCount = archivedResult.archivedGifts.gifts?.length || 0;
+      document.getElementById('db-archived-count').textContent = archivedCount;
+    }
+  } catch (error) {
+    log('Error loading database status: ' + error.message, 'error');
+  }
+}
+
+// Load and display version history
+async function loadVersionHistory() {
+  try {
+    const result = await window.sniAPI.getDatabaseVersions();
+    const container = document.getElementById('version-history-list');
+
+    if (!result || !result.versions || !result.versions.backups || result.versions.backups.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">No version history available</p>';
+      return;
+    }
+
+    // Sort backups by timestamp (newest first)
+    const backups = [...result.versions.backups].sort((a, b) =>
+      new Date(b.timestamp) - new Date(a.timestamp)
+    );
+
+    container.innerHTML = backups.map(backup => `
+      <div class="version-item">
+        <div class="version-info">
+          <div class="version-timestamp">${new Date(backup.timestamp).toLocaleString()}</div>
+          <div class="version-meta">
+            <span>📦 ${backup.giftCount} gifts</span>
+            ${backup.changes ? `
+              <span class="change-badge added">+${backup.changes.added}</span>
+              <span class="change-badge removed">-${backup.changes.removed}</span>
+              <span class="change-badge modified">~${backup.changes.modified}</span>
+            ` : ''}
+          </div>
+        </div>
+        <div class="version-actions">
+          <button class="btn-rollback" onclick="confirmRollback('${backup.backupPath}', '${backup.timestamp}')">
+            ↩️ Rollback
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    log('Error loading version history: ' + error.message, 'error');
+  }
+}
+
+// Setup event listeners for database update controls
+function setupDatabaseUpdateListeners() {
+  // Update button
+  const updateBtn = document.getElementById('update-gift-database-btn');
+  if (updateBtn) {
+    updateBtn.addEventListener('click', triggerDatabaseUpdate);
+  }
+
+  // View archived gifts button
+  const viewArchivedBtn = document.getElementById('view-archived-gifts-btn');
+  if (viewArchivedBtn) {
+    viewArchivedBtn.addEventListener('click', () => {
+      showArchivedGiftsModal();
+    });
+  }
+
+  // Listen for progress updates
+  window.sniAPI.onGiftUpdateProgress((data) => {
+    updateProgress(data);
+  });
+}
+
+// Trigger database update
+async function triggerDatabaseUpdate() {
+  const updateBtn = document.getElementById('update-gift-database-btn');
+  const progressContainer = document.getElementById('update-progress-container');
+  const resultsContainer = document.getElementById('update-results-container');
+
+  // Disable button and show progress
+  updateBtn.disabled = true;
+  updateBtn.textContent = '⏳ Updating...';
+  progressContainer.style.display = 'block';
+  resultsContainer.style.display = 'none';
+
+  try {
+    log('Starting gift database update...', 'info');
+
+    const result = await window.sniAPI.updateGiftDatabase({});
+
+    // Hide progress, show results
+    progressContainer.style.display = 'none';
+    resultsContainer.style.display = 'block';
+
+    const resultsCard = resultsContainer.querySelector('.results-card');
+    const resultsTitle = document.getElementById('results-title');
+    const resultsSummary = document.getElementById('results-summary');
+
+    if (result.success) {
+      if (result.noChanges) {
+        resultsCard.classList.remove('error');
+        resultsTitle.textContent = '✅ Database Up to Date';
+        resultsSummary.innerHTML = '<p>No changes detected. Your gift database is already current.</p>';
+        log('✅ Database is already up to date', 'success');
+      } else {
+        resultsCard.classList.remove('error');
+        resultsTitle.textContent = '✅ Update Complete';
+
+        const { added, removed, modified, total } = result.changes;
+        resultsSummary.innerHTML = `
+          <p><strong>${total} total changes:</strong></p>
+          <ul style="margin-left: 20px; margin-top: 10px;">
+            <li>✅ ${added} new gift${added !== 1 ? 's' : ''} added</li>
+            <li>📦 ${removed} gift${removed !== 1 ? 's' : ''} archived</li>
+            <li>🔄 ${modified} gift${modified !== 1 ? 's' : ''} modified</li>
+          </ul>
+          <p style="margin-top: 15px;">Database has been updated successfully!</p>
+        `;
+        log(`✅ Update complete: ${total} total changes`, 'success');
+
+        // Reload database status and version history
+        setTimeout(() => {
+          loadDatabaseStatus();
+          loadVersionHistory();
+        }, 500);
+      }
+    } else if (result.requiresConfirmation) {
+      resultsCard.classList.add('error');
+      resultsTitle.textContent = '⚠️ Large Update Detected';
+      resultsSummary.innerHTML = `
+        <p>${result.message}</p>
+        <p style="margin-top: 15px;">This is a significant change. Please review carefully before proceeding.</p>
+        <button class="btn-primary" style="margin-top: 15px;" onclick="confirmLargeUpdate()">
+          Confirm Update
+        </button>
+      `;
+    } else {
+      resultsCard.classList.add('error');
+      resultsTitle.textContent = '❌ Update Failed';
+      resultsSummary.innerHTML = `
+        <p><strong>Error:</strong> ${result.error || 'Unknown error occurred'}</p>
+        ${result.userMessage ? `<p style="margin-top: 10px;">${result.userMessage}</p>` : ''}
+      `;
+      log(`❌ Update failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    progressContainer.style.display = 'none';
+    resultsContainer.style.display = 'block';
+
+    const resultsCard = resultsContainer.querySelector('.results-card');
+    resultsCard.classList.add('error');
+    document.getElementById('results-title').textContent = '❌ Update Failed';
+    document.getElementById('results-summary').innerHTML = `
+      <p><strong>Error:</strong> ${error.message}</p>
+    `;
+    log(`❌ Update error: ${error.message}`, 'error');
+  } finally {
+    // Re-enable button
+    updateBtn.disabled = false;
+    updateBtn.textContent = '🔄 Update from streamtoearn.io';
+  }
+}
+
+// Confirm large update (>50% changes)
+async function confirmLargeUpdate() {
+  const updateBtn = document.getElementById('update-gift-database-btn');
+  const progressContainer = document.getElementById('update-progress-container');
+  const resultsContainer = document.getElementById('update-results-container');
+
+  updateBtn.disabled = true;
+  updateBtn.textContent = '⏳ Updating...';
+  progressContainer.style.display = 'block';
+  resultsContainer.style.display = 'none';
+
+  try {
+    const result = await window.sniAPI.updateGiftDatabase({ confirmLargeUpdate: true });
+
+    progressContainer.style.display = 'none';
+    resultsContainer.style.display = 'block';
+
+    const resultsCard = resultsContainer.querySelector('.results-card');
+    const resultsTitle = document.getElementById('results-title');
+    const resultsSummary = document.getElementById('results-summary');
+
+    if (result.success) {
+      resultsCard.classList.remove('error');
+      resultsTitle.textContent = '✅ Update Complete';
+
+      const { added, removed, modified, total } = result.changes;
+      resultsSummary.innerHTML = `
+        <p><strong>${total} total changes:</strong></p>
+        <ul style="margin-left: 20px; margin-top: 10px;">
+          <li>✅ ${added} new gift${added !== 1 ? 's' : ''} added</li>
+          <li>📦 ${removed} gift${removed !== 1 ? 's' : ''} archived</li>
+          <li>🔄 ${modified} gift${modified !== 1 ? 's' : ''} modified</li>
+        </ul>
+      `;
+
+      setTimeout(() => {
+        loadDatabaseStatus();
+        loadVersionHistory();
+      }, 500);
+    }
+  } catch (error) {
+    progressContainer.style.display = 'none';
+    resultsContainer.style.display = 'block';
+
+    const resultsCard = resultsContainer.querySelector('.results-card');
+    resultsCard.classList.add('error');
+    document.getElementById('results-title').textContent = '❌ Update Failed';
+    document.getElementById('results-summary').innerHTML = `<p>${error.message}</p>`;
+  } finally {
+    updateBtn.disabled = false;
+    updateBtn.textContent = '🔄 Update from streamtoearn.io';
+  }
+}
+
+// Update progress indicator
+function updateProgress(data) {
+  const progressStage = document.getElementById('update-progress-stage');
+  const progressPercent = document.getElementById('update-progress-percent');
+  const progressBar = document.getElementById('update-progress-bar');
+  const progressMessage = document.getElementById('update-progress-message');
+
+  if (progressStage) progressStage.textContent = data.stage || 'Processing...';
+  if (progressMessage) progressMessage.textContent = data.message || '';
+
+  // Calculate progress percentage based on stage
+  const stageProgress = {
+    'starting': 5,
+    'loading': 15,
+    'fetching': 30,
+    'comparing': 50,
+    'backup': 60,
+    'archiving': 70,
+    'updating': 85,
+    'complete': 100,
+    'error': 0
+  };
+
+  const percent = stageProgress[data.stage] || 0;
+  if (progressPercent) progressPercent.textContent = `${percent}%`;
+  if (progressBar) progressBar.style.width = `${percent}%`;
+}
+
+// Confirm and perform rollback
+async function confirmRollback(backupPath, timestamp) {
+  const date = new Date(timestamp).toLocaleString();
+
+  if (!confirm(`Rollback to version from ${date}?\n\nThis will restore the gift database to its previous state. Current data will be backed up first.`)) {
+    return;
+  }
+
+  try {
+    log(`Rolling back to ${date}...`, 'info');
+    const result = await window.sniAPI.rollbackDatabase(backupPath);
+
+    if (result.success) {
+      log(`✅ Rollback successful!`, 'success');
+
+      // Reload database status and version history
+      setTimeout(() => {
+        loadDatabaseStatus();
+        loadVersionHistory();
+      }, 500);
+    } else {
+      log(`❌ Rollback failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`❌ Rollback error: ${error.message}`, 'error');
+  }
+}
+
+// Make confirmRollback global so it can be called from onclick
+window.confirmRollback = confirmRollback;
+window.confirmLargeUpdate = confirmLargeUpdate;
+
+/**
+ * ========================================
+ * MAPPING WARNING SYSTEM FOR ARCHIVED GIFTS
+ * ========================================
+ */
+
+let archivedGiftMappings = [];
+let showOnlyArchivedMappings = false;
+
+// Check all gift mappings for archived gifts
+async function checkMappingsForArchivedGifts() {
+  try {
+    const mappingsResult = await window.sniAPI.loadGiftMappings();
+    if (!mappingsResult.success || !mappingsResult.mappings) {
+      return;
+    }
+
+    const warnings = await window.sniAPI.checkMappingsForArchivedGifts(mappingsResult.mappings);
+    archivedGiftMappings = warnings || [];
+
+    if (archivedGiftMappings.length > 0) {
+      displayMappingWarnings();
+      showArchivalBanner();
+    } else {
+      hideArchivalBanner();
+    }
+  } catch (error) {
+    log('Error checking archived gift mappings: ' + error.message, 'error');
+  }
+}
+
+// Display warning badges on affected mappings
+function displayMappingWarnings() {
+  // Remove any existing warnings first
+  document.querySelectorAll('.archived-gift-warning').forEach(el => el.remove());
+
+  archivedGiftMappings.forEach(warning => {
+    const giftKey = `${warning.giftName} (${warning.coins} coins)`;
+
+    // Find the gift select that has this mapping
+    const giftSelects = document.querySelectorAll('.gift-select');
+    giftSelects.forEach(select => {
+      if (select.value === giftKey) {
+        // Add warning badge
+        if (!select.nextElementSibling || !select.nextElementSibling.classList.contains('archived-gift-warning')) {
+          const badge = document.createElement('div');
+          badge.className = 'archived-gift-warning';
+          badge.innerHTML = `
+            <span class="warning-icon">⚠️</span>
+            <span class="warning-text">ARCHIVED</span>
+            <button class="btn-remap" data-gift="${giftKey}" data-action="${warning.action}">
+              🔄 Remap
+            </button>
+          `;
+          select.parentNode.insertBefore(badge, select.nextSibling);
+        }
+      }
+    });
+  });
+
+  // Add event listeners for remap buttons
+  document.querySelectorAll('.btn-remap').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const giftKey = e.target.dataset.gift;
+      const action = e.target.dataset.action;
+      handleRemapArchivedGift(giftKey, action);
+    });
+  });
+}
+
+// Show banner at top of gift mappings tab
+function showArchivalBanner() {
+  const mappingsSubtab = document.getElementById('gift-mappings-subtab');
+  if (!mappingsSubtab) return;
+
+  // Remove existing banner if present
+  const existingBanner = mappingsSubtab.querySelector('.archived-gifts-banner');
+  if (existingBanner) {
+    existingBanner.remove();
+  }
+
+  const banner = document.createElement('div');
+  banner.className = 'archived-gifts-banner';
+  banner.innerHTML = `
+    <div class="banner-content">
+      <span class="banner-icon">⚠️</span>
+      <div class="banner-text">
+        <strong>${archivedGiftMappings.length} mapping${archivedGiftMappings.length !== 1 ? 's' : ''} reference${archivedGiftMappings.length === 1 ? 's' : ''} archived gifts</strong>
+        <p>These gifts are no longer available on TikTok. Consider remapping to active gifts.</p>
+      </div>
+      <div class="banner-actions">
+        <button class="btn-filter-archived" onclick="toggleArchivedFilter()">
+          ${showOnlyArchivedMappings ? '📋 Show All' : '🔍 Show Only Archived'}
+        </button>
+        <button class="btn-view-archived" onclick="showArchivedGiftsModal()">
+          📦 View Archived Gifts
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Insert banner at the top of the tab body
+  const tabBody = mappingsSubtab.querySelector('.tab-body');
+  if (tabBody) {
+    tabBody.insertBefore(banner, tabBody.firstChild);
+  }
+}
+
+// Hide archival banner
+function hideArchivalBanner() {
+  const banner = document.querySelector('.archived-gifts-banner');
+  if (banner) {
+    banner.remove();
+  }
+}
+
+// Toggle filter to show only archived mappings
+function toggleArchivedFilter() {
+  showOnlyArchivedMappings = !showOnlyArchivedMappings;
+  applyArchivedFilter();
+
+  // Update button text
+  const filterBtn = document.querySelector('.btn-filter-archived');
+  if (filterBtn) {
+    filterBtn.textContent = showOnlyArchivedMappings ? '📋 Show All' : '🔍 Show Only Archived';
+  }
+}
+
+// Apply filter to show/hide mappings
+function applyArchivedFilter() {
+  const actionItems = document.querySelectorAll('.action-item, .action-item-with-duration');
+
+  if (!showOnlyArchivedMappings) {
+    // Show all mappings
+    actionItems.forEach(item => {
+      item.style.display = '';
+    });
+    return;
+  }
+
+  // Get list of archived gift keys
+  const archivedKeys = archivedGiftMappings.map(w => `${w.giftName} (${w.coins} coins)`);
+
+  // Show only action items with archived gift mappings
+  actionItems.forEach(item => {
+    const giftSelect = item.querySelector('.gift-select');
+    if (giftSelect && archivedKeys.includes(giftSelect.value)) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+// Handle remapping an archived gift
+async function handleRemapArchivedGift(giftKey, action) {
+  // Extract gift name and coins from key
+  const match = giftKey.match(/^(.+?)\s+\((\d+)\s+coins\)$/);
+  if (!match) return;
+
+  const giftName = match[1];
+  const coins = parseInt(match[2]);
+
+  const confirmRestore = confirm(
+    `"${giftName}" is currently archived.\n\n` +
+    `Would you like to:\n` +
+    `1. Restore it from the archive (if it's available again on TikTok)\n` +
+    `2. Manually remap to a different active gift\n\n` +
+    `Click OK to restore, Cancel to manually remap.`
+  );
+
+  if (confirmRestore) {
+    // Try to restore the gift
+    try {
+      const result = await window.sniAPI.restoreArchivedGift(giftName, coins);
+      if (result.success) {
+        log(`✅ ${giftName} restored successfully!`, 'success');
+
+        // Refresh warnings
+        setTimeout(() => {
+          checkMappingsForArchivedGifts();
+        }, 500);
+      } else {
+        log(`Failed to restore ${giftName}: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      log(`Error restoring gift: ${error.message}`, 'error');
+    }
+  } else {
+    // User wants to manually remap - clear the current selection
+    const giftSelects = document.querySelectorAll('.gift-select');
+    giftSelects.forEach(select => {
+      if (select.value === giftKey) {
+        select.value = '';
+        select.dataset.previousValue = '';
+        selectedGiftNames.delete(giftKey);
+
+        // Highlight the select so user knows which one to update
+        select.style.border = '2px solid #FF9800';
+        select.focus();
+
+        setTimeout(() => {
+          select.style.border = '';
+        }, 3000);
+      }
+    });
+
+    log('Please select a new gift from the dropdown', 'info');
+  }
+}
+
+// Make toggle function global
+window.toggleArchivedFilter = toggleArchivedFilter;

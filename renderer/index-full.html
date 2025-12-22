@@ -55,6 +55,7 @@
           <button class="subtab-btn" data-subtab="overlay-builder-subtab">🖼️ Overlay Builder</button>
           <button class="subtab-btn" data-subtab="gift-database-subtab">📚 Gift Database</button>
           <button class="subtab-btn" data-subtab="gift-images-subtab">🖼️ Gift Images</button>
+          <button class="subtab-btn" data-subtab="database-updates-subtab">🔄 Database Updates</button>
         </div>
 
         <!-- Subtab Content Container -->
@@ -690,6 +691,89 @@
           </div>
           <!-- End Gift Database Subtab -->
 
+          <!-- Database Updates Subtab -->
+          <div id="database-updates-subtab" class="subtab-content">
+            <div class="tab-body">
+              <div class="database-updates-container">
+
+                <!-- Update Status Section -->
+                <div class="updates-section">
+                  <h3>Database Status</h3>
+                  <div class="status-grid">
+                    <div class="status-card">
+                      <span class="status-label">Last Updated:</span>
+                      <span id="db-last-updated" class="status-value">Never</span>
+                    </div>
+                    <div class="status-card">
+                      <span class="status-label">Active Gifts:</span>
+                      <span id="db-active-count" class="status-value">-</span>
+                    </div>
+                    <div class="status-card">
+                      <span class="status-label">Archived Gifts:</span>
+                      <span id="db-archived-count" class="status-value">-</span>
+                    </div>
+                    <div class="status-card">
+                      <span class="status-label">Data Source:</span>
+                      <span class="status-value">streamtoearn.io</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Update Actions -->
+                <div class="updates-section">
+                  <h3>Update Gift Database</h3>
+                  <p class="section-description">
+                    Fetch the latest gift data from TikTok. Removed gifts will be archived (not deleted)
+                    and can be restored if they return.
+                  </p>
+                  <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn-primary" id="update-gift-database-btn">
+                      🔄 Update from streamtoearn.io
+                    </button>
+                    <button class="btn-secondary" id="view-archived-gifts-btn">
+                      📦 View Archived Gifts
+                    </button>
+                  </div>
+
+                  <!-- Progress Indicator -->
+                  <div id="update-progress-container" style="display: none; margin-top: 20px;">
+                    <div class="progress-header">
+                      <span id="update-progress-stage">Initializing...</span>
+                      <span id="update-progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                      <div id="update-progress-bar" class="progress-bar"></div>
+                    </div>
+                    <p id="update-progress-message" class="progress-message"></p>
+                  </div>
+
+                  <!-- Update Results -->
+                  <div id="update-results-container" style="display: none; margin-top: 20px;">
+                    <div class="results-card">
+                      <h4 id="results-title">Update Complete</h4>
+                      <div id="results-summary" class="results-summary"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Version History -->
+                <div class="updates-section">
+                  <h3>Version History</h3>
+                  <p class="section-description">
+                    View previous database versions and rollback if needed
+                  </p>
+                  <div id="version-history-list" class="version-history-list">
+                    <p style="text-align: center; color: #888; padding: 20px;">
+                      Loading version history...
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+          <!-- End Database Updates Subtab -->
+
           <!-- Gift Images Subtab -->
           <div id="gift-images-subtab" class="subtab-content">
             <!-- Images Actions at Top -->
@@ -1141,5 +1225,6 @@
   <script src="toast.js"></script>
   <script src="renderer-full.js"></script>
   <script src="gift-settings-modal.js"></script>
+  <script src="archived-gifts-modal.js"></script>
 </body>
 </html>

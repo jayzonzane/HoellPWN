@@ -1,0 +1,215 @@
+/**
+ * GiftAPIClient - Fetches gift data from streamtoearn.io API
+ * Handles parsing, validation, and normalization of gift data
+ */
+
+const https = require('https');
+
+class GiftAPIClient {
+  constructor(config = {}) {
+    this.apiBaseUrl = config.apiBaseUrl || 'https://streamtoearn.io';
+    this.timeout = config.timeout || 10000; // 10 seconds
+    this.region = config.region || 'US';
+  }
+
+  /**
+   * Fetch gifts from streamtoearn.io API
+   * @param {string} region - Region code (US, EU, etc.)
+   * @returns {Promise<Object>} Normalized gift data
+   */
+  async fetchGifts(region = this.region) {
+    try {
+      console.log(`🌐 Fetching gifts from streamtoearn.io (region: ${region})...`);
+
+      const url = `${this.apiBaseUrl}/gifts?region=${region}`;
+      const rawData = await this._makeRequest(url);
+
+      console.log(`✅ Received gift data (${rawData.length} gifts)`);
+
+      // Validate response structure
+      if (!this._validateResponse(rawData)) {
+        throw new Error('Invalid API response structure');
+      }
+
+      // Normalize to internal format
+      const normalizedData = this.normalizeGiftData(rawData);
+
+      return {
+        success: true,
+        gifts: normalizedData.gifts,
+        images: normalizedData.images,
+        rawCount: rawData.length,
+        fetchedAt: new Date().toISOString()
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to fetch gifts:', error.message);
+      return {
+        success: false,
+        error: error.message,
+        errorType: this._categorizeError(error)
+      };
+    }
+  }
+
+  /**
+   * Make HTTP GET request with timeout
+   * @private
+   */
+  _makeRequest(url) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Request timeout after ${this.timeout}ms`));
+      }, this.timeout);
+
+      https.get(url, (response) => {
+        clearTimeout(timeout);
+
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+          return;
+        }
+
+        let data = '';
+        response.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        response.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            resolve(parsed);
+          } catch (error) {
+            reject(new Error(`Failed to parse JSON: ${error.message}`));
+          }
+        });
+
+      }).on('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
+  }
+
+  /**
+   * Validate API response structure
+   * @private
+   */
+  _validateResponse(data) {
+    if (!Array.isArray(data)) {
+      console.error('Invalid response: Not an array');
+      return false;
+    }
+
+    if (data.length === 0) {
+      console.error('Invalid response: Empty array');
+      return false;
+    }
+
+    // Check first few items have required fields
+    const sampleSize = Math.min(5, data.length);
+    for (let i = 0; i < sampleSize; i++) {
+      const gift = data[i];
+      if (!gift.name || typeof gift.coins !== 'number') {
+        console.error(`Invalid gift structure at index ${i}:`, gift);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Normalize gift data from API format to internal TIKTOK_GIFTS format
+   * @param {Array} apiData - Raw API response
+   * @returns {Object} Normalized data {gifts, images}
+   */
+  normalizeGiftData(apiData) {
+    const gifts = {}; // Grouped by coin value
+    const images = {}; // Image URLs by coin value and gift name
+
+    apiData.forEach(item => {
+      const { name, coins, imageUrl } = item;
+
+      // Group gifts by coin value
+      if (!gifts[coins]) {
+        gifts[coins] = [];
+      }
+      gifts[coins].push(name);
+
+      // Store image URLs
+      if (imageUrl) {
+        if (!images[coins]) {
+          images[coins] = {};
+        }
+        images[coins][name] = {
+          cdn: imageUrl,
+          local: `./gift-images/${this._sanitizeForFilename(name)}_${coins}.webp`
+        };
+      }
+    });
+
+    // Sort gift names within each coin value
+    for (const coins in gifts) {
+      gifts[coins].sort();
+    }
+
+    console.log(`📦 Normalized ${Object.keys(gifts).length} coin values, ${apiData.length} total gifts`);
+
+    return { gifts, images };
+  }
+
+  /**
+   * Sanitize gift name for filename
+   * @private
+   */
+  _sanitizeForFilename(name) {
+    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  }
+
+  /**
+   * Categorize error type for better handling
+   * @private
+   */
+  _categorizeError(error) {
+    const message = error.message.toLowerCase();
+
+    if (message.includes('timeout')) {
+      return 'timeout';
+    }
+    if (message.includes('enotfound') || message.includes('econnrefused')) {
+      return 'network';
+    }
+    if (message.includes('parse') || message.includes('json')) {
+      return 'parse_error';
+    }
+    if (message.includes('http')) {
+      return 'http_error';
+    }
+    if (message.includes('invalid')) {
+      return 'validation_error';
+    }
+
+    return 'unknown';
+  }
+
+  /**
+   * Get human-readable error message
+   * @param {string} errorType - Error type from _categorizeError
+   * @returns {string} User-friendly error message
+   */
+  getErrorMessage(errorType) {
+    const messages = {
+      timeout: 'Request timed out. Please check your internet connection and try again.',
+      network: 'Unable to reach streamtoearn.io. Please check your internet connection.',
+      parse_error: 'Received invalid data from the server. The API may have changed.',
+      http_error: 'Server returned an error. The API may be temporarily unavailable.',
+      validation_error: 'Received unexpected data format. The API may have changed.',
+      unknown: 'An unexpected error occurred. Please try again later.'
+    };
+
+    return messages[errorType] || messages.unknown;
+  }
+}
+
+module.exports = GiftAPIClient;

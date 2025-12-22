@@ -148,6 +148,17 @@ contextBridge.exposeInMainWorld('sniAPI', {
   restoreAllItems: () => ipcRenderer.invoke('restore-all-items'),
   getSupportedItems: () => ipcRenderer.invoke('get-supported-items'),
 
+  // Gift Database Update System
+  updateGiftDatabase: (options) => ipcRenderer.invoke('update-gift-database', options),
+  getDatabaseVersions: () => ipcRenderer.invoke('get-database-versions'),
+  rollbackDatabase: (backupPath) => ipcRenderer.invoke('rollback-database', backupPath),
+  getActiveGifts: () => ipcRenderer.invoke('get-active-gifts'),
+  loadArchivedGifts: () => ipcRenderer.invoke('load-archived-gifts'),
+  restoreArchivedGift: (giftName, coins) => ipcRenderer.invoke('restore-archived-gift', giftName, coins),
+  deleteArchivedGift: (giftName, coins) => ipcRenderer.invoke('delete-archived-gift', giftName, coins),
+  checkMappingsForArchivedGifts: (giftMappings) => ipcRenderer.invoke('check-mappings-for-archived-gifts', giftMappings),
+  onGiftUpdateProgress: (callback) => ipcRenderer.on('gift-update-progress', (event, data) => callback(data)),
+
   // Event listeners
   onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data))
 });

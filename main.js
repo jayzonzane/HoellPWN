@@ -9,6 +9,7 @@ let gameOps;
 let expandedOps;
 let hoellPoller;
 let restorationManager;
+let giftUpdater;
 let sniProcess = null;
 
 // Function to start SNI server
@@ -130,6 +131,7 @@ function createWindow() {
   const ExpandedGameOperations = require('./src/sni/operations-expanded');
   const HoellStreamPoller = require('./src/hoellstream/poller');
   const ItemRestorationManager = require('./src/item-restoration/restoration-manager');
+  const GiftUpdater = require('./src/gift-updater');
 
   sniClient = new SNIClient();
   gameOps = new GameOperations(sniClient);
@@ -149,6 +151,13 @@ function createWindow() {
 
   // Connect restoration manager to poller
   hoellPoller.setRestorationManager(restorationManager);
+
+  // Initialize Gift Updater
+  giftUpdater = new GiftUpdater(app.getPath('userData'));
+  console.log('🔄 GiftUpdater initialized');
+
+  // Bootstrap gift database on first run
+  initializeGiftDatabase();
 
   // Load gift mappings from file on startup
   loadGiftMappingsOnStartup();
@@ -924,6 +933,23 @@ async function loadGiftMappingsOnStartup() {
   }
 }
 
+// Initialize gift database on first run
+async function initializeGiftDatabase() {
+  try {
+    // Load initial gifts from tiktok-gifts.js
+    const { TIKTOK_GIFTS } = require('./renderer/tiktok-gifts.js');
+    const result = await giftUpdater.initialize(TIKTOK_GIFTS);
+
+    if (result.success) {
+      console.log('✅ Gift database initialized successfully');
+    } else {
+      console.error('❌ Failed to initialize gift database:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Error initializing gift database:', error);
+  }
+}
+
 // Save gift mappings to JSON file
 ipcMain.handle('save-gift-mappings', async (event, mappings) => {
   try {
@@ -1335,6 +1361,112 @@ ipcMain.handle('get-supported-items', async () => {
     const items = restorationManager.getSupportedItems();
     return { success: true, items };
   } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// ============= GIFT DATABASE UPDATE SYSTEM =============
+
+// Update gift database from streamtoearn.io API
+ipcMain.handle('update-gift-database', async (event, options = {}) => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+
+    // Set progress callback to send updates to renderer
+    giftUpdater.progressCallback = (progress) => {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('gift-update-progress', progress);
+      }
+    };
+
+    const result = await giftUpdater.updateGiftDatabase(options);
+    return result;
+  } catch (error) {
+    console.error('Update gift database error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Get version history
+ipcMain.handle('get-database-versions', async () => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    const versions = await giftUpdater.getVersionHistory();
+    return { success: true, versions };
+  } catch (error) {
+    console.error('Get database versions error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Rollback database to previous version
+ipcMain.handle('rollback-database', async (event, backupPath) => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    const result = await giftUpdater.rollback(backupPath);
+    return result;
+  } catch (error) {
+    console.error('Rollback database error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Get active gifts
+ipcMain.handle('get-active-gifts', async () => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    const activeGifts = await giftUpdater.getActiveGifts();
+    return { success: true, activeGifts };
+  } catch (error) {
+    console.error('Get active gifts error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Load archived gifts
+ipcMain.handle('load-archived-gifts', async () => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    const archivedGifts = await giftUpdater.getArchivedGifts();
+    return { success: true, archivedGifts };
+  } catch (error) {
+    console.error('Load archived gifts error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Restore archived gift to active database
+ipcMain.handle('restore-archived-gift', async (event, giftName, coins) => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    const result = await giftUpdater.restoreArchivedGift(giftName, coins);
+    return result;
+  } catch (error) {
+    console.error('Restore archived gift error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Delete archived gift permanently
+ipcMain.handle('delete-archived-gift', async (event, giftName, coins) => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    const result = await giftUpdater.deleteArchivedGift(giftName, coins);
+    return result;
+  } catch (error) {
+    console.error('Delete archived gift error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Check if gift mappings reference archived gifts
+ipcMain.handle('check-mappings-for-archived-gifts', async (event, giftMappings) => {
+  try {
+    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    const warnings = await giftUpdater.checkMappingsForArchivedGifts(giftMappings);
+    return { success: true, warnings };
+  } catch (error) {
+    console.error('Check mappings for archived gifts error:', error);
     return { success: false, error: error.message };
   }
 });
