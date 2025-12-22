@@ -77,10 +77,20 @@ class GiftAPIClient {
 
         response.on('end', () => {
           try {
-            const parsed = JSON.parse(data);
-            resolve(parsed);
+            // Check if response is HTML or JSON
+            const trimmedData = data.trim();
+            if (trimmedData.startsWith('<')) {
+              // HTML response - parse it
+              console.log('📄 Received HTML response, parsing gifts...');
+              const parsedGifts = this._parseHTMLGifts(data);
+              resolve(parsedGifts);
+            } else {
+              // JSON response
+              const parsed = JSON.parse(data);
+              resolve(parsed);
+            }
           } catch (error) {
-            reject(new Error(`Failed to parse JSON: ${error.message}`));
+            reject(new Error(`Failed to parse response: ${error.message}`));
           }
         });
 
@@ -88,6 +98,56 @@ class GiftAPIClient {
         clearTimeout(timeout);
         reject(error);
       });
+    });
+  }
+
+  /**
+   * Parse gift data from HTML page
+   * @private
+   */
+  _parseHTMLGifts(html) {
+    const gifts = [];
+
+    // Simple regex-based parsing for gift data
+    // Pattern: <div class="gift">...<img src="URL"...<p class="gift-name">NAME</p>...<p class="gift-price">COINS
+    const giftPattern = /<div class="gift">[\s\S]*?<img src="([^"]+)"[\s\S]*?<p class="gift-name">([^<]+)<\/p>[\s\S]*?<p class="gift-price">(\d+)/g;
+
+    let match;
+    while ((match = giftPattern.exec(html)) !== null) {
+      const imageUrl = match[1];
+      const name = this._decodeHTML(match[2]);
+      const coins = parseInt(match[3]);
+
+      if (name && coins) {
+        gifts.push({
+          name: name.trim(),
+          coins: coins,
+          imageUrl: imageUrl
+        });
+      }
+    }
+
+    console.log(`📦 Parsed ${gifts.length} gifts from HTML`);
+    return gifts;
+  }
+
+  /**
+   * Decode HTML entities
+   * @private
+   */
+  _decodeHTML(text) {
+    const entities = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&#x27;': "'",
+      '&apos;': "'"
+    };
+
+    return text.replace(/&[#\w]+;/g, (entity) => {
+      return entities[entity] || entity;
     });
   }
 
