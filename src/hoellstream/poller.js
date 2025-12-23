@@ -96,13 +96,65 @@ class HoellStreamPoller {
         return;
       }
 
-      const data = await response.json();
+      // Handle Server-Sent Events stream - read with timeout
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const events = [];
+
+      // Read from stream with 1 second timeout
+      const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 1000));
+      const readChunk = async () => {
+        const { done, value } = await reader.read();
+        if (done) return null;
+        return decoder.decode(value, { stream: true });
+      };
+
+      // Read chunks until timeout
+      const timeoutPromise = timeout;
+      while (true) {
+        const chunkPromise = readChunk();
+        const chunk = await Promise.race([chunkPromise, timeoutPromise]);
+
+        if (chunk === null) break; // Timeout or stream ended
+
+        buffer += chunk;
+
+        // Parse complete SSE messages from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const jsonStr = line.substring(6);
+              const event = JSON.parse(jsonStr);
+              events.push(event);
+            } catch (e) {
+              this.log(`⚠️ Failed to parse event: ${e.message}`, 'warn');
+            }
+          }
+        }
+      }
+
+      // Clean up reader
+      try { reader.cancel(); } catch (e) { /* ignore */ }
+
+      // Wrap in expected format
+      const data = { events, count: events.length };
 
       this.log(`📦 Received ${data.events ? data.events.length : 0} total events`);
 
       if (!data.events || !Array.isArray(data.events)) {
         this.log('⚠️  HoellStream: Invalid response format', 'warn');
         return;
+      }
+
+      // Debug: log event types
+      if (data.events.length > 0 && this.debugMode) {
+        data.events.forEach(evt => {
+          this.log(`🔍 Event type: "${evt.type}" | giftName: "${evt.giftName || 'N/A'}" | platform: "${evt.platform}"`);
+        });
       }
 
       // Filter for gift events only

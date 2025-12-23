@@ -2,7 +2,7 @@
 const connectBtn = document.getElementById('connect-btn');
 const statusDiv = document.getElementById('status');
 const deviceSelect = document.getElementById('device-select');
-const controlsSection = document.getElementById('controls');
+const controlsSection = document.getElementById('controls-tab');
 const logDiv = document.getElementById('log');
 
 // State
