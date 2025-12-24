@@ -2184,3 +2184,399 @@ h3 {
   border-color: rgba(255, 152, 0, 0.7);
   transform: scale(1.05);
 }
+
+/* Combined Gift Database & Images Styles */
+.unified-gift-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.unified-gift-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.unified-gift-item.expanded {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.gift-main-row {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+  gap: 12px;
+}
+
+.gift-thumbnail {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gift-thumbnail img {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+}
+
+.no-image-icon {
+  font-size: 14px;
+}
+
+.gift-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gift-name-display {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.gift-coins-display {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.expand-indicator {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s;
+}
+
+.unified-gift-item.expanded .expand-indicator {
+  transform: rotate(90deg);
+}
+
+.gift-details {
+  padding: 0 10px 10px 42px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-group {
+  margin-top: 10px;
+}
+
+.detail-group label {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.detail-group input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.detail-group input[type="text"]:focus {
+  outline: none;
+  border-color: rgba(100, 150, 255, 0.6);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.url-hint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 3px;
+  font-style: italic;
+}
+
+/* ============================================
+   Inline Archived Gifts Styles
+   ============================================ */
+
+.archived-gifts-inline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.archived-gift-card-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.archived-gift-card-inline:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.archived-gift-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+}
+
+.archived-gift-details {
+  flex: 1;
+}
+
+.archived-gift-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.archived-gift-meta {
+  font-size: 12px;
+  color: #888;
+}
+
+.archived-gift-meta .separator {
+  margin: 0 6px;
+  color: #555;
+}
+
+.archived-gift-meta .gift-coins {
+  color: #ffd700;
+  font-weight: 500;
+}
+
+.archived-gift-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-small {
+  padding: 5px 10px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #218838;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+/* Scrollbar for archived gifts */
+.archived-gifts-inline-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.archived-gifts-inline-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.archived-gifts-inline-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.archived-gifts-inline-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   Expandable Version Items
+   ============================================ */
+
+.version-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.expand-arrow {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 10px;
+  transition: transform 0.2s;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.version-timestamp {
+  display: flex;
+  align-items: center;
+}
+
+.version-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.version-details-content {
+  padding: 8px 0;
+}
+
+.version-summary p {
+  margin: 6px 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.version-summary strong {
+  color: rgba(255, 255, 255, 0.9);
+  margin-right: 6px;
+}
+
+.version-header:hover {
+  opacity: 0.9;
+}
+
+.version-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ============================================
+   Version Details Gift Lists
+   ============================================ */
+
+.change-section {
+  margin: 12px 0;
+}
+
+.change-section p {
+  margin-bottom: 8px;
+}
+
+.gift-list {
+  margin: 0;
+  padding-left: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.gift-list li {
+  margin: 4px 0;
+  padding: 2px 0;
+}
+
+.gift-coins-inline {
+  color: #ffd700;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.gift-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gift-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.gift-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.gift-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   Collapsible Action Categories
+   ============================================ */
+
+.settings-category {
+  margin-bottom: 12px;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.category-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.category-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-arrow {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.category-header.expanded .category-arrow {
+  transform: rotate(90deg);
+}
+
+.category-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.category-content.expanded {
+  max-height: 2000px;
+  transition: max-height 0.5s ease-in;
+}
+
+.category-items {
+  padding: 8px 0;
+}

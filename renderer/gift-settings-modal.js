@@ -28,8 +28,8 @@ function getGiftName(originalName, coinValue) {
   return giftNameOverrides[key] || originalName;
 }
 
-// Populate gift database editor
-function populateGiftDatabase() {
+// Populate unified gift database with thumbnails and expandable image fields
+async function populateGiftDatabase() {
   const container = document.getElementById('gift-database-list');
   container.innerHTML = '';
 
@@ -38,42 +38,140 @@ function populateGiftDatabase() {
     return;
   }
 
-  // Group by coin values
-  const sortedCoins = Object.keys(TIKTOK_GIFTS).map(Number).sort((a, b) => a - b);
+  // Load active gift images
+  await loadActiveGiftImages();
 
-  sortedCoins.forEach(coins => {
-    const gifts = TIKTOK_GIFTS[coins];
-    if (!gifts || gifts.length === 0) return;
-
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'coin-group';
-
-    const headerDiv = document.createElement('div');
-    headerDiv.className = 'coin-group-header';
-    headerDiv.textContent = `💰 ${coins} coins (${gifts.length} gifts)`;
-    groupDiv.appendChild(headerDiv);
-
-    gifts.forEach(giftName => {
-      const itemDiv = document.createElement('div');
-      itemDiv.className = 'gift-edit-item';
-
-      const coinSpan = document.createElement('span');
-      coinSpan.className = 'gift-coin-value';
-      coinSpan.textContent = `${coins} 💰`;
-
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'gift-name-input';
-      input.value = getGiftName(giftName, coins);
-      input.dataset.originalName = giftName;
-      input.dataset.coins = coins;
-
-      itemDiv.appendChild(coinSpan);
-      itemDiv.appendChild(input);
-      groupDiv.appendChild(itemDiv);
+  // Create flat list of all gifts
+  const allGifts = [];
+  Object.entries(TIKTOK_GIFTS).forEach(([coins, giftNames]) => {
+    giftNames.forEach(name => {
+      allGifts.push({ name, coins: parseInt(coins) });
     });
+  });
 
-    container.appendChild(groupDiv);
+  // Sort by coin value, then name
+  allGifts.sort((a, b) => a.coins - b.coins || a.name.localeCompare(b.name));
+
+  // Render each gift
+  allGifts.forEach(gift => {
+    const item = createUnifiedGiftItem(gift.name, gift.coins);
+    container.appendChild(item);
+  });
+
+  // Set up search functionality
+  setupGiftSearch();
+}
+
+// Create a unified gift item with 20x20 thumbnail and expandable details
+function createUnifiedGiftItem(giftName, coins) {
+  const container = document.createElement('div');
+  container.className = 'unified-gift-item';
+  container.dataset.giftName = giftName;
+  container.dataset.coins = coins;
+
+  // Main row (clickable to expand)
+  const mainRow = document.createElement('div');
+  mainRow.className = 'gift-main-row';
+
+  // Thumbnail (20x20px)
+  const thumbnail = document.createElement('div');
+  thumbnail.className = 'gift-thumbnail';
+  const currentUrl = getCurrentImageUrl(giftName, coins);
+  if (currentUrl) {
+    const img = document.createElement('img');
+    img.src = currentUrl;
+    img.alt = giftName;
+    img.onerror = () => {
+      thumbnail.innerHTML = '<span class="no-image-icon">❌</span>';
+    };
+    thumbnail.appendChild(img);
+  } else {
+    thumbnail.innerHTML = '<span class="no-image-icon">📦</span>';
+  }
+
+  // Gift info
+  const info = document.createElement('div');
+  info.className = 'gift-info';
+
+  const name = document.createElement('div');
+  name.className = 'gift-name-display';
+  name.textContent = getGiftName(giftName, coins);
+
+  const coinValue = document.createElement('div');
+  coinValue.className = 'gift-coins-display';
+  coinValue.textContent = `${coins} 💰`;
+
+  info.appendChild(name);
+  info.appendChild(coinValue);
+
+  // Expand indicator
+  const expandBtn = document.createElement('span');
+  expandBtn.className = 'expand-indicator';
+  expandBtn.textContent = '▶';
+
+  mainRow.appendChild(thumbnail);
+  mainRow.appendChild(info);
+  mainRow.appendChild(expandBtn);
+
+  // Details panel (expandable)
+  const details = document.createElement('div');
+  details.className = 'gift-details';
+  details.style.display = 'none';
+
+  // Name editor
+  const nameGroup = document.createElement('div');
+  nameGroup.className = 'detail-group';
+  nameGroup.innerHTML = `
+    <label>Gift Name:</label>
+    <input type="text" class="gift-name-input" value="${getGiftName(giftName, coins)}"
+           data-original-name="${giftName}" data-coins="${coins}">
+  `;
+
+  // Image URL editor
+  const imageGroup = document.createElement('div');
+  imageGroup.className = 'detail-group';
+  const key = `${coins}-${giftName}`;
+  const currentOverride = giftImageOverrides[key] || '';
+  imageGroup.innerHTML = `
+    <label>Image URL:</label>
+    <input type="text" class="gift-image-url-input" value="${currentOverride}"
+           data-gift-name="${giftName}" data-coins="${coins}"
+           placeholder="${currentUrl || 'No image URL available'}">
+    <div class="url-hint">Current: ${currentUrl ? currentUrl.substring(0, 50) + '...' : 'None'}</div>
+  `;
+
+  details.appendChild(nameGroup);
+  details.appendChild(imageGroup);
+
+  // Click to expand/collapse
+  mainRow.addEventListener('click', () => {
+    const isExpanded = details.style.display !== 'none';
+    details.style.display = isExpanded ? 'none' : 'block';
+    expandBtn.textContent = isExpanded ? '▶' : '▼';
+    container.classList.toggle('expanded', !isExpanded);
+  });
+
+  container.appendChild(mainRow);
+  container.appendChild(details);
+
+  return container;
+}
+
+// Setup gift search functionality
+function setupGiftSearch() {
+  const searchInput = document.getElementById('gift-search');
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('.unified-gift-item');
+
+    items.forEach(item => {
+      const name = item.dataset.giftName.toLowerCase();
+      const coins = item.dataset.coins;
+      const matches = name.includes(searchTerm) || coins.includes(searchTerm);
+      item.style.display = matches ? 'block' : 'none';
+    });
   });
 }
 
@@ -267,34 +365,58 @@ async function removeCustomGift(index) {
 // Save gift database
 saveDatabaseBtn.addEventListener('click', async () => {
   try {
-    const overrides = {};
+    const nameOverrides = {};
     const nameChanges = {}; // Track original->new name mappings
-    const inputs = document.querySelectorAll('.gift-name-input');
+    const imageOverrides = {};
 
-    inputs.forEach(input => {
+    // Get all name inputs
+    const nameInputs = document.querySelectorAll('.gift-name-input');
+    nameInputs.forEach(input => {
       const originalName = input.dataset.originalName;
       const coins = input.dataset.coins;
       const newName = input.value.trim();
 
       if (newName && newName !== originalName) {
         const key = `${coins}-${originalName}`;
-        overrides[key] = newName;
-
-        // Track the name change for updating mappings
+        nameOverrides[key] = newName;
         nameChanges[originalName] = newName;
       }
     });
 
-    const result = await window.sniAPI.saveGiftNameOverrides(overrides);
-    if (result.success) {
-      giftNameOverrides = overrides;
+    // Get all image URL inputs
+    const imageInputs = document.querySelectorAll('.gift-image-url-input');
+    imageInputs.forEach(input => {
+      const giftName = input.dataset.giftName;
+      const coins = input.dataset.coins;
+      const url = input.value.trim();
+      const key = `${coins}-${giftName}`;
+
+      if (url) {
+        imageOverrides[key] = url;
+        // Update runtime image registry
+        if (typeof addCustomGiftImage !== 'undefined') {
+          addCustomGiftImage(giftName, parseInt(coins), url);
+        }
+      }
+    });
+
+    // Save both name and image overrides
+    const [nameResult, imageResult] = await Promise.all([
+      window.sniAPI.saveGiftNameOverrides(nameOverrides),
+      window.sniAPI.saveGiftImageOverrides(imageOverrides)
+    ]);
+
+    if (nameResult.success && imageResult.success) {
+      giftNameOverrides = nameOverrides;
+      giftImageOverrides = imageOverrides;
 
       // Update existing gift mappings with new names
       if (Object.keys(nameChanges).length > 0) {
         await updateMappingsWithNewNames(nameChanges);
       }
 
-      log(`Saved ${Object.keys(overrides).length} gift name overrides!`, 'success');
+      const totalSaved = Object.keys(nameOverrides).length + Object.keys(imageOverrides).length;
+      log(`Saved ${Object.keys(nameOverrides).length} name(s) and ${Object.keys(imageOverrides).length} image(s)!`, 'success');
 
       // Reload the gift dropdowns to apply changes
       if (document.querySelectorAll('.gift-select').length > 0) {
@@ -302,7 +424,10 @@ saveDatabaseBtn.addEventListener('click', async () => {
         loadGiftSettings();
       }
     } else {
-      log(`Failed to save: ${result.error}`, 'error');
+      const errors = [];
+      if (!nameResult.success) errors.push(`Names: ${nameResult.error}`);
+      if (!imageResult.success) errors.push(`Images: ${imageResult.error}`);
+      log(`Failed to save: ${errors.join('; ')}`, 'error');
     }
   } catch (error) {
     log(`Error saving gift database: ${error.message}`, 'error');
@@ -502,6 +627,11 @@ function openGiftSettings() {
   loadGiftNameOverrides();
   loadCustomGifts();
   loadGiftImageOverrides();
+
+  // Initialize collapsible categories (only once)
+  if (!document.querySelector('.category-header')) {
+    setTimeout(() => initializeCollapsibleCategories(), 100);
+  }
   // modal.style.display = 'block'; // No longer needed - using tabs
 }
 
@@ -1337,7 +1467,8 @@ async function loadGiftImageOverrides() {
 }
 
 // Save gift image overrides
-saveImagesBtn.addEventListener('click', async () => {
+if (saveImagesBtn) {
+  saveImagesBtn.addEventListener('click', async () => {
   try {
     const inputs = document.querySelectorAll('.gift-image-url-input');
     const overrides = {};
@@ -1368,6 +1499,7 @@ saveImagesBtn.addEventListener('click', async () => {
     log(`Error saving gift images: ${error.message}`, 'error');
   }
 });
+}
 
 // Populate gift images list
 async function populateGiftImagesList() {
@@ -1498,6 +1630,7 @@ async function populateGiftImagesList() {
 function initDatabaseUpdatesTab() {
   loadDatabaseStatus();
   loadVersionHistory();
+  loadArchivedGiftsInline();
   setupDatabaseUpdateListeners();
 }
 
@@ -1545,29 +1678,249 @@ async function loadVersionHistory() {
       new Date(b.timestamp) - new Date(a.timestamp)
     );
 
-    container.innerHTML = backups.map(backup => `
-      <div class="version-item">
-        <div class="version-info">
-          <div class="version-timestamp">${new Date(backup.timestamp).toLocaleString()}</div>
-          <div class="version-meta">
-            <span>📦 ${backup.giftCount} gifts</span>
-            ${backup.changes ? `
-              <span class="change-badge added">+${backup.changes.added}</span>
-              <span class="change-badge removed">-${backup.changes.removed}</span>
-              <span class="change-badge modified">~${backup.changes.modified}</span>
-            ` : ''}
+    container.innerHTML = backups.map((backup, index) => `
+      <div class="version-item" data-version-id="${index}">
+        <div class="version-header" data-version-index="${index}" style="cursor: pointer;">
+          <div class="version-info">
+            <div class="version-timestamp">
+              <span class="expand-arrow" id="arrow-${index}">▶</span>
+              ${new Date(backup.timestamp).toLocaleString()}
+            </div>
+            <div class="version-meta">
+              <span>📦 ${backup.giftCount} gifts</span>
+              ${backup.changes ? `
+                <span class="change-badge added">+${backup.changes.added}</span>
+                <span class="change-badge removed">-${backup.changes.removed}</span>
+                <span class="change-badge modified">~${backup.changes.modified}</span>
+              ` : ''}
+            </div>
           </div>
         </div>
-        <div class="version-actions">
-          <button class="btn-rollback" onclick="confirmRollback('${backup.backupPath}', '${backup.timestamp}')">
-            ↩️ Rollback
+        <div class="version-details" id="version-details-${index}" style="display: none;">
+          ${backup.changes && (backup.changes.added > 0 || backup.changes.removed > 0 || backup.changes.modified > 0) ? `
+            <div class="version-details-content">
+              <div class="version-summary">
+                ${backup.changes.added > 0 && backup.details && backup.details.added ? `
+                  <div class="change-section">
+                    <p><strong>✅ Added (${backup.changes.added}):</strong></p>
+                    <ul class="gift-list">
+                      ${backup.details.added.map(g => `<li>${escapeHtml(g.name)} <span class="gift-coins-inline">(${g.coins} coins)</span></li>`).join('')}
+                    </ul>
+                  </div>
+                ` : backup.changes.added > 0 ? `<p><strong>✅ Added:</strong> ${backup.changes.added} new gift${backup.changes.added !== 1 ? 's' : ''}</p>` : ''}
+
+                ${backup.changes.removed > 0 && backup.details && backup.details.removed ? `
+                  <div class="change-section">
+                    <p><strong>📦 Archived (${backup.changes.removed}):</strong></p>
+                    <ul class="gift-list">
+                      ${backup.details.removed.map(g => `<li>${escapeHtml(g.name)} <span class="gift-coins-inline">(${g.coins} coins)</span></li>`).join('')}
+                    </ul>
+                  </div>
+                ` : backup.changes.removed > 0 ? `<p><strong>📦 Archived:</strong> ${backup.changes.removed} gift${backup.changes.removed !== 1 ? 's' : ''}</p>` : ''}
+
+                ${backup.changes.modified > 0 && backup.details && backup.details.modified ? `
+                  <div class="change-section">
+                    <p><strong>🔄 Modified (${backup.changes.modified}):</strong></p>
+                    <ul class="gift-list">
+                      ${backup.details.modified.map(g => `<li>${escapeHtml(g.name)} <span class="gift-coins-inline">(${g.oldCoins} → ${g.newCoins} coins)</span></li>`).join('')}
+                    </ul>
+                  </div>
+                ` : backup.changes.modified > 0 ? `<p><strong>🔄 Modified:</strong> ${backup.changes.modified} gift${backup.changes.modified !== 1 ? 's' : ''} (coin value changed)</p>` : ''}
+              </div>
+            </div>
+          ` : '<p style="color: #888; padding: 10px;">No changes in this version</p>'}
+        </div>
+      </div>
+    `).join('');
+
+    // Add click event listeners to version headers
+    container.querySelectorAll('.version-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        const versionIndex = header.getAttribute('data-version-index');
+        const detailsDiv = document.getElementById(`version-details-${versionIndex}`);
+        const arrow = document.getElementById(`arrow-${versionIndex}`);
+
+        if (detailsDiv.style.display === 'none') {
+          detailsDiv.style.display = 'block';
+          arrow.textContent = '▼';
+        } else {
+          detailsDiv.style.display = 'none';
+          arrow.textContent = '▶';
+        }
+      });
+    });
+  } catch (error) {
+    log('Error loading version history: ' + error.message, 'error');
+  }
+}
+
+// Load and display archived gifts inline
+async function loadArchivedGiftsInline() {
+  try {
+    const result = await window.sniAPI.loadArchivedGifts();
+    const container = document.getElementById('archived-gifts-inline-list');
+    const countSpan = document.getElementById('archived-inline-count');
+
+    if (!result.success) {
+      container.innerHTML = '<p style="text-align: center; color: #f44; padding: 20px;">Error loading archived gifts</p>';
+      countSpan.textContent = '0';
+      return;
+    }
+
+    const archivedGifts = result.archivedGifts.gifts || [];
+    countSpan.textContent = archivedGifts.length;
+
+    if (archivedGifts.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">No archived gifts</p>';
+      return;
+    }
+
+    // Sort by coins (descending) then by name
+    archivedGifts.sort((a, b) => {
+      if (b.coins !== a.coins) return b.coins - a.coins;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Render archived gifts
+    container.innerHTML = archivedGifts.map(gift => `
+      <div class="archived-gift-card-inline" data-gift-name="${escapeHtml(gift.name)}" data-gift-coins="${gift.coins}">
+        <div class="archived-gift-info">
+          <div class="archived-gift-image">
+            <img src="${gift.imageUrl || './gift-images/placeholder.webp'}"
+                 alt="${escapeHtml(gift.name)}"
+                 style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px; background: #1a1a1a;"
+                 onerror="this.src='./gift-images/rose_1.webp'">
+          </div>
+          <div class="archived-gift-details">
+            <div class="archived-gift-name">${escapeHtml(gift.name)}</div>
+            <div class="archived-gift-meta">
+              <span class="gift-coins">${gift.coins} coins</span>
+              <span class="separator">•</span>
+              <span class="archived-date">${formatArchivedDate(gift.archivedDate)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="archived-gift-actions">
+          <button class="btn-small btn-success" onclick="restoreGiftInline('${escapeHtml(gift.name)}', ${gift.coins})">
+            ↩️ Restore
+          </button>
+          <button class="btn-small btn-danger" onclick="deleteGiftInline('${escapeHtml(gift.name)}', ${gift.coins})">
+            🗑️ Delete
           </button>
         </div>
       </div>
     `).join('');
+
+    // Setup search
+    const searchInput = document.getElementById('archived-inline-search');
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.oninput = (e) => filterArchivedGiftsInline(e.target.value, archivedGifts);
+    }
   } catch (error) {
-    log('Error loading version history: ' + error.message, 'error');
+    log('Error loading archived gifts inline: ' + error.message, 'error');
   }
+}
+
+// Filter archived gifts inline by search term
+function filterArchivedGiftsInline(searchTerm, allGifts) {
+  const filtered = allGifts.filter(gift =>
+    gift.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    gift.coins.toString().includes(searchTerm)
+  );
+
+  const container = document.getElementById('archived-gifts-inline-list');
+  if (filtered.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">No gifts match your search</p>';
+  } else {
+    container.innerHTML = filtered.map(gift => `
+      <div class="archived-gift-card-inline" data-gift-name="${escapeHtml(gift.name)}" data-gift-coins="${gift.coins}">
+        <div class="archived-gift-info">
+          <div class="archived-gift-image">
+            <img src="${gift.imageUrl || './gift-images/placeholder.webp'}"
+                 alt="${escapeHtml(gift.name)}"
+                 style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px; background: #1a1a1a;"
+                 onerror="this.src='./gift-images/rose_1.webp'">
+          </div>
+          <div class="archived-gift-details">
+            <div class="archived-gift-name">${escapeHtml(gift.name)}</div>
+            <div class="archived-gift-meta">
+              <span class="gift-coins">${gift.coins} coins</span>
+              <span class="separator">•</span>
+              <span class="archived-date">${formatArchivedDate(gift.archivedDate)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="archived-gift-actions">
+          <button class="btn-small btn-success" onclick="restoreGiftInline('${escapeHtml(gift.name)}', ${gift.coins})">
+            ↩️ Restore
+          </button>
+          <button class="btn-small btn-danger" onclick="deleteGiftInline('${escapeHtml(gift.name)}', ${gift.coins})">
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+// Restore gift from inline list
+async function restoreGiftInline(giftName, coins) {
+  if (!confirm(`Restore "${giftName}" (${coins} coins) to active gifts?`)) {
+    return;
+  }
+
+  try {
+    log(`Restoring ${giftName}...`, 'info');
+    const result = await window.sniAPI.restoreArchivedGift(giftName, coins);
+
+    if (result.success) {
+      log(`✅ ${giftName} restored successfully!`, 'success');
+
+      // Reload archived gifts and database status
+      await loadArchivedGiftsInline();
+      await loadDatabaseStatus();
+    } else {
+      log(`Failed to restore ${giftName}: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error restoring gift: ${error.message}`, 'error');
+  }
+}
+
+// Delete gift from inline list
+async function deleteGiftInline(giftName, coins) {
+  if (!confirm(`Permanently delete "${giftName}" (${coins} coins) from archive?\n\nThis action cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    log(`Deleting ${giftName} from archive...`, 'info');
+    const result = await window.sniAPI.deleteArchivedGift(giftName, coins);
+
+    if (result.success) {
+      log(`🗑️ ${giftName} deleted from archive`, 'success');
+
+      // Reload archived gifts and database status
+      await loadArchivedGiftsInline();
+      await loadDatabaseStatus();
+    } else {
+      log(`Failed to delete ${giftName}: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error deleting gift: ${error.message}`, 'error');
+  }
+}
+
+// Format archived date
+function formatArchivedDate(dateString) {
+  if (!dateString) return 'Unknown';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }
 
 // Setup event listeners for database update controls
@@ -1576,14 +1929,6 @@ function setupDatabaseUpdateListeners() {
   const updateBtn = document.getElementById('update-gift-database-btn');
   if (updateBtn) {
     updateBtn.addEventListener('click', triggerDatabaseUpdate);
-  }
-
-  // View archived gifts button
-  const viewArchivedBtn = document.getElementById('view-archived-gifts-btn');
-  if (viewArchivedBtn) {
-    viewArchivedBtn.addEventListener('click', () => {
-      showArchivedGiftsModal();
-    });
   }
 
   // Listen for progress updates
@@ -1649,6 +1994,18 @@ async function triggerDatabaseUpdate() {
           `;
         }
 
+        // Add restored gifts list (gifts that were archived and automatically restored)
+        if (result.details && result.details.restored && result.details.restored.length > 0) {
+          summaryHTML += `
+            <details style="margin-top: 10px; cursor: pointer;">
+              <summary style="font-weight: 600; color: #00BCD4;">♻️ Auto-Restored from Archive (${result.details.restored.length})</summary>
+              <ul style="margin: 10px 0 0 20px; max-height: 150px; overflow-y: auto;">
+                ${result.details.restored.map(g => `<li>${g.name} (${g.coins} coins)</li>`).join('')}
+              </ul>
+            </details>
+          `;
+        }
+
         // Add detailed archived gifts list
         if (result.details && result.details.removed && result.details.removed.length > 0) {
           summaryHTML += `
@@ -1702,10 +2059,11 @@ async function triggerDatabaseUpdate() {
 
         log(`✅ Update complete: ${total} total changes`, 'success');
 
-        // Reload database status and version history
+        // Reload database status, version history, and archived gifts
         setTimeout(() => {
           loadDatabaseStatus();
           loadVersionHistory();
+          loadArchivedGiftsInline();
         }, 500);
       }
     } else if (result.requiresConfirmation) {
@@ -1783,6 +2141,7 @@ async function confirmLargeUpdate() {
       setTimeout(() => {
         loadDatabaseStatus();
         loadVersionHistory();
+        loadArchivedGiftsInline();
       }, 500);
     }
   } catch (error) {
@@ -1847,6 +2206,7 @@ async function confirmRollback(backupPath, timestamp) {
       setTimeout(() => {
         loadDatabaseStatus();
         loadVersionHistory();
+        loadArchivedGiftsInline();
       }, 500);
     } else {
       log(`❌ Rollback failed: ${result.error}`, 'error');
@@ -2073,3 +2433,187 @@ async function handleRemapArchivedGift(giftKey, action) {
 
 // Make toggle function global
 window.toggleArchivedFilter = toggleArchivedFilter;
+
+// ============================================
+// COLLAPSIBLE ACTION CATEGORIES
+// ============================================
+
+function initializeCollapsibleCategories() {
+  const settingsScroll = document.querySelector('#gift-mappings-subtab .settings-scroll');
+  if (!settingsScroll) {
+    return;
+  }
+
+  const categories = settingsScroll.querySelectorAll('.settings-category');
+  
+  categories.forEach(category => {
+    const h4 = category.querySelector('h4');
+    if (!h4) return;
+
+    // Store category title
+    const title = h4.textContent;
+    
+    // Create header structure
+    const header = document.createElement('div');
+    header.className = 'category-header expanded';
+    header.innerHTML = `
+      <h4>${title}</h4>
+      <span class="category-arrow">▶</span>
+    `;
+
+    // Collect all action items
+    const actionItems = Array.from(category.querySelectorAll('.action-item'));
+    
+    // Create content wrapper
+    const content = document.createElement('div');
+    content.className = 'category-content expanded';
+    
+    const itemsWrapper = document.createElement('div');
+    itemsWrapper.className = 'category-items';
+    actionItems.forEach(item => itemsWrapper.appendChild(item));
+    content.appendChild(itemsWrapper);
+
+    // Replace h4 with header and add content wrapper
+    h4.replaceWith(header);
+    category.appendChild(content);
+
+    // Add click handler
+    header.addEventListener('click', () => {
+      const isExpanded = header.classList.contains('expanded');
+      
+      if (isExpanded) {
+        header.classList.remove('expanded');
+        content.classList.remove('expanded');
+      } else {
+        header.classList.add('expanded');
+        content.classList.add('expanded');
+      }
+    });
+  });
+
+  // Now reorganize: Move Reset Bird to Core and move Item Disable section
+  reorganizeActions();
+}
+
+function reorganizeActions() {
+  const settingsScroll = document.querySelector('#gift-mappings-subtab .settings-scroll');
+  if (!settingsScroll) return;
+
+  // Find the Core category
+  const coreCategory = Array.from(settingsScroll.querySelectorAll('.settings-category')).find(cat => {
+    const header = cat.querySelector('.category-header h4');
+    return header && header.textContent.includes('Core');
+  });
+
+  // Find the Flute category
+  const fluteCategory = Array.from(settingsScroll.querySelectorAll('.settings-category')).find(cat => {
+    const header = cat.querySelector('.category-header h4');
+    return header && header.textContent.includes('Flute');
+  });
+
+  // Find the Item Disable category
+  const disableCategory = Array.from(settingsScroll.querySelectorAll('.settings-category')).find(cat => {
+    const header = cat.querySelector('.category-header h4');
+    return header && header.textContent.includes('Item Disable');
+  });
+
+  // Move Reset Bird from Flute to Core
+  if (coreCategory && fluteCategory) {
+    const resetBirdItem = Array.from(fluteCategory.querySelectorAll('.action-item')).find(item => {
+      const actionName = item.querySelector('.action-name');
+      return actionName && actionName.textContent.includes('Reset Bird');
+    });
+
+    if (resetBirdItem) {
+      const coreItems = coreCategory.querySelector('.category-items');
+      if (coreItems) {
+        coreItems.appendChild(resetBirdItem);
+      }
+    }
+  }
+
+  // Move Item Disable category to position 2 (right after Core)
+  if (disableCategory && coreCategory) {
+    coreCategory.parentNode.insertBefore(disableCategory, coreCategory.nextSibling);
+  }
+}
+
+// Collapse/Expand all categories
+function toggleAllCategories() {
+  const collapseBtn = document.getElementById('collapse-all-categories');
+  const headers = document.querySelectorAll('.category-header');
+  const contents = document.querySelectorAll('.category-content');
+
+  if (!collapseBtn || headers.length === 0) {
+    return;
+  }
+
+  // Check if all are expanded
+  const allExpanded = Array.from(headers).every(h => h.classList.contains('expanded'));
+
+  if (allExpanded) {
+    // Collapse all
+    headers.forEach(h => h.classList.remove('expanded'));
+    contents.forEach(c => c.classList.remove('expanded'));
+    collapseBtn.innerHTML = '📂 Expand All';
+  } else {
+    // Expand all
+    headers.forEach(h => h.classList.add('expanded'));
+    contents.forEach(c => c.classList.add('expanded'));
+    collapseBtn.innerHTML = '📁 Collapse All';
+  }
+}
+
+// Initialize collapsible categories with retry logic
+function tryInitializeCollapsible() {
+  // Check if categories exist
+  const settingsScroll = document.querySelector('#gift-mappings-subtab .settings-scroll');
+  const categories = settingsScroll ? settingsScroll.querySelectorAll('.settings-category') : [];
+
+  if (categories.length > 0 && !document.querySelector('.category-header')) {
+    initializeCollapsibleCategories();
+
+    // Attach button handler
+    setTimeout(() => {
+      const collapseAllBtn = document.getElementById('collapse-all-categories');
+      if (collapseAllBtn && !collapseAllBtn.hasAttribute('data-listener-attached')) {
+        collapseAllBtn.addEventListener('click', toggleAllCategories);
+        collapseAllBtn.setAttribute('data-listener-attached', 'true');
+      }
+    }, 50);
+
+    return true;
+  }
+  return false;
+}
+
+// Run when the gift settings tab is opened
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize when the Gift Settings tab is clicked
+  const giftSettingsTabBtn = document.querySelector('[data-tab="gift-settings-tab"]');
+
+  if (giftSettingsTabBtn) {
+    giftSettingsTabBtn.addEventListener('click', () => {
+      // Try immediately
+      if (!tryInitializeCollapsible()) {
+        // If not ready, retry a few times
+        let attempts = 0;
+        const retryInterval = setInterval(() => {
+          attempts++;
+
+          if (tryInitializeCollapsible() || attempts >= 10) {
+            clearInterval(retryInterval);
+          }
+        }, 100);
+      }
+    });
+  }
+
+  // Also initialize when subtab button is clicked (in case user switches between subtabs)
+  const mappingsBtn = document.querySelector('[data-subtab="gift-mappings-subtab"]');
+  if (mappingsBtn) {
+    mappingsBtn.addEventListener('click', () => {
+      setTimeout(() => tryInitializeCollapsible(), 100);
+    });
+  }
+});

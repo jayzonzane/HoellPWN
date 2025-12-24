@@ -53,8 +53,7 @@
         <div class="subtab-navigation">
           <button class="subtab-btn active" data-subtab="gift-mappings-subtab">📝 Gift Mappings</button>
           <button class="subtab-btn" data-subtab="overlay-builder-subtab">🖼️ Overlay Builder</button>
-          <button class="subtab-btn" data-subtab="gift-database-subtab">📚 Gift Database</button>
-          <button class="subtab-btn" data-subtab="gift-images-subtab">🖼️ Gift Images</button>
+          <button class="subtab-btn" data-subtab="gift-database-subtab">📚 Gift Database & Images</button>
           <button class="subtab-btn" data-subtab="database-updates-subtab">🔄 Database Updates</button>
         </div>
 
@@ -64,7 +63,7 @@
           <!-- Gift Mappings Subtab -->
           <div id="gift-mappings-subtab" class="subtab-content active">
             <!-- Mappings Actions at Top -->
-            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px;">
               <button class="btn-reset" id="reset-all-gift-mappings" style="background: #ef4444;">🗑️ Reset All Gifts</button>
             </div>
 
@@ -72,7 +71,10 @@
           <div class="settings-container">
             <!-- Left Column: Actions -->
             <div class="settings-column">
-              <h3>Available Actions</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Available Actions</h3>
+                <button class="btn-secondary" id="collapse-all-categories" style="background: #6366f1; padding: 6px 12px; font-size: 13px;">📁 Collapse All</button>
+              </div>
               <div class="settings-scroll">
                 <!-- Core Actions -->
                 <div class="settings-category">
@@ -647,18 +649,37 @@
           <!-- Gift Database Subtab -->
           <div id="gift-database-subtab" class="subtab-content">
             <!-- Database Actions at Top -->
-            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px;">
-              <button class="btn-save" id="save-gift-database">💾 Save Database</button>
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-save" id="save-gift-database">💾 Save Database & Images</button>
               <button class="btn-reset" id="reset-gift-database">🔄 Reset to Defaults</button>
+              <button class="btn-download" id="download-all-images" style="background: #1da1f2;">🖼️ Download All Images</button>
             </div>
 
             <div class="tab-body">
               <div class="database-container">
                 <div class="database-section">
-                  <h3>Edit Gift Names</h3>
-                  <p class="section-description">Customize the display names of TikTok gifts</p>
+                  <h3>Edit Gifts (Names & Images)</h3>
+                  <p class="section-description">Customize gift display names and images. Click a gift to expand and edit image URL.</p>
+
+                  <!-- Search Bar -->
+                  <div style="margin-bottom: 15px;">
+                    <input type="text" id="gift-search" placeholder="🔍 Search gifts..." style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white;">
+                  </div>
+
+                  <!-- Download Progress -->
+                  <div id="download-progress" style="display: none; margin-bottom: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <div style="margin-bottom: 5px; font-size: 13px;">
+                      <span id="download-status">Downloading...</span>
+                      <span id="download-count" style="float: right; font-weight: bold;"></span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); height: 20px; border-radius: 10px; overflow: hidden;">
+                      <div id="download-progress-bar" style="background: linear-gradient(90deg, #1da1f2, #0d8bd9); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <div id="download-current" style="margin-top: 5px; font-size: 12px; opacity: 0.7;"></div>
+                  </div>
+
                   <div id="gift-database-list" class="gift-database-list">
-                    <!-- Gift name inputs will be populated here by JS -->
+                    <!-- Gift entries with thumbnails will be populated here by JS -->
                   </div>
                 </div>
 
@@ -730,9 +751,6 @@
                     <button class="btn-primary" id="update-gift-database-btn">
                       🔄 Update from streamtoearn.io
                     </button>
-                    <button class="btn-secondary" id="view-archived-gifts-btn">
-                      📦 View Archived Gifts
-                    </button>
                   </div>
 
                   <!-- Progress Indicator -->
@@ -760,7 +778,7 @@
                 <div class="updates-section">
                   <h3>Version History</h3>
                   <p class="section-description">
-                    View previous database versions and rollback if needed
+                    Click on a version to see what gifts were added or removed
                   </p>
                   <div id="version-history-list" class="version-history-list">
                     <p style="text-align: center; color: #888; padding: 20px;">
@@ -769,51 +787,29 @@
                   </div>
                 </div>
 
+                <!-- Archived Gifts -->
+                <div class="updates-section">
+                  <h3>Archived Gifts (<span id="archived-inline-count">0</span>)</h3>
+                  <p class="section-description">
+                    Gifts that were removed from TikTok. You can restore them if they return.
+                  </p>
+                  <div class="archived-search" style="margin-top: 15px; margin-bottom: 15px;">
+                    <input type="text"
+                           id="archived-inline-search"
+                           placeholder="🔍 Search archived gifts..."
+                           style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white;">
+                  </div>
+                  <div id="archived-gifts-inline-list" class="archived-gifts-inline-container">
+                    <p style="text-align: center; color: #888; padding: 20px;">
+                      Loading archived gifts...
+                    </p>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
           <!-- End Database Updates Subtab -->
-
-          <!-- Gift Images Subtab -->
-          <div id="gift-images-subtab" class="subtab-content">
-            <!-- Images Actions at Top -->
-            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-              <button class="btn-save" id="save-gift-images">💾 Save Images</button>
-            </div>
-
-            <div class="tab-body">
-              <div class="images-container">
-                <h3>Gift Image URLs</h3>
-                <p class="section-description">Override gift images with custom URLs (e.g., from TikTok CDN)</p>
-
-                <!-- Download Section -->
-                <div class="download-section" style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                  <h4 style="margin-top: 0;">📥 Download All Images</h4>
-                  <p style="margin-bottom: 10px; font-size: 13px; opacity: 0.9;">
-                    If images aren't showing up, click below to download all gift images from TikTok CDN.
-                  </p>
-                  <button class="btn-download" id="download-all-images" style="background: #1da1f2; padding: 10px 20px; font-size: 14px; font-weight: bold;">
-                    🖼️ Download All Images (331 files)
-                  </button>
-                  <div id="download-progress" style="display: none; margin-top: 15px;">
-                    <div style="margin-bottom: 5px; font-size: 13px;">
-                      <span id="download-status">Downloading...</span>
-                      <span id="download-count" style="float: right; font-weight: bold;"></span>
-                    </div>
-                    <div style="background: rgba(0,0,0,0.3); height: 20px; border-radius: 10px; overflow: hidden;">
-                      <div id="download-progress-bar" style="background: linear-gradient(90deg, #1da1f2, #0d8bd9); height: 100%; width: 0%; transition: width 0.3s;"></div>
-                    </div>
-                    <div id="download-current" style="margin-top: 5px; font-size: 12px; opacity: 0.7;"></div>
-                  </div>
-                </div>
-
-                <div id="gift-images-list" class="gift-images-list">
-                  <!-- Gift image items will be populated here by JS -->
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- End Gift Images Subtab -->
 
         </div>
         <!-- End Subtab Content Container -->
