@@ -87,7 +87,32 @@ class GiftUpdater {
         throw new Error('Failed to create backup: ' + backupResult.error);
       }
 
-      // Phase 6: Archive removed gifts
+      // Phase 6: Auto-restore archived gifts that are being re-added
+      this.progressCallback({ stage: 'checking_archives', message: 'Checking for archived gifts to restore...' });
+      const archivedData = await this.dbManager.loadArchivedGifts();
+      const giftsRestored = [];
+
+      for (const addedGift of changes.added) {
+        // Check if this gift exists in archive
+        const archivedIndex = archivedData.gifts.findIndex(
+          g => g.name === addedGift.name && g.coins === addedGift.coins
+        );
+
+        if (archivedIndex !== -1) {
+          // Remove from archive - it's being restored
+          const restored = archivedData.gifts.splice(archivedIndex, 1)[0];
+          giftsRestored.push(restored);
+          console.log(`♻️  Auto-restored from archive: ${restored.name} (${restored.coins} coins)`);
+        }
+      }
+
+      // Save updated archive if any gifts were restored
+      if (giftsRestored.length > 0) {
+        await this.dbManager.saveArchivedGifts(archivedData);
+        console.log(`♻️  ${giftsRestored.length} gift(s) auto-restored from archive`);
+      }
+
+      // Phase 7: Archive removed gifts
       this.progressCallback({ stage: 'archiving', message: 'Archiving removed gifts...' });
 
       const giftsToArchive = [
@@ -99,7 +124,7 @@ class GiftUpdater {
         await this.dbManager.archiveGifts(giftsToArchive);
       }
 
-      // Phase 7: Download images for new gifts
+      // Phase 8: Download images for new gifts
       let downloadResults = { downloaded: [], failed: [] };
       if (changes.added.length > 0) {
         this.progressCallback({ stage: 'downloading_images', message: `Downloading images for ${changes.added.length} new gifts...` });
@@ -120,7 +145,7 @@ class GiftUpdater {
         downloadResults = await this.dbManager.downloadGiftImages(giftsToDownload, this.progressCallback);
       }
 
-      // Phase 8: Update active database
+      // Phase 9: Update active database
       this.progressCallback({ stage: 'updating', message: 'Updating gift database...' });
       const newActiveData = {
         version: '1.1.0',
@@ -131,7 +156,7 @@ class GiftUpdater {
       };
       await this.dbManager.saveActiveGifts(newActiveData);
 
-      // Phase 9: Update version history
+      // Phase 10: Update version history
       await this.dbManager.updateVersionHistory(changes, backupResult.backupPath);
 
       console.log('✅ Gift database update completed successfully');
@@ -142,12 +167,14 @@ class GiftUpdater {
           added: changes.added.length,
           removed: changes.removed.length,
           modified: changes.modified.length,
+          restored: giftsRestored.length,
           total: totalChanges
         },
         details: {
           added: changes.added,      // Full list of added gifts
           removed: changes.removed,  // Full list of removed gifts
-          modified: changes.modified // Full list of modified gifts
+          modified: changes.modified, // Full list of modified gifts
+          restored: giftsRestored    // Full list of auto-restored gifts
         },
         imageDownloads: downloadResults,
         timestamp: new Date().toISOString()
@@ -169,7 +196,83 @@ class GiftUpdater {
    * Get version history
    */
   async getVersionHistory() {
-    return await this.dbManager.loadVersions();
+    const versions = await this.dbManager.loadVersions();
+
+    // Populate details from backup files if missing
+    if (versions && versions.backups) {
+      const fs = require('fs').promises;
+      const currentActive = await this.dbManager.loadActiveGifts();
+
+      for (let i = 0; i < versions.backups.length; i++) {
+        const backup = versions.backups[i];
+
+        // If details are missing, reconstruct from backup file
+        if (!backup.details && backup.backupPath) {
+          try {
+            // Read the backup file (state before update)
+            const backupData = await fs.readFile(backup.backupPath, 'utf8');
+            const backupContent = JSON.parse(backupData);
+
+            // Get the "after" state (either current or next backup)
+            let afterState;
+            if (i === 0) {
+              // This is the most recent backup, compare to current state
+              afterState = currentActive.gifts;
+            } else {
+              // Compare to the previous backup in the list (which is newer)
+              const nextBackupData = await fs.readFile(versions.backups[i - 1].backupPath, 'utf8');
+              const nextBackup = JSON.parse(nextBackupData);
+              afterState = nextBackup.activeGifts.gifts;
+            }
+
+            // Compare to determine what changed
+            const changes = this.dbManager.compareGifts(
+              backupContent.activeGifts.gifts,
+              afterState
+            );
+
+            // Cross-reference added and removed to find duplicates (same name + coins)
+            // These are gifts that were removed and re-added (likely image updates)
+            const duplicates = new Set();
+
+            changes.added.forEach(added => {
+              const isDuplicate = changes.removed.some(removed =>
+                removed.name === added.name && removed.coins === added.coins
+              );
+              if (isDuplicate) {
+                duplicates.add(`${added.name}_${added.coins}`);
+              }
+            });
+
+            // Filter out duplicates from both lists
+            const filteredAdded = changes.added.filter(g =>
+              !duplicates.has(`${g.name}_${g.coins}`)
+            );
+            const filteredRemoved = changes.removed.filter(g =>
+              !duplicates.has(`${g.name}_${g.coins}`)
+            );
+
+            // Add details to the backup entry
+            backup.details = {
+              added: filteredAdded,
+              removed: filteredRemoved,
+              modified: changes.modified || []
+            };
+
+            // Update counts to match filtered lists
+            backup.changes = {
+              added: filteredAdded.length,
+              removed: filteredRemoved.length,
+              modified: changes.modified ? changes.modified.length : 0
+            };
+          } catch (error) {
+            console.error(`Failed to reconstruct details for backup ${backup.timestamp}:`, error);
+          }
+        }
+      }
+    }
+
+    return versions;
   }
 
   /**

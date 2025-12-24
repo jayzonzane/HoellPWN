@@ -1351,10 +1351,9 @@ document.addEventListener('click', (e) => {
     targetContent.classList.add('active');
   }
 
-  // Populate content on first open
-  if (targetSubtab === 'overlay-builder-subtab' && !overlayGiftsPopulated && typeof populateOverlayGiftSelection === 'function') {
+  // Populate overlay builder - always refresh to show latest mappings
+  if (targetSubtab === 'overlay-builder-subtab' && typeof populateOverlayGiftSelection === 'function') {
     populateOverlayGiftSelection();
-    overlayGiftsPopulated = true;
   }
 
   if (targetSubtab === 'gift-database-subtab' && !giftDatabasePopulated && typeof populateGiftDatabase === 'function') {
@@ -1363,11 +1362,6 @@ document.addEventListener('click', (e) => {
       displayCustomGifts();
     }
     giftDatabasePopulated = true;
-  }
-
-  if (targetSubtab === 'gift-images-subtab' && !giftImagesPopulated && typeof populateGiftImagesList === 'function') {
-    populateGiftImagesList();
-    giftImagesPopulated = true;
   }
 
   if (targetSubtab === 'database-updates-subtab' && !databaseUpdatesPopulated && typeof initDatabaseUpdatesTab === 'function') {

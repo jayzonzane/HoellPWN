@@ -470,6 +470,11 @@ class GiftDatabaseManager {
           removed: changes.removed.length,
           modified: changes.modified.length
         },
+        details: {
+          added: changes.added || [],
+          removed: changes.removed || [],
+          modified: changes.modified || []
+        },
         backupPath
       });
 
