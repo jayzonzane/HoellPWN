@@ -1,517 +1,281 @@
-// Complete ALTTP Memory Map from Archipelago
-// This file contains ALL known memory addresses for ALTTP modifications
+// Complete Super Mario World Memory Map
+// Sources: SMW Central, Data Crystal, SnesLab, TASVideos, smwrammap
+// This file contains ALL known memory addresses for SMW modifications
 
-// Base addresses for different memory regions
-const ROM_START = 0x000000;
-const WRAM_START = 0xF50000;  // FX Pak Pro address space
-const SRAM_START = 0xE00000;
-const SAVEDATA_START = WRAM_START + 0xF000;
-
-// SNES A-bus addresses for RetroArch
+// Base addresses for SNES memory regions
 const SNES_WRAM_BASE = 0x7E0000;
-const SNES_SAVEDATA_BASE = SNES_WRAM_BASE + 0xF000;
 
 // Complete memory address map
 const MEMORY_ADDRESSES = {
-  // ============= HEALTH & PLAYER STATE =============
-  CURRENT_HEALTH: SNES_SAVEDATA_BASE + 0x36D,     // Current HP (0x08 = 1 heart)
-  MAX_HEALTH: SNES_SAVEDATA_BASE + 0x36C,         // Max HP capacity
-  HEART_PIECES: SNES_SAVEDATA_BASE + 0x36B,       // Heart piece counter (0-3)
-  INVINCIBLE: WRAM_START + 0x037B,                // Invincibility flag
-  DAMAGE_TO_APPLY: WRAM_START + 0x0373,           // Damage queue
+  // ============= PLAYER STATE =============
+  POWERUP_STATUS: SNES_WRAM_BASE + 0x0019,        // Power-up state: 0=small, 1=super, 2=cape, 3=fire
+  LIVES: SNES_WRAM_BASE + 0x0DB4,                 // Mario's lives (also at 0x0DBE in single player)
+  COINS: SNES_WRAM_BASE + 0x0DBF,                 // Coin counter (100 = 1 life)
+  RESERVE_ITEM: SNES_WRAM_BASE + 0x0DC1,          // Reserve item box: 0=none, 1=mushroom, 2=fire, 3=star, 4=feather
+  PLAYER_DIRECTION: SNES_WRAM_BASE + 0x0076,      // Facing direction (0=right, 1=left)
+  PLAYER_BLOCKED_STATUS: SNES_WRAM_BASE + 0x0077, // Blocked/collision flags
+  PLAYER_AIRBORNE: SNES_WRAM_BASE + 0x0072,       // Airborne state indicator
+  INVINCIBILITY_TIMER: SNES_WRAM_BASE + 0x1490,   // Star power timer (0x30 = standard duration)
 
-  // ============= MAGIC =============
-  MAGIC_METER: SNES_SAVEDATA_BASE + 0x36E,        // Magic meter (0x80 = enabled)
-  CURRENT_MAGIC: SNES_SAVEDATA_BASE + 0x373,      // Current magic points (0x80 = full, 0x00 = empty)
-  MAGIC_UPGRADE: SNES_SAVEDATA_BASE + 0x37B,      // 0=normal, 1=1/2 magic, 2=1/4 magic
+  // ============= PLAYER PHYSICS =============
+  PLAYER_X_SPEED: SNES_WRAM_BASE + 0x007B,        // Horizontal velocity (signed, subpixels/frame)
+  PLAYER_Y_SPEED: SNES_WRAM_BASE + 0x007D,        // Vertical velocity (signed, subpixels/frame)
+  PLAYER_X_POSITION: SNES_WRAM_BASE + 0x0094,     // X position in pixels (low byte)
+  PLAYER_Y_POSITION: SNES_WRAM_BASE + 0x0096,     // Y position in pixels (low byte)
+  PLAYER_X_SUBPIXEL: SNES_WRAM_BASE + 0x13DA,     // X sub-pixel coordinate
+  PLAYER_Y_SUBPIXEL: SNES_WRAM_BASE + 0x13DC,     // Y sub-pixel coordinate
+  PLAYER_X_SCREEN: SNES_WRAM_BASE + 0x007E,       // Player screen-relative X position
+  PLAYER_Y_SCREEN: SNES_WRAM_BASE + 0x0080,       // Player screen-relative Y position
+  P_METER: SNES_WRAM_BASE + 0x13E4,               // Run meter (0-112, 112=max speed)
+  TAKEOFF_METER: SNES_WRAM_BASE + 0x149F,         // Cape flight meter (decrements during flight)
 
-  // ============= CURRENCY & AMMO =============
-  RUPEES_LOW: SNES_SAVEDATA_BASE + 0x360,         // Rupees (low byte)
-  RUPEES_HIGH: SNES_SAVEDATA_BASE + 0x361,        // Rupees (high byte) - max 9999
-  BOMBS: SNES_SAVEDATA_BASE + 0x343,              // Current bomb count
-  ARROWS: SNES_SAVEDATA_BASE + 0x377,             // Current arrow count
+  // ============= YOSHI STATE =============
+  YOSHI_COLOR: SNES_WRAM_BASE + 0x13C7,           // 0=green, 1=yellow, 2=red, 3=blue
+  YOSHI_TONGUE_TIMER: SNES_WRAM_BASE + 0x18AC,    // Swallow timer
+  BERRY_COUNTER_1: SNES_WRAM_BASE + 0x18D4,       // Pink berry counter
+  BERRY_COUNTER_2: SNES_WRAM_BASE + 0x18D5,       // Green berry counter
+  BERRY_COUNTER_3: SNES_WRAM_BASE + 0x18D6,       // Red berry counter
+  P_BALLOON_TIMER: SNES_WRAM_BASE + 0x1891,       // P-Balloon flight timer
 
-  // ============= WEAPONS & TOOLS =============
-  BOW: SNES_SAVEDATA_BASE + 0x340,                // 0=none, 1=bow, 2=bow+arrows, 3=silver bow
-  BOOMERANG: SNES_SAVEDATA_BASE + 0x341,          // 0=none, 1=blue, 2=red
-  HOOKSHOT: SNES_SAVEDATA_BASE + 0x342,           // 0=none, 1=hookshot
-  MUSHROOM_POWDER: SNES_SAVEDATA_BASE + 0x344,    // 0=none, 1=mushroom, 2=powder
-  FIRE_ROD: SNES_SAVEDATA_BASE + 0x345,           // 0=none, 1=fire rod
-  ICE_ROD: SNES_SAVEDATA_BASE + 0x346,            // 0=none, 1=ice rod
-  BOMBOS: SNES_SAVEDATA_BASE + 0x347,             // 0=none, 1=bombos
-  ETHER: SNES_SAVEDATA_BASE + 0x348,              // 0=none, 1=ether
-  QUAKE: SNES_SAVEDATA_BASE + 0x349,              // 0=none, 1=quake
-  LAMP: SNES_SAVEDATA_BASE + 0x34A,               // 0=none, 1=lamp
-  HAMMER: SNES_SAVEDATA_BASE + 0x34B,             // 0=none, 1=hammer
-  FLUTE_SHOVEL: SNES_SAVEDATA_BASE + 0x34C,       // 0=none, 1=shovel, 2=flute, 3=active flute
-  BUG_NET: SNES_SAVEDATA_BASE + 0x34D,            // 0=none, 1=net
-  BOOK: SNES_SAVEDATA_BASE + 0x34E,               // 0=none, 1=book of mudora
-  BOTTLE_COUNT: SNES_SAVEDATA_BASE + 0x34F,       // Number of bottles (0-4)
-  SOMARIA: SNES_SAVEDATA_BASE + 0x350,            // 0=none, 1=cane of somaria
-  BYRNA: SNES_SAVEDATA_BASE + 0x351,              // 0=none, 1=cane of byrna
-  CAPE: SNES_SAVEDATA_BASE + 0x352,               // 0=none, 1=cape
-  MIRROR: SNES_SAVEDATA_BASE + 0x353,             // 0=none, 2=mirror
+  // ============= SPRITE TABLES (12 normal sprites) =============
+  SPRITE_STATUS: SNES_WRAM_BASE + 0x14C8,         // Sprite status (12 bytes): 0=inactive, non-zero=active states
+  SPRITE_TYPE: SNES_WRAM_BASE + 0x009E,           // Sprite ID/type table (12 bytes)
+  SPRITE_X_LOW: SNES_WRAM_BASE + 0x00E4,          // Sprite X position low byte (12 bytes)
+  SPRITE_X_HIGH: SNES_WRAM_BASE + 0x14E0,         // Sprite X position high byte (12 bytes)
+  SPRITE_Y_LOW: SNES_WRAM_BASE + 0x00D8,          // Sprite Y position low byte (12 bytes)
+  SPRITE_Y_HIGH: SNES_WRAM_BASE + 0x14D4,         // Sprite Y position high byte (12 bytes)
+  SPRITE_X_SUBPIXEL: SNES_WRAM_BASE + 0x14F8,     // Sprite X sub-pixel table (12 bytes)
+  SPRITE_Y_SUBPIXEL: SNES_WRAM_BASE + 0x14EC,     // Sprite Y sub-pixel table (12 bytes)
+  SPRITE_X_SPEED: SNES_WRAM_BASE + 0x00B6,        // Sprite X velocity table (12 bytes)
+  SPRITE_Y_SPEED: SNES_WRAM_BASE + 0x00AA,        // Sprite Y velocity table (12 bytes)
+  SPRITE_BLOCKED_STATUS: SNES_WRAM_BASE + 0x1588, // Sprite blocked/collision flags (12 bytes)
+  SPRITE_CARRYING_FLAG: SNES_WRAM_BASE + 0x1470,  // Item carrying state (12 bytes)
+  SPRITE_TWEAKER_1: SNES_WRAM_BASE + 0x1656,      // Sprite tweaker byte 1 (12 bytes)
+  SPRITE_TWEAKER_2: SNES_WRAM_BASE + 0x1662,      // Sprite tweaker byte 2 (12 bytes)
+  SPRITE_TWEAKER_3: SNES_WRAM_BASE + 0x166E,      // Sprite tweaker byte 3 (12 bytes)
+  SPRITE_TWEAKER_4: SNES_WRAM_BASE + 0x167A,      // Sprite tweaker byte 4 (12 bytes)
+  SPRITE_TWEAKER_5: SNES_WRAM_BASE + 0x1686,      // Sprite tweaker byte 5 (12 bytes)
 
-  // ============= EQUIPMENT =============
-  GLOVES: SNES_SAVEDATA_BASE + 0x354,             // 0=none, 1=power glove, 2=titan mitts
-  BOOTS: SNES_SAVEDATA_BASE + 0x355,              // 0=none, 1=pegasus boots
-  FLIPPERS: SNES_SAVEDATA_BASE + 0x356,           // 0=none, 1=flippers
-  MOON_PEARL: SNES_SAVEDATA_BASE + 0x357,         // 0=none, 1=moon pearl
-  SWORD: SNES_SAVEDATA_BASE + 0x359,              // 0=none, 1=fighter, 2=master, 3=tempered, 4=golden
-  SHIELD: SNES_SAVEDATA_BASE + 0x35A,             // 0=none, 1=blue, 2=red, 3=mirror
-  ARMOR: SNES_SAVEDATA_BASE + 0x35B,              // 0=green, 1=blue, 2=red
+  // ============= EXTENDED SPRITES (10 slots) =============
+  EXT_SPRITE_TYPE: SNES_WRAM_BASE + 0x170B,       // Extended sprite type (10 bytes)
+  EXT_SPRITE_X_LOW: SNES_WRAM_BASE + 0x171F,      // Extended sprite X low (10 bytes)
+  EXT_SPRITE_X_HIGH: SNES_WRAM_BASE + 0x1733,     // Extended sprite X high (10 bytes)
+  EXT_SPRITE_Y_LOW: SNES_WRAM_BASE + 0x1715,      // Extended sprite Y low (10 bytes)
+  EXT_SPRITE_Y_HIGH: SNES_WRAM_BASE + 0x1729,     // Extended sprite Y high (10 bytes)
+  EXT_SPRITE_X_SPEED: SNES_WRAM_BASE + 0x1747,    // Extended sprite X velocity (10 bytes)
+  EXT_SPRITE_Y_SPEED: SNES_WRAM_BASE + 0x173D,    // Extended sprite Y velocity (10 bytes)
 
-  // ============= BOTTLES =============
-  BOTTLE_1: SNES_SAVEDATA_BASE + 0x35C,           // Bottle 1 contents
-  BOTTLE_2: SNES_SAVEDATA_BASE + 0x35D,           // Bottle 2 contents
-  BOTTLE_3: SNES_SAVEDATA_BASE + 0x35E,           // Bottle 3 contents
-  BOTTLE_4: SNES_SAVEDATA_BASE + 0x35F,           // Bottle 4 contents
-  // Bottle values: 0=no bottle, 2=empty, 3=red potion, 4=green potion,
-  // 5=blue potion, 6=fairy, 7=bee, 8=good bee
+  // ============= MINOR EXTENDED SPRITES (12 slots) =============
+  MINOR_EXT_SPRITE_TYPE: SNES_WRAM_BASE + 0x17F0, // Minor extended sprite type (12 bytes)
+  MINOR_EXT_SPRITE_X_LOW: SNES_WRAM_BASE + 0x1808, // Minor extended sprite X low (12 bytes)
+  MINOR_EXT_SPRITE_X_HIGH: SNES_WRAM_BASE + 0x1820, // Minor extended sprite X high (12 bytes)
+  MINOR_EXT_SPRITE_Y_LOW: SNES_WRAM_BASE + 0x17FC, // Minor extended sprite Y low (12 bytes)
+  MINOR_EXT_SPRITE_Y_HIGH: SNES_WRAM_BASE + 0x1814, // Minor extended sprite Y high (12 bytes)
 
-  // ============= PENDANTS & CRYSTALS =============
-  PENDANTS: SNES_SAVEDATA_BASE + 0x374,           // Bit flags: 0x01=red, 0x02=blue, 0x04=green
-  CRYSTALS: SNES_SAVEDATA_BASE + 0x37A,           // Bit flags for crystals 1-7
+  // ============= SPINNING COINS & EFFECTS =============
+  SPINNING_COIN_X: SNES_WRAM_BASE + 0x17C0,       // Spinning coin X position (4 bytes)
+  SPINNING_COIN_Y: SNES_WRAM_BASE + 0x17C4,       // Spinning coin Y position (4 bytes)
+  SMOKE_SPRITE_X: SNES_WRAM_BASE + 0x17C8,        // Smoke sprite X position (4 bytes)
+  SMOKE_SPRITE_Y: SNES_WRAM_BASE + 0x17CC,        // Smoke sprite Y position (4 bytes)
 
-  // ============= DUNGEON ITEMS =============
-  // Small Keys (values are counts)
-  KEYS_HYRULE_CASTLE: SNES_SAVEDATA_BASE + 0x37C,
-  KEYS_EASTERN: SNES_SAVEDATA_BASE + 0x37E,
-  KEYS_DESERT: SNES_SAVEDATA_BASE + 0x37F,
-  KEYS_TOWER_HERA: SNES_SAVEDATA_BASE + 0x386,
-  KEYS_AGAHNIM: SNES_SAVEDATA_BASE + 0x380,
-  KEYS_SWAMP: SNES_SAVEDATA_BASE + 0x381,
-  KEYS_DARKNESS: SNES_SAVEDATA_BASE + 0x382,
-  KEYS_THIEVES: SNES_SAVEDATA_BASE + 0x387,
-  KEYS_SKULL: SNES_SAVEDATA_BASE + 0x384,
-  KEYS_MISERY: SNES_SAVEDATA_BASE + 0x383,
-  KEYS_ICE: SNES_SAVEDATA_BASE + 0x385,
-  KEYS_TURTLE: SNES_SAVEDATA_BASE + 0x388,
-  KEYS_GANON: SNES_SAVEDATA_BASE + 0x389,
-  KEYS_UNIVERSAL: SNES_SAVEDATA_BASE + 0x38B,
+  // ============= LEVEL & WORLD STATE =============
+  GAME_MODE: SNES_WRAM_BASE + 0x0100,             // Current game mode (0x0E=level, 0x0C=overworld, etc.)
+  TRANSLEVEL_NUMBER: SNES_WRAM_BASE + 0x13BF,     // Current level number (0x00-0xFF)
+  CURRENT_WORLD: SNES_WRAM_BASE + 0x1F11,         // Current world/submap (0-6 = worlds 1-7)
+  CURRENT_SUBMAP: SNES_WRAM_BASE + 0x1F12,        // Current submap/screen
+  CHECKPOINT_FLAG: SNES_WRAM_BASE + 0x13CE,       // Midpoint checkpoint passed flag
+  EXIT_TYPE: SNES_WRAM_BASE + 0x141A,             // Exit type (0=normal, 1=secret)
+  LEVEL_TILES_STATE: SNES_WRAM_BASE + 0x13D0,     // Level tile modification state
 
-  // Current dungeon small keys (WRAM - live count displayed in HUD)
-  CURRENT_SMALL_KEYS: SNES_SAVEDATA_BASE + 0x36F,
+  // ============= SPRITE LOADING =============
+  SPRITE_LOAD_STATUS: SNES_WRAM_BASE + 0x1938,    // Sprite load status table (128 bytes)
 
-  // Big Keys (bit flags in 2 bytes)
-  BIG_KEYS_1: SNES_SAVEDATA_BASE + 0x366,
-  BIG_KEYS_2: SNES_SAVEDATA_BASE + 0x367,
+  // ============= CAMERA & SCROLLING =============
+  CAMERA_X_POSITION: SNES_WRAM_BASE + 0x1462,     // Camera/screen X position
+  CAMERA_Y_POSITION: SNES_WRAM_BASE + 0x1464,     // Camera/screen Y position
+  LAYER_1_X_MIRROR: SNES_WRAM_BASE + 0x001A,      // Layer 1 X position mirror
+  LAYER_1_Y_MIRROR: SNES_WRAM_BASE + 0x001C,      // Layer 1 Y position mirror
+  LAYER_2_X_MIRROR: SNES_WRAM_BASE + 0x001E,      // Layer 2 X position mirror
+  LAYER_2_Y_MIRROR: SNES_WRAM_BASE + 0x0020,      // Layer 2 Y position mirror
+  SCREEN_VERTICAL_SIZE: SNES_WRAM_BASE + 0x13D7,  // Screen vertical size (2 bytes)
 
-  // Maps (bit flags in 2 bytes)
-  MAPS_1: SNES_SAVEDATA_BASE + 0x368,
-  MAPS_2: SNES_SAVEDATA_BASE + 0x369,
+  // ============= TIMER & SCORE =============
+  FRAME_COUNTER: SNES_WRAM_BASE + 0x0F30,         // Global frame counter
+  TIMER_HUNDREDS: SNES_WRAM_BASE + 0x0F31,        // Timer display (hundreds digit)
+  TIMER_TENS: SNES_WRAM_BASE + 0x0F32,            // Timer display (tens digit)
+  TIMER_ONES: SNES_WRAM_BASE + 0x0F33,            // Timer display (ones digit)
+  SCORE_DIGIT_1: SNES_WRAM_BASE + 0x0F34,         // Score counter (lowest digit)
+  SCORE_DIGIT_2: SNES_WRAM_BASE + 0x0F35,         // Score counter
+  SCORE_DIGIT_3: SNES_WRAM_BASE + 0x0F36,         // Score counter
+  SCORE_DIGIT_4: SNES_WRAM_BASE + 0x0F37,         // Score counter (highest digit)
 
-  // Compasses (bit flags in 2 bytes)
-  COMPASSES_1: SNES_SAVEDATA_BASE + 0x364,
-  COMPASSES_2: SNES_SAVEDATA_BASE + 0x365,
+  // ============= OVERWORLD STATE =============
+  LEVEL_FLAGS_BEATEN: SNES_WRAM_BASE + 0x1EA2,    // Level beaten flags (96 bytes)
+  LEVEL_FLAGS_MIDWAY: SNES_WRAM_BASE + 0x1F02,    // Midway entrance flags (24 bytes)
+  SWITCH_PALACE_STATE: SNES_WRAM_BASE + 0x1F27,   // Switch block states (4 palaces)
+  STAR_WORLD_FLAGS: SNES_WRAM_BASE + 0x1F2E,      // Special/Star World access flags
+  YOSHI_COINS_COLLECTED: SNES_WRAM_BASE + 0x1F2F, // Yoshi coin collection flags
 
-  // ============= SPECIAL FLAGS =============
-  ABILITY_FLAGS: SNES_SAVEDATA_BASE + 0x379,      // Various ability flags
-  ITEM_FLAGS: SNES_SAVEDATA_BASE + 0x38C,         // Item obtained flags
-  SPECIAL_FLAGS: SNES_SAVEDATA_BASE + 0x38E,      // Special item flags
+  // ============= CONTROLLER INPUT =============
+  CONTROLLER_1_CURRENT: SNES_WRAM_BASE + 0x0015,  // Currently pressed buttons (set 1)
+  CONTROLLER_1_PRESSED: SNES_WRAM_BASE + 0x0016,  // Just pressed this frame (set 1)
+  CONTROLLER_2_CURRENT: SNES_WRAM_BASE + 0x0017,  // Currently pressed buttons (set 2)
+  CONTROLLER_2_PRESSED: SNES_WRAM_BASE + 0x0018,  // Just pressed this frame (set 2)
 
-  // ============= GAME STATE =============
-  GAME_MODE: WRAM_START + 0x10,                   // Current game mode
-  CURRENT_ROOM: WRAM_START + 0xA0,                // Current room ID (2 bytes)
-  CURRENT_ROOM_HIGH: WRAM_START + 0xA1,           // Current room ID high byte
-  INDOORS_FLAG: WRAM_START + 0x1B,                // 0=outdoors, 1=indoors
-  DUNGEON_ID: WRAM_START + 0x040C,                // Current dungeon
-  MODULE_INDEX: WRAM_START + 0x10,                // Main module
-  SUBMODULE_INDEX: WRAM_START + 0x11,             // Submodule for transitions
+  // ============= SPECIAL TIMERS & FLAGS =============
+  P_SWITCH_TIMER: SNES_WRAM_BASE + 0x14AD,        // P-Switch timer (9 seconds = ~0x200 frames)
+  STAR_POWER_TIMER: SNES_WRAM_BASE + 0x1490,      // Star power invincibility timer
+  ON_OFF_SWITCH_STATE: SNES_WRAM_BASE + 0x14B0,   // ON/OFF switch state
+  CAPE_SPIN_TIMER: SNES_WRAM_BASE + 0x1410,       // Cape spin attack timer
 
-  // ============= PLAYER POSITION =============
-  PLAYER_X_POS: WRAM_START + 0x22,                // X coordinate (2 bytes)
-  PLAYER_Y_POS: WRAM_START + 0x20,                // Y coordinate (2 bytes)
-  CURRENT_SCREEN: WRAM_START + 0x8A,              // Current screen ID
-  CAMERA_X: WRAM_START + 0x061C,                  // Camera X position
-  CAMERA_Y: WRAM_START + 0x061E,                  // Camera Y position
+  // ============= RNG & SYSTEM =============
+  RNG_BYTE_1: SNES_WRAM_BASE + 0x148D,            // Random number generator (byte 1)
+  RNG_BYTE_2: SNES_WRAM_BASE + 0x148E,            // Random number generator (byte 2)
+  PAUSE_FLAG: SNES_WRAM_BASE + 0x0013,            // Game paused flag
 
-  // ============= LAYER POSITIONS =============
-  BG1_H_OFFSET: WRAM_START + 0xE0,                // BG1 Horizontal scroll
-  BG1_V_OFFSET: WRAM_START + 0xE2,                // BG1 Vertical scroll
-  BG2_H_OFFSET: WRAM_START + 0xE6,                // BG2 Horizontal scroll
-  BG2_V_OFFSET: WRAM_START + 0xE8,                // BG2 Vertical scroll
+  // ============= OAM (SPRITE GRAPHICS) =============
+  OAM_SPRITE_TABLE: SNES_WRAM_BASE + 0x0200,      // OAM sprite data (544 bytes: 128 sprites × 4 bytes + 32 bytes)
+  OAM_SIZE_BITS: SNES_WRAM_BASE + 0x0420,         // Sprite size/position high bits (128 bytes)
 
-  // ============= INPUT & PHYSICS =============
-  JOYPAD1_INPUT: SNES_WRAM_BASE + 0x00F0,         // Current joypad 1 input (2 bytes)
-  JOYPAD1_NEW: SNES_WRAM_BASE + 0x00F2,           // Newly pressed joypad 1 buttons (2 bytes)
-  LINK_STATE: SNES_WRAM_BASE + 0x005D,            // Link's state/animation
-  LINK_DIRECTION: SNES_WRAM_BASE + 0x002F,        // Link's facing direction
-  TILE_TYPE_UNDER_LINK: SNES_WRAM_BASE + 0x0114,  // Tile type Link is standing on (READ ONLY - game sets this)
-  ICE_FLOOR_BITFIELD: SNES_WRAM_BASE + 0x0348,    // Ice floor interaction bitfield (controls ice physics)
-  MOVEMENT_LOCK: SNES_WRAM_BASE + 0x02E4,         // Movement lock flag (prevents ALL input including buttons)
-  LINK_SPEED_MODIFIER: SNES_WRAM_BASE + 0x002D,   // Link's movement speed modifier
-  Y_BUTTON_ITEM: SNES_WRAM_BASE + 0x0303,         // Currently equipped item in Y slot (0x00 = no item)
-  X_BUTTON_ITEM: SNES_WRAM_BASE + 0x0340,         // Currently equipped item in X slot (0x00 = no item)
+  // ============= GRAPHICS & VRAM =============
+  VRAM_UPLOAD_INDEX_1: SNES_WRAM_BASE + 0x0045,   // VRAM upload scheduling indices
+  VRAM_UPLOAD_INDEX_2: SNES_WRAM_BASE + 0x0046,
+  GFX_FILE_POINTER_1: SNES_WRAM_BASE + 0x0101,    // Graphics file pointers
+  GFX_FILE_POINTER_2: SNES_WRAM_BASE + 0x0102,
 
-  // Chicken attack sprite type constant
-  CHICKEN_SPRITE_TYPE: 0x0B,                      // Chicken/Cucco sprite type ID (set sprite_C=1 for attack mode)
+  // ============= LEVEL DATA BUFFERS =============
+  LAYER_1_TILEMAP_BUFFER: SNES_WRAM_BASE + 0x1BE6, // Layer 1 VRAM upload staging (128 bytes)
+  LAYER_2_TILEMAP_BUFFER: SNES_WRAM_BASE + 0x1CE8, // Layer 2 VRAM upload staging (256 bytes)
 
-  // ============= OVERLORD ARRAYS (8 slots 0-7) =============
-  // Overlords are special objects that spawn other objects (traps, factories, etc.)
-  OVERLORD_TYPE: SNES_WRAM_BASE + 0x0B00,         // [0x08] Overlord type (0x1A = bomb trap)
-  OVERLORD_X_LOW: SNES_WRAM_BASE + 0x0B08,        // [0x08] Overlord X coordinate (low byte)
-  OVERLORD_X_HIGH: SNES_WRAM_BASE + 0x0B10,       // [0x08] Overlord X coordinate (high byte)
-  OVERLORD_Y_LOW: SNES_WRAM_BASE + 0x0B18,        // [0x08] Overlord Y coordinate (low byte)
-  OVERLORD_Y_HIGH: SNES_WRAM_BASE + 0x0B20,       // [0x08] Overlord Y coordinate (high byte)
-  OVERLORD_FLOOR: SNES_WRAM_BASE + 0x0B28,        // [0x08] Overlord floor/layer
-  OVERLORD_ROOM: SNES_WRAM_BASE + 0x0B30,         // [0x08] Overlord room
-  OVERLORD_SPAWNED_ID: SNES_WRAM_BASE + 0x0B38,   // [0x08] Spawned sprite ID
-
-  // ============= SPRITE/ENEMY ARRAYS (16 slots each) =============
-  // Position & Movement
-  SPRITE_Y_LOW: SNES_WRAM_BASE + 0x0D00,          // [0x10] Sprite Y coordinate (low byte)
-  SPRITE_X_LOW: SNES_WRAM_BASE + 0x0D10,          // [0x10] Sprite X coordinate (low byte)
-  SPRITE_Y_HIGH: SNES_WRAM_BASE + 0x0D20,         // [0x10] Sprite Y coordinate (high byte)
-  SPRITE_X_HIGH: SNES_WRAM_BASE + 0x0D30,         // [0x10] Sprite X coordinate (high byte)
-  SPRITE_Y_VEL: SNES_WRAM_BASE + 0x0D40,          // [0x10] Sprite Y velocity
-  SPRITE_X_VEL: SNES_WRAM_BASE + 0x0D50,          // [0x10] Sprite X velocity
-
-  // State & Type
-  SPRITE_STATE: SNES_WRAM_BASE + 0x0DD0,          // [0x10] Sprite state (0=inactive, 0x09=active)
-  SPRITE_TYPE: SNES_WRAM_BASE + 0x0E20,           // [0x10] Sprite type ID array
-  SPRITE_SUBTYPE: SNES_WRAM_BASE + 0x0E30,        // [0x10] Sprite subtype/variant
-
-  // Visual & Physics Properties
-  SPRITE_FLOOR: SNES_WRAM_BASE + 0x0F20,          // [0x10] Floor level (for multilevel rooms)
-  SPRITE_OAM_FLAGS: SNES_WRAM_BASE + 0x0F50,      // [0x10] OAM flags (palette, flip, priority) - derived from flags3 & 0x0F
-  SPRITE_GRAPHICS: SNES_WRAM_BASE + 0x0DC0,       // [0x10] Graphics/animation frame (0=default frame)
-  SPRITE_ROOM: SNES_WRAM_BASE + 0x0C9A,           // [0x10] Room sprite belongs to
-  SPRITE_PALETTE: SNES_WRAM_BASE + 0x0F50,        // [0x10] Palette, tile flipping, tile set (DEPRECATED - use SPRITE_OAM_FLAGS)
-  SPRITE_HITBOX: SNES_WRAM_BASE + 0x0F60,         // [0x10] Hit box settings (bits 0-4)
-  SPRITE_HEIGHT: SNES_WRAM_BASE + 0x0F70,         // [0x10] Z-position (height/shadow distance)
-  SPRITE_AI_STATE: SNES_WRAM_BASE + 0x0D80,       // [0x10] AI state/behavior index
-  SPRITE_A: SNES_WRAM_BASE + 0x0D90,              // [0x10] Sprite behavior flag A
-  SPRITE_B: SNES_WRAM_BASE + 0x0DA0,              // [0x10] Sprite behavior flag B (chicken hit counter - set to 35+ for continuous attack)
-  SPRITE_C: SNES_WRAM_BASE + 0x0DB0,              // [0x10] Sprite behavior flag C (chicken attack mode, etc.)
-  SPRITE_D: SNES_WRAM_BASE + 0x0DE0,              // [0x10] Sprite behavior flag D
-  SPRITE_E: SNES_WRAM_BASE + 0x0E90,              // [0x10] Sprite behavior flag E
-  SPRITE_F: SNES_WRAM_BASE + 0x0EA0,              // [0x10] Sprite behavior flag F
-  SPRITE_G: SNES_WRAM_BASE + 0x0ED0,              // [0x10] Sprite behavior flag G
-  SPRITE_PAUSE: SNES_WRAM_BASE + 0x0F00,          // [0x10] Sprite pause flag
-  SPRITE_DELAY_TIMER: SNES_WRAM_BASE + 0x0F80,    // [0x10] Auxiliary delay timer
-  SPRITE_Z_VEL: SNES_WRAM_BASE + 0x0D60,          // [0x10] Sprite Z velocity (vertical/jump)
-  SPRITE_Z: SNES_WRAM_BASE + 0x0DF0,              // [0x10] Sprite Z position (height)
-  SPRITE_N: SNES_WRAM_BASE + 0x0BC0,              // [0x10] Sprite index/slot identifier
-  SPRITE_DIE_ACTION: SNES_WRAM_BASE + 0x0CBA,     // [0x10] Death action/behavior
-
-  // Combat & Behavior Properties (loaded from ROM tables during sprite initialization)
-  SPRITE_HEALTH: SNES_WRAM_BASE + 0x0E50,         // [0x10] Sprite health points
-  SPRITE_BUMP_DAMAGE: SNES_WRAM_BASE + 0x0CD2,    // [0x10] Contact damage dealt to Link
-  SPRITE_DEFL_BITS: SNES_WRAM_BASE + 0x0CAA,      // [0x10] Weapon deflection bits (what bounces off)
-  SPRITE_FLAGS: SNES_WRAM_BASE + 0x0B6B,          // [0x10] Sprite behavior flags
-  SPRITE_FLAGS2: SNES_WRAM_BASE + 0x0E40,         // [0x10] Additional behavior flags
-  SPRITE_FLAGS3: SNES_WRAM_BASE + 0x0E60,         // [0x10] OAM and behavior flags
-  SPRITE_FLAGS4: SNES_WRAM_BASE + 0x0F60,         // [0x10] More behavior flags
-  SPRITE_FLAGS5: SNES_WRAM_BASE + 0x0BE0,         // [0x10] Additional behavior flags
+  // ============= MAP16 TILES (DECOMPRESSED) =============
+  MAP16_LOW_BYTES: SNES_WRAM_BASE + 0xC800,       // Map16 tile data low bytes (0x3800 bytes)
+  MAP16_HIGH_BYTES: SNES_WRAM_BASE + 0xFC00,      // Map16 tile data high bytes (0x3800 bytes)
 };
 
-// Bottle content values
-const BOTTLE_CONTENTS = {
-  NO_BOTTLE: 0x00,
-  EMPTY: 0x02,
-  RED_POTION: 0x03,
-  GREEN_POTION: 0x04,
-  BLUE_POTION: 0x05,
-  FAIRY: 0x06,
-  BEE: 0x07,
-  GOOD_BEE: 0x08
+// Power-up type constants
+const POWERUP_TYPES = {
+  SMALL: 0x00,
+  SUPER: 0x01,
+  CAPE: 0x02,
+  FIRE: 0x03
 };
 
-// Equipment values
-const EQUIPMENT_VALUES = {
-  SWORD: {
-    NONE: 0x00,
-    FIGHTER: 0x01,
-    MASTER: 0x02,
-    TEMPERED: 0x03,
-    GOLDEN: 0x04
-  },
-  SHIELD: {
-    NONE: 0x00,
-    BLUE: 0x01,
-    RED: 0x02,
-    MIRROR: 0x03
-  },
-  ARMOR: {
-    GREEN: 0x00,
-    BLUE: 0x01,
-    RED: 0x02
-  },
-  GLOVES: {
-    NONE: 0x00,
-    POWER: 0x01,
-    TITAN: 0x02
-  }
+// Reserve item type constants
+const RESERVE_ITEMS = {
+  NONE: 0x00,
+  MUSHROOM: 0x01,
+  FIRE_FLOWER: 0x02,
+  STAR: 0x03,
+  FEATHER: 0x04
 };
 
-// Dungeon IDs
-const DUNGEONS = {
-  HYRULE_CASTLE: 0x00,
-  EASTERN_PALACE: 0x02,
-  DESERT_PALACE: 0x03,
-  TOWER_HERA: 0x05,
-  AGAHNIM_TOWER: 0x04,
-  SWAMP_PALACE: 0x06,
-  PALACE_DARKNESS: 0x08,
-  THIEVES_TOWN: 0x0B,
-  SKULL_WOODS: 0x07,
-  MISERY_MIRE: 0x09,
-  ICE_PALACE: 0x0A,
-  TURTLE_ROCK: 0x0C,
-  GANONS_TOWER: 0x0D
+// Yoshi color constants
+const YOSHI_COLORS = {
+  GREEN: 0x00,
+  YELLOW: 0x01,
+  RED: 0x02,
+  BLUE: 0x03
 };
 
-// Room IDs for warping
-const ROOM_IDS = {
-  // Dungeon Entrances
-  EASTERN_PALACE: 0xC9,
-  DESERT_PALACE_MAIN: 0x83,
-  DESERT_PALACE_BACK: 0x63,
-  TOWER_HERA: 0x77,
-  PALACE_DARKNESS: 0x4A,
-  SWAMP_PALACE: 0x28,
-  SKULL_WOODS: 0x58,
-  THIEVES_TOWN: 0xDB,
-  ICE_PALACE: 0x0E,
-  MISERY_MIRE: 0x98,
-  TURTLE_ROCK: 0xD6,
-  GANONS_TOWER: 0x0C,
-
-  // Special Locations
-  LINKS_HOUSE: 0x104,
-  SANCTUARY: 0x12,
-  KAKARIKO_SHOP: 0x1F,
-  LOST_WOODS_SHOP: 0x10F,
-  DEATH_MOUNTAIN_SHOP: 0xFF,
-  LAKE_HYLIA_SHOP: 0x10E,
-  DARK_WORLD_POTION_SHOP: 0x10F,
-
-  // Boss Rooms
-  ARMOS_KNIGHTS: 0xC8,     // Eastern Palace
-  LANMOLAS: 0x33,           // Desert Palace
-  MOLDORM: 0x07,            // Tower of Hera
-  HELMASAUR: 0x5A,          // Palace of Darkness
-  ARRGHUS: 0x06,            // Swamp Palace
-  MOTHULA: 0x29,            // Skull Woods
-  BLIND: 0xAC,              // Thieves' Town
-  KHOLDSTARE: 0xDE,         // Ice Palace
-  VITREOUS: 0x90,           // Misery Mire
-  TRINEXX: 0xA4,            // Turtle Rock
-  AGAHNIM_1: 0x20,          // Agahnim Tower
-  AGAHNIM_2: 0x1C,          // Ganon's Tower
-  GANON: 0x00               // Pyramid
-};
-
-// Game modes
-const GAME_MODES = {
-  INGAME: [0x07, 0x09, 0x0B],
-  DEATH: [0x12],
-  ENDGAME: [0x19, 0x1A],
-  DUNGEON: 0x07,
-  OVERWORLD: 0x09,
-  SPECIAL: 0x0B,
-  LOADING: 0x0F,
-  TRANSITION: 0x11
-};
-
-// Sprite/Enemy Type IDs (common enemies)
+// Common sprite IDs (partial list - to be expanded during implementation)
 const SPRITE_TYPES = {
-  // Working enemies (HP > 0, < 255) - Verified with correct sprite IDs
-  OCTOROK: 0x08,          // Red octorok
-  BALL_AND_CHAIN: 0x6A,   // Ball and chain trooper
-  SNAPDRAGON: 0x0E,       // Plant enemy
-  OCTOBALLOON: 0x0F,      // Flying octopus
-  HINOX: 0x11,            // Cyclops-like enemy
-  MINI_HELMASAUR: 0x13,   // Small lizard (actual mini helmasaur)
-  MINI_MOLDORM: 0x18,     // Mini moldorm (labeled as "Mini Helmasaur" in UI)
-  SLUGGULA: 0x20,         // Sluggula (labeled as "Bomb Guy" in UI)
-  SOLDIER_BLUE: 0x41,     // Blue sword soldier
-  SOLDIER_GREEN: 0x42,    // Green sword soldier
-  BEE: 0x79,              // Hostile bee (attacks player)
-  LYNEL: 0xD0,            // Lynel - tough fire-breathing centaur (Death Mountain)
+  // Standard Enemies
+  GREEN_KOOPA_TROOPA: 0x01,
+  RED_KOOPA_TROOPA: 0x02,
+  YELLOW_KOOPA_TROOPA: 0x03,
+  GREEN_KOOPA_PARATROOPA: 0x04,
+  RED_KOOPA_PARATROOPA: 0x05,
+  YELLOW_KOOPA_PARATROOPA: 0x06,
+  HOPPING_FLAME: 0x07,
+  BUZZY_BEETLE: 0x08,
+  SPINY: 0x09,
+  CHEEP_CHEEP: 0x0A,
+  GOOMBA: 0x0B,
+  PIRANHA_PLANT: 0x0C,
+  VOLCANO_LOTUS: 0x0D,
+  BOO: 0x0E,
+  BOO_BLOCK: 0x0F,
+  SHELL_KICKED: 0x10,
+  BUZZY_SHELL_KICKED: 0x11,
 
-  // Other sprite types (not for spawning - broken or bosses)
-  OCTOROK_4_WAY: 0x0C,
-  MOBLIN: 0x12,           // HP varies
-  KEESE: 0x15,            // Spawns anti-fairy
-  RED_BARI: 0x23,         // Red electric chu
-  BLUE_BARI: 0x24,        // Blue electric chu
-  ARMOS: 0x19,            // Broken
-  GIBDO: 0x21,            // Broken
-  STALFOS_KNIGHT: 0x1E,   // HP 0
-  CROW: 0x27,             // HP 255
-  BLADE_TRAP: 0x20
+  // Flying/Air Enemies
+  BULLET_BILL: 0x18,
+  TORPEDO_TED: 0x19,
+  WIGGLER: 0x1A,
+  REX: 0x1B,
+  SWOOPER: 0x1C,
+
+  // Misc Enemies
+  MONTY_MOLE: 0x1D,
+  SUMO_BROTHER: 0x1E,
+  AMAZING_FLYIN_HAMMER_BROTHER: 0x1F,
+  DRY_BONES: 0x20,
+  BOO_CIRCLE: 0x21,
+  CHARGIN_CHUCK: 0x22,
+  THWOMP: 0x23,
+  MAGIKOOPA: 0x24,
+
+  // Bosses
+  REZNOR: 0x30,
+  BOWSER: 0x31,
+
+  // Items/Power-ups (spawnable)
+  MUSHROOM: 0x74,
+  FIRE_FLOWER: 0x75,
+  CAPE_FEATHER: 0x76,
+  STAR_POWER: 0x77,
+  YOSHI_EGG: 0x78,
+  ONE_UP_MUSHROOM: 0x79,
+  COIN_FROM_BLOCK: 0x7A,
+  SPRINGBOARD: 0x7B,
+  P_SWITCH: 0x7C,
+  VINE: 0x7D,
+  KEY: 0x7E,
+  TRAMPOLINE: 0x7F,
+
+  // Platform sprites
+  MOVING_PLATFORM: 0x35,
+  FALLING_PLATFORM: 0x36,
+
+  // Other
+  BOB_OMB: 0x3D,
+  BANZAI_BILL: 0x3E
 };
 
-// ROM Sprite Initialization Tables
-// These tables contain the proper initialization values for sprite properties
-// Extracted from zelda3 source code (sprite.c) - indexed by sprite type ID
-// Only includes verified working enemies with proper sprite IDs
-const SPRITE_ROM_INIT = {
-  // Format: { health, bumpDamage, deflBits, flags, flags2, flags3, flags4, flags5 }
-
-  // 10 Working Enemies (Verified)
-  [SPRITE_TYPES.OCTOROK]: {
-    health: 2,
-    bumpDamage: 1,
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x02,
-    flags3: 0x1D,
-    flags4: 0x00,
-    flags5: 0x02
-  },
-  [SPRITE_TYPES.BALL_AND_CHAIN]: {
-    health: 16,
-    bumpDamage: 3,
-    deflBits: 0x00,
-    flags: 0x60,
-    flags2: 0x09,
-    flags3: 0x1D,
-    flags4: 0x12,
-    flags5: 0x92
-  },
-  [SPRITE_TYPES.SNAPDRAGON]: {
-    health: 12,
-    bumpDamage: 8,
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x04,
-    flags3: 0x09,
-    flags4: 0x00,
-    flags5: 0x97
-  },
-  [SPRITE_TYPES.OCTOBALLOON]: {
-    health: 2,
-    bumpDamage: 1,
-    deflBits: 0x00,
-    flags: 0x20,
-    flags2: 0x84,
-    flags3: 0x9D,
-    flags4: 0x02,
-    flags5: 0x80
-  },
-  [SPRITE_TYPES.HINOX]: {
-    health: 20,
-    bumpDamage: 8,
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x05,
-    flags3: 0x01,
-    flags4: 0x03,
-    flags5: 0x94
-  },
-  [SPRITE_TYPES.MINI_HELMASAUR]: {
-    health: 4,
-    bumpDamage: 3,
-    deflBits: 0x00,
-    flags: 0x01,
-    flags2: 0x01,
-    flags3: 0x11,
-    flags4: 0x00,
-    flags5: 0x07
-  },
-  [SPRITE_TYPES.MINI_MOLDORM]: {
-    health: 3,
-    bumpDamage: 3,
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x04,
-    flags3: 0x07,
-    flags4: 0x00,
-    flags5: 0x92
-  },
-  [SPRITE_TYPES.SLUGGULA]: {
-    health: 8,
-    bumpDamage: 6,
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x01,
-    flags3: 0x1B,
-    flags4: 0x00,
-    flags5: 0x04
-  },
-  [SPRITE_TYPES.SOLDIER_BLUE]: {
-    health: 6,
-    bumpDamage: 1,
-    deflBits: 0x00,
-    flags: 0x61,
-    flags2: 0x08,
-    flags3: 0x19,
-    flags4: 0x12,
-    flags5: 0x91
-  },
-  [SPRITE_TYPES.SOLDIER_GREEN]: {
-    health: 4,
-    bumpDamage: 1,
-    deflBits: 0x00,
-    flags: 0x61,
-    flags2: 0x08,
-    flags3: 0x1B,
-    flags4: 0x12,
-    flags5: 0x91
-  },
-  [SPRITE_TYPES.BEE]: {
-    health: 2,
-    bumpDamage: 3,
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x02,
-    flags3: 0x1D,
-    flags4: 0x00,
-    flags5: 0x02
-  },
-  [SPRITE_TYPES.LYNEL]: {
-    health: 28,      // Very tough enemy
-    bumpDamage: 8,   // Heavy contact damage
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x05,
-    flags3: 0x01,
-    flags4: 0x03,
-    flags5: 0x94
-  },
-
-  // Boss: Helmasaur King (0x5A) - Palace of Darkness boss
-  // WARNING: May be unstable outside boss room
-  [0x5A]: {
-    health: 24,      // Boss-level health
-    bumpDamage: 8,   // Heavy contact damage
-    deflBits: 0x00,
-    flags: 0x00,
-    flags2: 0x05,
-    flags3: 0x01,
-    flags4: 0x03,
-    flags5: 0x94
-  },
-
-  // Chicken/Cucco (0x0B) - From ROM table kSpriteInit_DeflBits[0x0B] = 0x48
-  // deflBits 0x48 has bits 0x40 and 0x08 set
-  // Adding bit 0x80 for off-screen persistence: 0x48 | 0x80 = 0xC8
-  [0x0B]: {
-    health: 1,
-    bumpDamage: 0,
-    deflBits: 0xC8,   // 0x48 (ROM value) | 0x80 (prevent pause/despawn)
-    flags: 0x00,
-    flags2: 0x08,     // Standard sprite behavior
-    flags3: 0x1B,     // Rendering and persistence flags
-    flags4: 0x00,
-    flags5: 0x90      // Additional persistence
-  }
+// Game mode constants
+const GAME_MODES = {
+  OVERWORLD: 0x0C,
+  LEVEL: 0x0E,
+  TITLE_SCREEN: 0x00,
+  FILE_SELECT: 0x01,
+  GAME_OVER: 0x0B,
+  DEATH_ANIMATION: 0x10
 };
 
+// Controller button bit flags
+const CONTROLLER_BUTTONS = {
+  B: 0x80,
+  Y: 0x40,
+  SELECT: 0x20,
+  START: 0x10,
+  UP: 0x08,
+  DOWN: 0x04,
+  LEFT: 0x02,
+  RIGHT: 0x01,
+  A: 0x80,      // Same bit as B (different set)
+  X: 0x40,      // Same bit as Y (different set)
+  L: 0x20,      // Same bit as SELECT (different set)
+  R: 0x10       // Same bit as START (different set)
+};
+
+// Export everything
 module.exports = {
   MEMORY_ADDRESSES,
-  BOTTLE_CONTENTS,
-  EQUIPMENT_VALUES,
-  DUNGEONS,
-  ROOM_IDS,
-  GAME_MODES,
+  POWERUP_TYPES,
+  RESERVE_ITEMS,
+  YOSHI_COLORS,
   SPRITE_TYPES,
-  SPRITE_ROM_INIT,
-  WRAM_START,
-  SAVEDATA_START,
-  SNES_WRAM_BASE,
-  SNES_SAVEDATA_BASE
+  GAME_MODES,
+  CONTROLLER_BUTTONS,
+  SNES_WRAM_BASE
 };
