@@ -1362,9 +1362,10 @@ document.addEventListener('click', async (e) => {
     }
     // All other actions are SMW operations - use generic handler
     else {
-      // Get parameters from button dataset
+      // Get parameters from button dataset (check both data-amount and data-value for coins)
       const duration = button.dataset.duration ? parseInt(button.dataset.duration) : undefined;
-      const amount = button.dataset.amount ? parseInt(button.dataset.amount) : undefined;
+      const amount = button.dataset.amount ? parseInt(button.dataset.amount) :
+                     button.dataset.value ? parseInt(button.dataset.value) : undefined;
       const color = button.dataset.color ? parseInt(button.dataset.color) : undefined;
       const bossType = button.dataset.bossType ? parseInt(button.dataset.bossType) : undefined;
 

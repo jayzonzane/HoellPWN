@@ -287,7 +287,9 @@ class ExpandedGameOperations {
     try {
       const current = await this.readWithRetry(MEMORY_ADDRESSES.LIVES, 1);
       const newLives = Math.min(current[0] + count, 99); // Max 99 lives
+      // Write to both addresses to ensure it works in-game and overworld
       await this.writeWithRetry(MEMORY_ADDRESSES.LIVES, Buffer.from([newLives]));
+      await this.writeWithRetry(0x7E0DBE, Buffer.from([newLives])); // Alternate lives address
       console.log(`[addLife] Added ${count} life/lives (now ${newLives})`);
       return true;
     } catch (error) {
@@ -301,7 +303,9 @@ class ExpandedGameOperations {
     try {
       const current = await this.readWithRetry(MEMORY_ADDRESSES.LIVES, 1);
       const newLives = Math.max(current[0] - count, 0);
+      // Write to both addresses to ensure it works in-game and overworld
       await this.writeWithRetry(MEMORY_ADDRESSES.LIVES, Buffer.from([newLives]));
+      await this.writeWithRetry(0x7E0DBE, Buffer.from([newLives])); // Alternate lives address
       console.log(`[removeLife] Removed ${count} life/lives (now ${newLives})`);
       return true;
     } catch (error) {
@@ -645,16 +649,19 @@ class ExpandedGameOperations {
     try {
       console.log(`[makeEnemiesInvisible] Making enemies invisible for ${duration} seconds`);
 
-      // Store original OAM data
-      const originalOAM = await this.readWithRetry(MEMORY_ADDRESSES.OAM_SPRITE_TABLE, 544);
-
       // Hide all sprites by setting Y position off-screen
       const interval = setInterval(async () => {
-        // Set sprite Y positions to 240 (off-screen)
+        // Batch create buffer for all 128 sprite Y positions
+        // Each sprite in OAM is 4 bytes, Y position is at offset +1
+        const offscreenBuffer = Buffer.alloc(128);
+        offscreenBuffer.fill(240); // 240 = off-screen Y position
+
+        // Write all Y positions in a single batch for better performance
         for (let i = 0; i < 128; i++) {
-          await this.writeWithRetry(MEMORY_ADDRESSES.OAM_SPRITE_TABLE + (i * 4) + 1, Buffer.from([240]));
+          const yPosAddr = MEMORY_ADDRESSES.OAM_SPRITE_TABLE + (i * 4) + 1;
+          await this.writeWithRetry(yPosAddr, Buffer.from([240]));
         }
-      }, 16); // ~60fps refresh
+      }, 8); // ~120fps refresh for smoother invisibility
 
       this.activeTimers.set('invisibleEnemies', interval);
 
@@ -882,6 +889,12 @@ class ExpandedGameOperations {
 
         // Treat as signed byte
         let speed = xSpeed[0] << 24 >> 24;
+
+        // If speed is very low, set a minimum to make the effect noticeable
+        if (Math.abs(speed) > 0 && Math.abs(speed) < 8) {
+          speed = speed > 0 ? 16 : -16;
+        }
+
         speed = Math.floor(speed * multiplier);
         speed = Math.max(-128, Math.min(127, speed));
 
@@ -908,9 +921,9 @@ class ExpandedGameOperations {
     return await this.modifyMarioSpeed(0.5, duration);
   }
 
-  // Double speed
+  // Double speed (use 3x multiplier for more noticeable effect)
   async doubleSpeed(duration = 30) {
-    return await this.modifyMarioSpeed(2.0, duration);
+    return await this.modifyMarioSpeed(3.0, duration);
   }
 
   // Modify jump height
@@ -1075,9 +1088,17 @@ class ExpandedGameOperations {
       console.log(`[disableRunning] Disabling running for ${duration} seconds`);
 
       const interval = setInterval(async () => {
-        // Set P-meter to 0 (prevents running/flying)
+        // Set P-meter to 0 AND cap horizontal speed
         await this.writeWithRetry(MEMORY_ADDRESSES.P_METER, Buffer.from([0x00]));
-      }, 16); // ~60fps refresh
+
+        // Cap speed to prevent running
+        const xSpeed = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, 1);
+        let speed = xSpeed[0] << 24 >> 24;
+        if (Math.abs(speed) > 16) {
+          speed = speed > 0 ? 16 : -16;
+          await this.writeWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, Buffer.from([speed & 0xFF]));
+        }
+      }, 8); // ~120fps refresh for responsive control
 
       this.activeTimers.set('disableRunning', interval);
 
@@ -1100,9 +1121,17 @@ class ExpandedGameOperations {
       console.log(`[forceContinuousRun] Forcing continuous run for ${duration} seconds`);
 
       const interval = setInterval(async () => {
-        // Set P-meter to max (112 = max speed)
+        // Set P-meter to max AND boost horizontal speed
         await this.writeWithRetry(MEMORY_ADDRESSES.P_METER, Buffer.from([112]));
-      }, 16); // ~60fps refresh
+
+        // Boost speed to running level
+        const xSpeed = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, 1);
+        let speed = xSpeed[0] << 24 >> 24;
+        if (Math.abs(speed) > 0 && Math.abs(speed) < 32) {
+          speed = speed > 0 ? 40 : -40;
+          await this.writeWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, Buffer.from([speed & 0xFF]));
+        }
+      }, 8); // ~120fps refresh for responsive control
 
       this.activeTimers.set('forceContinuousRun', interval);
 
