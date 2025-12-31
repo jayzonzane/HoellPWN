@@ -12,6 +12,7 @@ class ItemRestorationManager {
 
   /**
    * Temporarily remove an item and schedule restoration
+   * Adds time if already disabled instead of rejecting
    * @param {string} itemName - Name of item (e.g., 'bow', 'hammer', 'boots')
    * @param {number} durationSeconds - How long to remove it for
    * @returns {Promise<Object>} Result object with success status
@@ -22,14 +23,38 @@ class ItemRestorationManager {
       return { success: false, error: `Unknown item: ${itemName}` };
     }
 
-    // Check if item is already disabled - reject if so (per user requirement)
+    // Check if item is already disabled - ADD TIME instead of rejecting
     if (this.activeRestorations.has(itemName)) {
       const existing = this.activeRestorations.get(itemName);
-      const remaining = Math.ceil((existing.restoreAt - Date.now()) / 1000);
+      const remainingBefore = Math.ceil((existing.restoreAt - Date.now()) / 1000);
+
+      // Add the new duration to the restore time
+      const addedMs = durationSeconds * 1000;
+      existing.restoreAt += addedMs;
+
+      const remainingAfter = Math.ceil((existing.restoreAt - Date.now()) / 1000);
+
+      // Clear old timer and set new one
+      const oldTimer = this.timers.get(itemName);
+      if (oldTimer) {
+        clearTimeout(oldTimer);
+      }
+
+      const newTimer = setTimeout(() => {
+        this.restoreItem(itemName);
+      }, existing.restoreAt - Date.now());
+
+      this.timers.set(itemName, newTimer);
+
+      console.log(`🚫 Added ${durationSeconds}s to ${itemConfig.displayName} disable. Was ${remainingBefore}s, now ${remainingAfter}s remaining`);
+
       return {
-        success: false,
-        error: `${itemConfig.displayName} is already disabled (${remaining}s remaining)`,
-        alreadyDisabled: true
+        success: true,
+        itemName,
+        displayName: itemConfig.displayName,
+        timeAdded: durationSeconds,
+        totalRemaining: remainingAfter,
+        message: `Added ${durationSeconds}s to ${itemConfig.displayName} disable! Now ${remainingAfter}s remaining`
       };
     }
 

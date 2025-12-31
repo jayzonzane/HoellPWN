@@ -83,7 +83,10 @@ class SNIClient {
     console.log(`Selected device: ${deviceInfo.uri}, using address space: ${this.addressSpace === 0 ? 'FxPakPro' : 'SnesABus'}`);
   }
 
-  async readMemory(address, size) {
+  async readMemory(address, size, retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 100; // ms
+
     if (!this.memoryClient) {
       throw new Error('Not connected to SNI');
     }
@@ -116,14 +119,34 @@ class SNIClient {
       original: address.toString(16),
       adjusted: adjustedAddress.toString(16),
       size,
-      addressSpace: this.addressSpace === 0 ? 'FxPakPro' : 'SnesABus'
+      addressSpace: this.addressSpace === 0 ? 'FxPakPro' : 'SnesABus',
+      retry: retryCount
     });
 
     return new Promise((resolve, reject) => {
-      this.memoryClient.SingleRead(request, (err, response) => {
+      this.memoryClient.SingleRead(request, async (err, response) => {
         if (err) {
-          console.error('Read memory error:', err);
-          reject(err);
+          console.error(`Read memory error (attempt ${retryCount + 1}/${MAX_RETRIES + 1}):`, err.message);
+
+          // Retry on connection errors
+          if (retryCount < MAX_RETRIES && (
+            err.code === 14 || // UNAVAILABLE
+            err.code === 4 ||  // DEADLINE_EXCEEDED
+            err.message.includes('UNAVAILABLE') ||
+            err.message.includes('Connection') ||
+            err.message.includes('timeout')
+          )) {
+            console.log(`Retrying read in ${RETRY_DELAY}ms...`);
+            await new Promise(res => setTimeout(res, RETRY_DELAY * (retryCount + 1)));
+            try {
+              const result = await this.readMemory(address, size, retryCount + 1);
+              resolve(result);
+            } catch (retryErr) {
+              reject(retryErr);
+            }
+          } else {
+            reject(err);
+          }
         } else {
           const data = response.response.data;
           console.log('Read data:', data);
@@ -133,7 +156,10 @@ class SNIClient {
     });
   }
 
-  async writeMemory(address, data) {
+  async writeMemory(address, data, retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 100; // ms
+
     if (!this.memoryClient) {
       throw new Error('Not connected to SNI');
     }
@@ -171,14 +197,34 @@ class SNIClient {
       original: address.toString(16),
       adjusted: adjustedAddress.toString(16),
       data: Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '),
-      addressSpace: this.addressSpace === 0 ? 'FxPakPro' : 'SnesABus'
+      addressSpace: this.addressSpace === 0 ? 'FxPakPro' : 'SnesABus',
+      retry: retryCount
     });
 
     return new Promise((resolve, reject) => {
-      this.memoryClient.SingleWrite(request, (err, response) => {
+      this.memoryClient.SingleWrite(request, async (err, response) => {
         if (err) {
-          console.error('Write memory error:', err);
-          reject(err);
+          console.error(`Write memory error (attempt ${retryCount + 1}/${MAX_RETRIES + 1}):`, err.message);
+
+          // Retry on connection errors
+          if (retryCount < MAX_RETRIES && (
+            err.code === 14 || // UNAVAILABLE
+            err.code === 4 ||  // DEADLINE_EXCEEDED
+            err.message.includes('UNAVAILABLE') ||
+            err.message.includes('Connection') ||
+            err.message.includes('timeout')
+          )) {
+            console.log(`Retrying write in ${RETRY_DELAY}ms...`);
+            await new Promise(res => setTimeout(res, RETRY_DELAY * (retryCount + 1)));
+            try {
+              const result = await this.writeMemory(address, data, retryCount + 1);
+              resolve(result);
+            } catch (retryErr) {
+              reject(retryErr);
+            }
+          } else {
+            reject(err);
+          }
         } else {
           console.log('Write successful');
           resolve(response);

@@ -22,6 +22,12 @@ let customGifts = [];
 // Track gift image overrides
 let giftImageOverrides = {};
 
+// Global storage for active and archived gifts data
+window.allGiftsData = {
+  active: {},
+  archived: []
+};
+
 // Get gift name (with override applied)
 function getGiftName(originalName, coinValue) {
   const key = `${coinValue}-${originalName}`;
@@ -33,28 +39,83 @@ async function populateGiftDatabase() {
   const container = document.getElementById('gift-database-list');
   container.innerHTML = '';
 
-  if (typeof TIKTOK_GIFTS === 'undefined') {
-    container.innerHTML = '<p>Gift database not loaded</p>';
-    return;
-  }
-
   // Load active gift images
   await loadActiveGiftImages();
 
-  // Create flat list of all gifts
+  // Create flat list of all active gifts from active-gifts.json
   const allGifts = [];
-  Object.entries(TIKTOK_GIFTS).forEach(([coins, giftNames]) => {
-    giftNames.forEach(name => {
-      allGifts.push({ name, coins: parseInt(coins) });
-    });
-  });
 
-  // Sort by coin value, then name
-  allGifts.sort((a, b) => a.coins - b.coins || a.name.localeCompare(b.name));
+  try {
+    // Load from active-gifts.json (updated database)
+    const result = await window.sniAPI.getActiveGifts();
+    if (result && result.success && result.activeGifts && result.activeGifts.gifts) {
+      // Store active gifts globally for mapping dropdowns
+      window.allGiftsData.active = result.activeGifts.gifts;
+
+      // activeGifts.gifts is organized by coin value
+      Object.entries(result.activeGifts.gifts).forEach(([coins, giftNames]) => {
+        giftNames.forEach(name => {
+          allGifts.push({ name, coins: parseInt(coins), archived: false });
+        });
+      });
+    } else if (typeof TIKTOK_GIFTS !== 'undefined') {
+      // Fallback to hardcoded TIKTOK_GIFTS if active-gifts.json fails
+      console.warn('Failed to load active-gifts.json, falling back to TIKTOK_GIFTS');
+      window.allGiftsData.active = TIKTOK_GIFTS;
+      Object.entries(TIKTOK_GIFTS).forEach(([coins, giftNames]) => {
+        giftNames.forEach(name => {
+          allGifts.push({ name, coins: parseInt(coins), archived: false });
+        });
+      });
+    } else {
+      container.innerHTML = '<p>Gift database not loaded</p>';
+      return;
+    }
+  } catch (error) {
+    console.error('Error loading active gifts:', error);
+    // Fallback to TIKTOK_GIFTS
+    if (typeof TIKTOK_GIFTS !== 'undefined') {
+      window.allGiftsData.active = TIKTOK_GIFTS;
+      Object.entries(TIKTOK_GIFTS).forEach(([coins, giftNames]) => {
+        giftNames.forEach(name => {
+          allGifts.push({ name, coins: parseInt(coins), archived: false });
+        });
+      });
+    } else {
+      container.innerHTML = '<p>Error loading gift database</p>';
+      return;
+    }
+  }
+
+  // Load and add archived gifts
+  try {
+    const archivedResult = await window.sniAPI.loadArchivedGifts();
+    if (archivedResult && archivedResult.success && archivedResult.archivedGifts) {
+      const archivedGifts = archivedResult.archivedGifts.gifts || [];
+      // Store archived gifts globally for mapping dropdowns
+      window.allGiftsData.archived = archivedGifts;
+
+      archivedGifts.forEach(gift => {
+        allGifts.push({
+          name: gift.name,
+          coins: gift.coins,
+          archived: true
+        });
+      });
+    }
+  } catch (error) {
+    console.error('Error loading archived gifts:', error);
+  }
+
+  // Sort by archived status (active first), then coin value, then name
+  allGifts.sort((a, b) => {
+    if (a.archived !== b.archived) return a.archived ? 1 : -1;
+    return a.coins - b.coins || a.name.localeCompare(b.name);
+  });
 
   // Render each gift
   allGifts.forEach(gift => {
-    const item = createUnifiedGiftItem(gift.name, gift.coins);
+    const item = createUnifiedGiftItem(gift.name, gift.coins, gift.archived);
     container.appendChild(item);
   });
 
@@ -63,27 +124,44 @@ async function populateGiftDatabase() {
 }
 
 // Create a unified gift item with 20x20 thumbnail and expandable details
-function createUnifiedGiftItem(giftName, coins) {
+function createUnifiedGiftItem(giftName, coins, archived = false) {
   const container = document.createElement('div');
   container.className = 'unified-gift-item';
+  if (archived) {
+    container.classList.add('archived-gift');
+  }
   container.dataset.giftName = giftName;
   container.dataset.coins = coins;
+  container.dataset.archived = archived;
 
   // Main row (clickable to expand)
   const mainRow = document.createElement('div');
   mainRow.className = 'gift-main-row';
 
-  // Thumbnail (20x20px)
+  // Thumbnail (50x50px)
   const thumbnail = document.createElement('div');
   thumbnail.className = 'gift-thumbnail';
   const currentUrl = getCurrentImageUrl(giftName, coins);
+
+  // Debug: Log first few images
+  if (coins <= 5) {
+    console.log(`[Image URL] ${giftName} (${coins}): ${currentUrl}`);
+  }
+
   if (currentUrl) {
     const img = document.createElement('img');
     img.src = currentUrl;
     img.alt = giftName;
-    img.onerror = () => {
-      thumbnail.innerHTML = '<span class="no-image-icon">❌</span>';
+    img.title = `${giftName} (${coins} coins)`;
+
+    // Debug: Log image load events
+    img.onload = () => {
+      if (coins <= 5) console.log(`[Image Loaded] ${giftName} (${coins})`);
     };
+    img.onerror = (e) => {
+      if (coins <= 5) console.error(`[Image Error] ${giftName} (${coins}):`, e);
+    };
+
     thumbnail.appendChild(img);
   } else {
     thumbnail.innerHTML = '<span class="no-image-icon">📦</span>';
@@ -96,6 +174,16 @@ function createUnifiedGiftItem(giftName, coins) {
   const name = document.createElement('div');
   name.className = 'gift-name-display';
   name.textContent = getGiftName(giftName, coins);
+
+  // Add archived badge if applicable
+  if (archived) {
+    const archivedBadge = document.createElement('span');
+    archivedBadge.className = 'archived-badge';
+    archivedBadge.textContent = 'ARCHIVED';
+    archivedBadge.title = 'This gift is no longer active on TikTok';
+    name.appendChild(document.createTextNode(' '));
+    name.appendChild(archivedBadge);
+  }
 
   const coinValue = document.createElement('div');
   coinValue.className = 'gift-coins-display';
@@ -134,11 +222,67 @@ function createUnifiedGiftItem(giftName, coins) {
   const currentOverride = giftImageOverrides[key] || '';
   imageGroup.innerHTML = `
     <label>Image URL:</label>
-    <input type="text" class="gift-image-url-input" value="${currentOverride}"
-           data-gift-name="${giftName}" data-coins="${coins}"
-           placeholder="${currentUrl || 'No image URL available'}">
+    <div class="image-url-row">
+      <input type="text" class="gift-image-url-input" value="${currentOverride}"
+             data-gift-name="${giftName}" data-coins="${coins}"
+             placeholder="${currentUrl || 'No image URL available'}">
+      <button class="download-image-btn" data-gift-name="${giftName}" data-coins="${coins}">⬇ Download</button>
+    </div>
     <div class="url-hint">Current: ${currentUrl ? currentUrl.substring(0, 50) + '...' : 'None'}</div>
   `;
+
+  // Add download button event listener
+  const downloadBtn = imageGroup.querySelector('.download-image-btn');
+  downloadBtn.addEventListener('click', async (e) => {
+    e.stopPropagation(); // Prevent row expansion
+    const urlInput = imageGroup.querySelector('.gift-image-url-input');
+    const url = urlInput.value.trim();
+
+    if (!url) {
+      alert('Please enter an image URL first');
+      return;
+    }
+
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = '⏳ Downloading...';
+
+    try {
+      const result = await window.sniAPI.downloadSingleGiftImage(giftName, coins, url);
+
+      if (result.success) {
+        downloadBtn.textContent = '✅ Downloaded!';
+
+        // Reload the gift database to show the new image
+        await loadActiveGiftImages();
+
+        // Update the thumbnail image
+        const img = thumbnail.querySelector('img');
+        if (img) {
+          const newUrl = getCurrentImageUrl(giftName, coins);
+          img.src = newUrl;
+        }
+
+        setTimeout(() => {
+          downloadBtn.textContent = '⬇ Download';
+          downloadBtn.disabled = false;
+        }, 2000);
+      } else {
+        downloadBtn.textContent = '❌ Failed';
+        alert('Download failed: ' + result.error);
+        setTimeout(() => {
+          downloadBtn.textContent = '⬇ Download';
+          downloadBtn.disabled = false;
+        }, 2000);
+      }
+    } catch (error) {
+      downloadBtn.textContent = '❌ Error';
+      alert('Error: ' + error.message);
+      setTimeout(() => {
+        downloadBtn.textContent = '⬇ Download';
+        downloadBtn.disabled = false;
+      }, 2000);
+    }
+  });
 
   details.appendChild(nameGroup);
   details.appendChild(imageGroup);
@@ -508,23 +652,66 @@ function generateCoinValueOptions() {
   return optionsHTML;
 }
 
+// Get all gifts within a coin range from active and archived data
+function getGiftsForCoinRangeLive(minCoins, maxCoins) {
+  const gifts = [];
+
+  // Add active gifts
+  if (window.allGiftsData.active && Object.keys(window.allGiftsData.active).length > 0) {
+    for (const [coins, giftNames] of Object.entries(window.allGiftsData.active)) {
+      const coinValue = parseInt(coins);
+      if (coinValue >= minCoins && coinValue <= maxCoins) {
+        giftNames.forEach(name => {
+          gifts.push({ name, coins: coinValue, archived: false });
+        });
+      }
+    }
+  } else if (typeof TIKTOK_GIFTS !== 'undefined') {
+    // Fallback to hardcoded TIKTOK_GIFTS
+    for (const [coins, giftNames] of Object.entries(TIKTOK_GIFTS)) {
+      const coinValue = parseInt(coins);
+      if (coinValue >= minCoins && coinValue <= maxCoins) {
+        giftNames.forEach(name => {
+          gifts.push({ name, coins: coinValue, archived: false });
+        });
+      }
+    }
+  }
+
+  // Add archived gifts
+  if (window.allGiftsData.archived && window.allGiftsData.archived.length > 0) {
+    window.allGiftsData.archived.forEach(gift => {
+      if (gift.coins >= minCoins && gift.coins <= maxCoins) {
+        gifts.push({ name: gift.name, coins: gift.coins, archived: true });
+      }
+    });
+  }
+
+  // Sort by archived status (active first), then coin value, then name
+  return gifts.sort((a, b) => {
+    if (a.archived !== b.archived) return a.archived ? 1 : -1;
+    return a.coins - b.coins || a.name.localeCompare(b.name);
+  });
+}
+
 // Generate gift options for a coin range (with overrides applied)
 function generateGiftOptionsForCoinValue(rangeValue, selectedGift = '') {
   let optionsHTML = '<option value="">Select a gift...</option>';
-  if (rangeValue && typeof getGiftsForCoinRange !== 'undefined') {
+  if (rangeValue) {
     // Parse range value (e.g., "1-5" or "1001-2000")
     const [minStr, maxStr] = rangeValue.split('-');
     const min = parseInt(minStr);
     const max = parseInt(maxStr);
 
     if (!isNaN(min) && !isNaN(max)) {
-      const giftsWithCoins = getGiftsForCoinRange(min, max);
+      const giftsWithCoins = getGiftsForCoinRangeLive(min, max);
       if (giftsWithCoins && giftsWithCoins.length > 0) {
         giftsWithCoins.forEach(giftObj => {
           // Apply name override if exists
           const displayName = getGiftName(giftObj.name, giftObj.coins);
           const selected = giftObj.name === selectedGift ? 'selected' : '';
-          optionsHTML += `<option value="${giftObj.name}" ${selected}>${displayName} (${giftObj.coins})</option>`;
+          const archivedLabel = giftObj.archived ? ' [ARCHIVED]' : '';
+          optionsHTML += `<option value="${giftObj.name}" ${selected} ${giftObj.archived ? 'class="archived-option"' : ''}>${displayName} (${giftObj.coins})${archivedLabel}</option>`;
         });
       }
     }
@@ -536,6 +723,9 @@ function generateGiftOptionsForCoinValue(rangeValue, selectedGift = '') {
 function convertInputsToSelects() {
   const inputs = document.querySelectorAll('.gift-input');
   inputs.forEach(input => {
+    const actionItem = input.closest('.action-item');
+    const hasDuration = actionItem && actionItem.classList.contains('action-item-with-duration');
+
     // Create container for both dropdowns
     const container = document.createElement('div');
     container.className = 'gift-dropdown-container';
@@ -570,8 +760,20 @@ function convertInputsToSelects() {
     container.appendChild(coinSelect);
     container.appendChild(giftSelect);
 
-    // Replace input with container
-    input.parentNode.replaceChild(container, input);
+    // For items with duration inputs, we need to preserve the grid layout
+    if (hasDuration) {
+      // Find the duration input (should be next sibling)
+      const durationInput = actionItem.querySelector('.duration-input');
+
+      // Replace input with container
+      input.parentNode.replaceChild(container, input);
+
+      // Make sure duration input is still visible and in the right place
+      // It should already be in the grid as the third column
+    } else {
+      // Replace input with container
+      input.parentNode.replaceChild(container, input);
+    }
   });
 }
 
@@ -762,6 +964,28 @@ async function loadGiftSettings() {
               durationInput.value = duration;
             }
           }
+        } else if (action === 'triggerChickenAttack' || action === 'triggerEnemyWaves' || action === 'triggerBeeSwarmWaves' || action === 'makeEnemiesInvisible') {
+          // Special handling for timed event actions (with duration)
+          const duration = mapping.params && mapping.params.duration;
+          const giftSelect = document.querySelector(`.gift-select[data-action="${action}"]`);
+          if (giftSelect && rangeValue) {
+            // Find and set the paired coin select
+            const pairedId = giftSelect.dataset.pairedSelectId;
+            const coinSelect = document.querySelector(`.coin-select[data-paired-gift-select="${pairedId}"]`);
+            if (coinSelect) {
+              coinSelect.value = rangeValue;
+              // Populate gift dropdown with gifts in this range
+              giftSelect.innerHTML = generateGiftOptionsForCoinValue(rangeValue, giftName);
+              giftSelect.disabled = false;
+              giftSelect.value = giftName;
+            }
+
+            // Also set the duration input
+            const durationInput = document.querySelector(`.duration-input[data-action="${action}"]`);
+            if (durationInput && duration) {
+              durationInput.value = duration;
+            }
+          }
         } else {
           // Standard handling for other actions
           const paramsStr = mapping.params ? JSON.stringify(mapping.params) : '';
@@ -926,6 +1150,11 @@ if (resetAllMappingsBtn) {
       if (result.success) {
         log('All gift mappings cleared!', 'success');
         await window.sniAPI.reloadGiftMappings();
+
+        // Force refresh overlay builder to reflect changes
+        if (typeof populateOverlayGiftSelection === 'function') {
+          await populateOverlayGiftSelection(true); // true = force refresh
+        }
       } else {
         log(`Failed to clear mappings: ${result.error}`, 'error');
       }
@@ -970,6 +1199,14 @@ saveBtn.addEventListener('click', async () => {
             itemName: itemName,
             duration: duration
           };
+        } else if (action === 'triggerChickenAttack' || action === 'triggerEnemyWaves' || action === 'triggerBeeSwarmWaves' || action === 'makeEnemiesInvisible') {
+          // Special handling for timed event actions (with duration input)
+          const durationInput = document.querySelector(`.duration-input[data-action="${action}"]`);
+          const duration = durationInput ? parseInt(durationInput.value) : 60;
+
+          mapping.params = {
+            duration: duration
+          };
         } else {
           // Standard param handling for other actions
           const paramsStr = select.dataset.params;
@@ -995,6 +1232,11 @@ saveBtn.addEventListener('click', async () => {
       // Reload the poller with new mappings
       await window.sniAPI.reloadGiftMappings();
       log('Gift mappings reloaded in poller', 'success');
+
+      // Force refresh overlay builder to reflect changes
+      if (typeof populateOverlayGiftSelection === 'function') {
+        await populateOverlayGiftSelection(true); // true = force refresh
+      }
     } else {
       log(`Failed to save: ${result.error}`, 'error');
     }
@@ -1041,6 +1283,11 @@ if (downloadAllImagesBtn) {
           currentDiv.textContent = `📁 Images saved to app data directory`;
         }
 
+        // Refresh the gift database to show downloaded images
+        log('Refreshing gift images display...', 'info');
+        await populateGiftDatabase();
+        log('Gift images display updated!', 'success');
+
         // Re-enable button after a delay
         setTimeout(() => {
           downloadAllImagesBtn.disabled = false;
@@ -1086,8 +1333,32 @@ window.sniAPI.onImageDownloadProgress((data) => {
 
 // ============= OVERLAY BUILDER =============
 
+// Track last known gift list and overlay state
+let lastKnownGiftList = null;
+let overlayGiftState = {}; // { giftName: { checked: true/false, customText: "..." } }
+
+// Save current overlay state
+function saveOverlayState() {
+  const checkboxes = document.querySelectorAll('.overlay-gift-checkbox');
+  const textInputs = document.querySelectorAll('.overlay-text-input');
+
+  overlayGiftState = {};
+
+  checkboxes.forEach(checkbox => {
+    const giftName = checkbox.value;
+    overlayGiftState[giftName] = overlayGiftState[giftName] || {};
+    overlayGiftState[giftName].checked = checkbox.checked;
+  });
+
+  textInputs.forEach(input => {
+    const giftName = input.dataset.giftName;
+    overlayGiftState[giftName] = overlayGiftState[giftName] || {};
+    overlayGiftState[giftName].customText = input.value;
+  });
+}
+
 // Populate overlay gift selection from mapped gifts
-async function populateOverlayGiftSelection() {
+async function populateOverlayGiftSelection(forceRefresh = false) {
   const container = document.getElementById('overlay-gift-list');
   if (!container) return;
 
@@ -1095,8 +1366,26 @@ async function populateOverlayGiftSelection() {
     const result = await window.sniAPI.loadGiftMappings();
     if (!result.success || !result.mappings || Object.keys(result.mappings).length === 0) {
       container.innerHTML = '<div style="color: #aaa; text-align: center; padding: 20px;">No gift mappings found. Map some gifts in the "Gift Mappings" tab first.</div>';
+      lastKnownGiftList = null;
       return;
     }
+
+    // Create a sorted gift list to compare
+    const currentGiftList = Object.keys(result.mappings).sort().join(',');
+
+    // Only repopulate if the gift list has changed or force refresh is requested
+    if (!forceRefresh && lastKnownGiftList === currentGiftList && container.children.length > 0) {
+      // Gift list hasn't changed, don't repopulate
+      return;
+    }
+
+    // Save current state before rebuilding
+    if (container.children.length > 0) {
+      saveOverlayState();
+    }
+
+    // Update last known gift list
+    lastKnownGiftList = currentGiftList;
 
     container.innerHTML = '';
     Object.entries(result.mappings).forEach(([giftName, mapping]) => {
@@ -1108,20 +1397,41 @@ async function populateOverlayGiftSelection() {
       checkbox.className = 'overlay-gift-checkbox';
       checkbox.value = giftName;
       checkbox.id = `overlay-gift-${giftName.replace(/\s+/g, '-')}`;
-      checkbox.checked = true; // Default to checked
+
+      // Restore previous state or default to checked
+      checkbox.checked = overlayGiftState[giftName]?.checked !== undefined
+        ? overlayGiftState[giftName].checked
+        : true;
 
       const label = document.createElement('label');
       label.className = 'overlay-gift-label';
       label.htmlFor = checkbox.id;
+      label.textContent = giftName;
 
-      // Clean up action description
+      // Clean up action description for default text
       let actionText = mapping.description || mapping.action;
       actionText = actionText.replace(/^Disable\s+/i, '').replace(/^\W+/, '');
 
-      label.textContent = `${giftName} → ${actionText}`;
+      // Create custom text input
+      const textInput = document.createElement('input');
+      textInput.type = 'text';
+      textInput.className = 'overlay-text-input';
+      textInput.placeholder = 'Custom overlay text...';
+
+      // Restore previous custom text or use default
+      textInput.value = overlayGiftState[giftName]?.customText || actionText;
+      textInput.dataset.giftName = giftName;
+
+      const textLabel = document.createElement('small');
+      textLabel.style.display = 'block';
+      textLabel.style.marginTop = '4px';
+      textLabel.style.opacity = '0.7';
+      textLabel.textContent = 'Overlay display text:';
 
       item.appendChild(checkbox);
       item.appendChild(label);
+      item.appendChild(textLabel);
+      item.appendChild(textInput);
       container.appendChild(item);
     });
   } catch (error) {
@@ -1139,6 +1449,7 @@ async function generateOverlay() {
     // Convert seconds to milliseconds for HTML generation
     const stagger = (parseFloat(document.getElementById('overlay-stagger').value) || 2) * 1000;
     const pause = (parseFloat(document.getElementById('overlay-pause').value) || 30) * 1000;
+    const spacing = parseInt(document.getElementById('overlay-spacing').value) || 150;
     const continuousLoop = document.getElementById('overlay-continuous-loop').checked;
 
     // Get selected gifts
@@ -1162,11 +1473,15 @@ async function generateOverlay() {
       const mapping = result.mappings[giftName];
       if (!mapping) return;
 
-      // Get action description
-      let action = mapping.description || mapping.action;
-      // Clean up action text (remove emoji, "Disable", etc.)
-      action = action.replace(/^[\u{1F000}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u, '').trim();
-      action = action.replace(/^Disable\s+/i, '');
+      // Get custom text from the text input
+      const textInput = document.querySelector(`.overlay-text-input[data-gift-name="${giftName}"]`);
+      let action = textInput ? textInput.value : (mapping.description || mapping.action);
+
+      // Clean up action text if it's still the default (remove emoji, "Disable", etc.)
+      if (!textInput || !textInput.value) {
+        action = action.replace(/^[\u{1F000}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u, '').trim();
+        action = action.replace(/^Disable\s+/i, '');
+      }
 
       // Find coin value for gift
       const coinValue = findCoinValueForGift(giftName);
@@ -1190,7 +1505,7 @@ async function generateOverlay() {
     });
 
     // Generate HTML content
-    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop);
+    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop, spacing);
 
     // Save file via IPC
     const saveResult = await window.sniAPI.saveOverlayFile(html);
@@ -1205,7 +1520,7 @@ async function generateOverlay() {
 }
 
 // Generate overlay HTML content
-function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true) {
+function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100) {
   const giftsJSON = JSON.stringify(gifts, null, 2);
   const count = gifts.length;
   const period = stagger * count;
@@ -1254,7 +1569,8 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
     grid-template-rows: auto auto auto;
     justify-items: center;
     text-align: center;
-    min-width: 170px;
+    min-width: 240px;
+    padding: 0 20px;
     filter: drop-shadow(0 2px 8px rgba(0,0,0,.7));
     will-change: transform;
   }
@@ -1341,16 +1657,16 @@ els.forEach(el => lane.appendChild(el));
 
 /* -------- MEASURE & ANIMATE -------- */
 const TRAVEL_MS   = ${period};
-const TAIL_GAP_PX = 100;
+const TAIL_GAP_PX = ${spacing};
 
 let laneW = 0;
-let itemsW = new Array(COUNT).fill(220);
+let itemsW = new Array(COUNT).fill(280);
 
 function measure() {
   laneW = lane.clientWidth;
   els.forEach((el, i) => {
     const r = el.getBoundingClientRect();
-    itemsW[i] = Math.max(170, Math.ceil(r.width || 220));
+    itemsW[i] = Math.max(240, Math.ceil(r.width || 280));
   });
 }
 
@@ -1362,7 +1678,9 @@ function positionAt(t) {
 
     const el = els[i];
     const w = itemsW[i];
-    const dist = laneW + w + TAIL_GAP_PX;
+    // Add extra spacing multiplier to increase gap between items
+    const effectiveSpacing = TAIL_GAP_PX * 2;
+    const dist = laneW + w + effectiveSpacing;
 
     if (phase >= 0 && phase <= TRAVEL_MS) {
       const p = phase / TRAVEL_MS;
@@ -1370,7 +1688,7 @@ function positionAt(t) {
       el.style.transform = 'translateX(' + x + 'px)';
       el.style.visibility = 'visible';
     } else {
-      el.style.transform = 'translateX(' + (laneW + TAIL_GAP_PX) + 'px)';
+      el.style.transform = 'translateX(' + (laneW + effectiveSpacing) + 'px)';
       el.style.visibility = 'hidden';
     }
   }
@@ -1410,47 +1728,120 @@ els.forEach(el => {
 // ============= GIFT IMAGES MANAGER =============
 
 // Get current image URL for a gift (from overrides or default)
-// For UI previews, we use CDN URLs; for overlay generation, we use local paths
+// For UI previews, we use custom protocol or local paths; for overlay generation, use local paths
 function getCurrentImageUrl(giftName, coinValue, forPreview = true) {
   const key = `${coinValue}-${giftName}`;
-  // Check overrides first
-  if (giftImageOverrides[key]) {
-    return giftImageOverrides[key];
-  }
 
-  // Check default gift images
-  if (forPreview && typeof getGiftImageCDN !== 'undefined') {
-    // Use CDN for UI preview
-    const cdnUrl = getGiftImageCDN(giftName, coinValue);
-    if (cdnUrl) return cdnUrl;
-  }
-
-  // Check active-gifts.json for CDN URLs from database updates
-  if (forPreview && window.activeGiftImages && window.activeGiftImages[coinValue]) {
+  // Check active-gifts.json for downloaded images FIRST (highest priority)
+  if (window.activeGiftImages && window.activeGiftImages[coinValue]) {
     const giftImageData = window.activeGiftImages[coinValue][giftName];
-    if (giftImageData && giftImageData.cdn) {
-      return giftImageData.cdn;
+
+    if (giftImageData && giftImageData.local) {
+      // For preview, use gift-image:// protocol to load from userData
+      // Extract filename from path
+      const filename = giftImageData.local.replace('./gift-images/', '');
+
+      if (forPreview) {
+        // Use custom protocol for app display
+        const url = `gift-image://${filename}`;
+        if (coinValue <= 5) console.log(`[getCurrentImageUrl] ${giftName} (${coinValue}) -> ${url}`);
+        return url;
+      } else {
+        // Use relative path for overlay generation
+        return giftImageData.local;
+      }
     }
   }
 
-  if (typeof getGiftImageUrl !== 'undefined') {
-    // Use local path for overlay generation
-    return getGiftImageUrl(giftName, coinValue, !forPreview);
+  // Check overrides second
+  if (giftImageOverrides[key]) {
+    if (coinValue <= 5) console.log(`[getCurrentImageUrl] ${giftName} (${coinValue}) -> override: ${giftImageOverrides[key]}`);
+    return giftImageOverrides[key];
   }
+
+  // Check default gift images (from gift-images.js)
+  if (typeof getGiftImageUrl !== 'undefined') {
+    const url = getGiftImageUrl(giftName, coinValue, true);
+    if (coinValue <= 5) console.log(`[getCurrentImageUrl] ${giftName} (${coinValue}) -> fallback: ${url}`);
+    return url;
+  }
+
   return null;
 }
 
 // Load active gift images from database
 async function loadActiveGiftImages() {
   try {
+    console.log('[loadActiveGiftImages] Starting...');
+
+    // Load the downloaded images path
+    const pathResult = await window.sniAPI.getDownloadedImagesPath();
+    if (pathResult && pathResult.success) {
+      window.downloadedImagesPath = pathResult.path;
+      console.log('[loadActiveGiftImages] Downloaded images path:', pathResult.path);
+    }
+
+    // Load active gift images metadata
     const result = await window.sniAPI.getActiveGifts();
-    if (result && result.activeGifts && result.activeGifts.images) {
-      // Store globally so getCurrentImageUrl can access it
-      window.activeGiftImages = result.activeGifts.images;
-      console.log('Loaded active gift images from database');
+    console.log('[loadActiveGiftImages] getActiveGifts result:', result);
+
+    if (result && result.activeGifts) {
+      console.log('[loadActiveGiftImages] activeGifts keys:', Object.keys(result.activeGifts));
+
+      if (result.activeGifts.images) {
+        // Store globally so getCurrentImageUrl can access it
+        window.activeGiftImages = result.activeGifts.images;
+        const coinValues = Object.keys(result.activeGifts.images);
+        console.log(`[loadActiveGiftImages] ✅ Loaded ${coinValues.length} coin value groups`);
+        console.log('[loadActiveGiftImages] Sample coin values:', coinValues.slice(0, 5));
+
+        // Log sample gift from first coin value
+        const firstCoin = coinValues[0];
+        const giftsInFirst = Object.keys(result.activeGifts.images[firstCoin]);
+        console.log(`[loadActiveGiftImages] Coin ${firstCoin} has ${giftsInFirst.length} gifts`);
+        if (giftsInFirst.length > 0) {
+          const sampleGift = result.activeGifts.images[firstCoin][giftsInFirst[0]];
+          console.log(`[loadActiveGiftImages] Sample gift data:`, sampleGift);
+        }
+
+        // Automatically download missing images in the background
+        downloadMissingImagesInBackground();
+      } else {
+        console.error('[loadActiveGiftImages] ❌ No images field in activeGifts!');
+      }
+    } else {
+      console.error('[loadActiveGiftImages] ❌ No activeGifts in result!');
     }
   } catch (error) {
-    console.error('Error loading active gift images:', error);
+    console.error('[loadActiveGiftImages] Error:', error);
+  }
+}
+
+// Download missing images in the background
+async function downloadMissingImagesInBackground() {
+  try {
+    console.log('🔍 Checking for missing gift images...');
+    const result = await window.sniAPI.downloadMissingGiftImages();
+
+    if (result.success) {
+      if (result.total > 0) {
+        console.log(`✅ Downloaded ${result.downloaded} missing images (${result.failed} failed)`);
+
+        // Reload the gift database display to show newly downloaded images
+        if (document.getElementById('gift-database-list')) {
+          populateGiftDatabase();
+        }
+        if (document.getElementById('gift-images-list')) {
+          populateGiftImagesList();
+        }
+      } else {
+        console.log('✅ All gift images already downloaded');
+      }
+    } else {
+      console.error('❌ Error downloading missing images:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Error in downloadMissingImagesInBackground:', error);
   }
 }
 
@@ -1509,18 +1900,44 @@ async function populateGiftImagesList() {
   // Load active gift images from database first
   await loadActiveGiftImages();
 
-  if (typeof TIKTOK_GIFTS === 'undefined') {
-    container.innerHTML = '<div class="no-gifts-message">Gift database not loaded</div>';
-    return;
-  }
-
-  // Get all unique gifts sorted by coin value
+  // Get all unique gifts sorted by coin value from active-gifts.json
   const allGifts = [];
-  Object.entries(TIKTOK_GIFTS).forEach(([coins, giftNames]) => {
-    giftNames.forEach(name => {
-      allGifts.push({ name, coins: parseInt(coins) });
-    });
-  });
+
+  try {
+    // Load from active-gifts.json (updated database)
+    const result = await window.sniAPI.getActiveGifts();
+    if (result && result.success && result.activeGifts && result.activeGifts.gifts) {
+      Object.entries(result.activeGifts.gifts).forEach(([coins, giftNames]) => {
+        giftNames.forEach(name => {
+          allGifts.push({ name, coins: parseInt(coins) });
+        });
+      });
+    } else if (typeof TIKTOK_GIFTS !== 'undefined') {
+      // Fallback to hardcoded TIKTOK_GIFTS
+      console.warn('Failed to load active-gifts.json, falling back to TIKTOK_GIFTS for gift images');
+      Object.entries(TIKTOK_GIFTS).forEach(([coins, giftNames]) => {
+        giftNames.forEach(name => {
+          allGifts.push({ name, coins: parseInt(coins) });
+        });
+      });
+    } else {
+      container.innerHTML = '<div class="no-gifts-message">Gift database not loaded</div>';
+      return;
+    }
+  } catch (error) {
+    console.error('Error loading active gifts for images:', error);
+    // Fallback to TIKTOK_GIFTS
+    if (typeof TIKTOK_GIFTS !== 'undefined') {
+      Object.entries(TIKTOK_GIFTS).forEach(([coins, giftNames]) => {
+        giftNames.forEach(name => {
+          allGifts.push({ name, coins: parseInt(coins) });
+        });
+      });
+    } else {
+      container.innerHTML = '<div class="no-gifts-message">Error loading gift database</div>';
+      return;
+    }
+  }
 
   allGifts.sort((a, b) => a.coins - b.coins || a.name.localeCompare(b.name));
 
@@ -1880,6 +2297,9 @@ async function restoreGiftInline(giftName, coins) {
       // Reload archived gifts and database status
       await loadArchivedGiftsInline();
       await loadDatabaseStatus();
+      // Also refresh the Gift Database & Images tab
+      await populateGiftDatabase();
+      await populateGiftImagesList();
     } else {
       log(`Failed to restore ${giftName}: ${result.error}`, 'error');
     }
@@ -1904,6 +2324,9 @@ async function deleteGiftInline(giftName, coins) {
       // Reload archived gifts and database status
       await loadArchivedGiftsInline();
       await loadDatabaseStatus();
+      // Also refresh the Gift Database & Images tab
+      await populateGiftDatabase();
+      await populateGiftImagesList();
     } else {
       log(`Failed to delete ${giftName}: ${result.error}`, 'error');
     }
@@ -2064,6 +2487,9 @@ async function triggerDatabaseUpdate() {
           loadDatabaseStatus();
           loadVersionHistory();
           loadArchivedGiftsInline();
+          // Also refresh the Gift Database & Images tab to show new gifts
+          populateGiftDatabase();
+          populateGiftImagesList();
         }, 500);
       }
     } else if (result.requiresConfirmation) {
@@ -2142,6 +2568,9 @@ async function confirmLargeUpdate() {
         loadDatabaseStatus();
         loadVersionHistory();
         loadArchivedGiftsInline();
+        // Also refresh the Gift Database & Images tab to show new gifts
+        populateGiftDatabase();
+        populateGiftImagesList();
       }, 500);
     }
   } catch (error) {
@@ -2207,6 +2636,9 @@ async function confirmRollback(backupPath, timestamp) {
         loadDatabaseStatus();
         loadVersionHistory();
         loadArchivedGiftsInline();
+        // Also refresh the Gift Database & Images tab to show updated gifts
+        populateGiftDatabase();
+        populateGiftImagesList();
       }, 500);
     } else {
       log(`❌ Rollback failed: ${result.error}`, 'error');
@@ -2517,7 +2949,13 @@ function reorganizeActions() {
     return header && header.textContent.includes('Item Disable');
   });
 
-  // Move Reset Bird from Flute to Core
+  // Find the Set Hearts category
+  const heartsCategory = Array.from(settingsScroll.querySelectorAll('.settings-category')).find(cat => {
+    const header = cat.querySelector('.category-header h4');
+    return header && header.textContent.includes('Set Hearts');
+  });
+
+  // Move Reset Bird from Flute to Core (position after Enemy Swarm)
   if (coreCategory && fluteCategory) {
     const resetBirdItem = Array.from(fluteCategory.querySelectorAll('.action-item')).find(item => {
       const actionName = item.querySelector('.action-name');
@@ -2527,7 +2965,79 @@ function reorganizeActions() {
     if (resetBirdItem) {
       const coreItems = coreCategory.querySelector('.category-items');
       if (coreItems) {
-        coreItems.appendChild(resetBirdItem);
+        // Find Enemy Swarm action
+        const enemySwarmItem = Array.from(coreItems.querySelectorAll('.action-item')).find(item => {
+          const actionName = item.querySelector('.action-name');
+          return actionName && actionName.textContent.includes('Enemy Swarm');
+        });
+
+        if (enemySwarmItem) {
+          // Insert Reset Bird after Enemy Swarm
+          enemySwarmItem.parentNode.insertBefore(resetBirdItem, enemySwarmItem.nextSibling);
+        } else {
+          // Fallback: append to end if Enemy Swarm not found
+          coreItems.appendChild(resetBirdItem);
+        }
+      }
+    }
+  }
+
+  // Move heart actions from Core to Set Hearts section (at the top)
+  if (coreCategory && heartsCategory) {
+    const coreItems = coreCategory.querySelector('.category-items');
+    const heartsItems = heartsCategory.querySelector('.category-items');
+
+    if (coreItems && heartsItems) {
+      // Find the three heart actions in Core
+      const addHeartItem = Array.from(coreItems.querySelectorAll('.action-item')).find(item => {
+        const actionName = item.querySelector('.action-name');
+        return actionName && actionName.textContent.includes('Add Heart Container');
+      });
+
+      const removeHeartItem = Array.from(coreItems.querySelectorAll('.action-item')).find(item => {
+        const actionName = item.querySelector('.action-name');
+        return actionName && actionName.textContent.includes('Remove Heart Container');
+      });
+
+      const heartPieceItem = Array.from(coreItems.querySelectorAll('.action-item')).find(item => {
+        const actionName = item.querySelector('.action-name');
+        return actionName && actionName.textContent.includes('Add Heart Piece');
+      });
+
+      // Get the first item in hearts section to insert before
+      const firstHeartItem = heartsItems.querySelector('.action-item');
+
+      // Move items to top of hearts section in order
+      if (addHeartItem && firstHeartItem) {
+        heartsItems.insertBefore(addHeartItem, firstHeartItem);
+      }
+      if (removeHeartItem && firstHeartItem) {
+        // Insert after Add Heart Container
+        const newFirst = heartsItems.querySelector('.action-item');
+        if (newFirst && newFirst.nextSibling) {
+          heartsItems.insertBefore(removeHeartItem, newFirst.nextSibling);
+        } else {
+          heartsItems.appendChild(removeHeartItem);
+        }
+      }
+      if (heartPieceItem) {
+        // Insert after Remove Heart Container
+        const addHeartInHearts = Array.from(heartsItems.querySelectorAll('.action-item')).find(item => {
+          const actionName = item.querySelector('.action-name');
+          return actionName && actionName.textContent.includes('Add Heart Container');
+        });
+        const removeHeartInHearts = Array.from(heartsItems.querySelectorAll('.action-item')).find(item => {
+          const actionName = item.querySelector('.action-name');
+          return actionName && actionName.textContent.includes('Remove Heart Container');
+        });
+
+        if (removeHeartInHearts && removeHeartInHearts.nextSibling) {
+          heartsItems.insertBefore(heartPieceItem, removeHeartInHearts.nextSibling);
+        } else if (addHeartInHearts && addHeartInHearts.nextSibling) {
+          heartsItems.insertBefore(heartPieceItem, addHeartInHearts.nextSibling);
+        } else {
+          heartsItems.appendChild(heartPieceItem);
+        }
       }
     }
   }

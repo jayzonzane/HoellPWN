@@ -1,5 +1,6 @@
 // UI Elements
 const connectBtn = document.getElementById('connect-btn');
+const restartSniBtn = document.getElementById('restart-sni-btn');
 const statusDiv = document.getElementById('status');
 const deviceSelect = document.getElementById('device-select');
 const controlsSection = document.getElementById('controls-tab');
@@ -97,6 +98,32 @@ deviceSelect.addEventListener('change', async (e) => {
   } else {
     controlsSection.style.display = 'none';
     selectedDevice = null;
+  }
+});
+
+// Restart SNI button handler
+restartSniBtn.addEventListener('click', async () => {
+  try {
+    log('🔄 Restarting SNI server...', 'info');
+    statusDiv.textContent = 'Restarting SNI...';
+    statusDiv.className = 'status connecting';
+    restartSniBtn.disabled = true;
+
+    const result = await window.sniAPI.restartSNI();
+
+    if (result.success) {
+      log('✅ SNI server restarted successfully!', 'success');
+      statusDiv.textContent = 'SNI Restarted - Reconnecting...';
+      // The auto-connect will happen on the backend
+    } else {
+      throw new Error(result.error || 'Restart failed');
+    }
+  } catch (error) {
+    log(`❌ Failed to restart SNI: ${error.message}`, 'error');
+    statusDiv.textContent = 'Restart failed';
+    statusDiv.className = 'status error';
+  } finally {
+    restartSniBtn.disabled = false;
   }
 });
 
@@ -540,9 +567,9 @@ async function spawnEnemy(enemyType) {
   }
 }
 
-async function triggerChickenAttack() {
+async function triggerChickenAttack(durationSeconds) {
   try {
-    const result = await window.sniAPI.triggerChickenAttack();
+    const result = await window.sniAPI.triggerChickenAttack(durationSeconds);
     if (result.success) {
       log(result.message, 'warning');
     } else {
@@ -597,9 +624,9 @@ async function spawnBeeSwarm() {
   }
 }
 
-async function triggerEnemyWaves() {
+async function triggerEnemyWaves(durationSeconds) {
   try {
-    const result = await window.sniAPI.triggerEnemyWaves();
+    const result = await window.sniAPI.triggerEnemyWaves(durationSeconds);
     if (result.success) {
       log(result.message, 'warning');
     } else {
@@ -610,11 +637,53 @@ async function triggerEnemyWaves() {
   }
 }
 
-async function triggerBeeSwarmWaves() {
+async function triggerBeeSwarmWaves(durationSeconds) {
   try {
-    const result = await window.sniAPI.triggerBeeSwarmWaves();
+    const result = await window.sniAPI.triggerBeeSwarmWaves(durationSeconds);
     if (result.success) {
       log(result.message, 'warning');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function makeEnemiesInvisible(durationSeconds) {
+  try {
+    const result = await window.sniAPI.makeEnemiesInvisible(durationSeconds);
+    if (result.success) {
+      log(result.message, 'warning');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function enableInfiniteMagic(durationSeconds) {
+  console.log(`[Renderer] enableInfiniteMagic called with duration: ${durationSeconds}`);
+  try {
+    const result = await window.sniAPI.enableInfiniteMagic(durationSeconds);
+    console.log('[Renderer] enableInfiniteMagic result:', result);
+    if (result.success) {
+      log(result.message, 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('[Renderer] enableInfiniteMagic error:', error);
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function deleteAllSaves() {
+  try {
+    const result = await window.sniAPI.deleteAllSaves();
+    if (result.success) {
+      log(result.message, 'error');
     } else {
       log(`Failed: ${result.error}`, 'error');
     }
@@ -783,11 +852,90 @@ async function enableMagic() {
   }
 }
 
+async function removeMagic() {
+  try {
+    const result = await window.sniAPI.removeMagic();
+    if (result.success) {
+      log(result.message || 'Magic removed!', 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
 async function setMagicUpgrade(level) {
   try {
     const result = await window.sniAPI.setMagicUpgrade(level);
     if (result.success) {
       log(`Magic: ${result.upgrade}`, 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+// Chaotic Features
+async function enableIceWorld(durationSeconds) {
+  try {
+    const result = await window.sniAPI.enableIceWorld(durationSeconds);
+    if (result.success) {
+      log(result.message || `❄️ Ice World for ${durationSeconds}s!`, 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function spawnBossRush(durationSeconds) {
+  try {
+    const result = await window.sniAPI.spawnBossRush(durationSeconds);
+    if (result.success) {
+      log(result.message || `💀 Boss Rush for ${durationSeconds}s!`, 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function enableItemLock(durationSeconds) {
+  try {
+    const result = await window.sniAPI.enableItemLock(durationSeconds);
+    if (result.success) {
+      log(result.message || `🔒 Item Lock for ${durationSeconds}s!`, 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function enableGlassCannon(durationSeconds) {
+  try {
+    const result = await window.sniAPI.enableGlassCannon(durationSeconds);
+    if (result.success) {
+      log(result.message || `💀 Glass Cannon for ${durationSeconds}s!`, 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function blessingAndCurse() {
+  try {
+    const result = await window.sniAPI.blessingAndCurse();
+    if (result.success) {
+      log(result.message || '🎲 Effect Roulette activated!', 'success');
     } else {
       log(`Failed: ${result.error}`, 'error');
     }
@@ -1070,6 +1218,45 @@ async function warpEastern() {
   }
 }
 
+async function fakeMirror() {
+  try {
+    const result = await window.sniAPI.fakeMirror();
+    if (result.success) {
+      log(result.message || '🪞 Fake Mirror activated!', 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function chaosDungeonWarp() {
+  try {
+    const result = await window.sniAPI.chaosDungeonWarp();
+    if (result.success) {
+      log(result.message || '🎲 Chaos Dungeon Warp!', 'special');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+async function toggleWorld() {
+  try {
+    const result = await window.sniAPI.toggleWorld();
+    if (result.success) {
+      log(result.message || '🌍 World flipped!', 'special');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
 // ============= ITEM RESTORATION SYSTEM =============
 
 // Test disable item function
@@ -1167,6 +1354,8 @@ document.addEventListener('click', async (e) => {
   button.disabled = true;
 
   try {
+    console.log(`[Button Click] Action: ${action}, Value: ${value}, Dungeon: ${dungeon}`);
+
     // Route to appropriate function based on action
     switch(action) {
       // Core functions
@@ -1224,6 +1413,7 @@ document.addEventListener('click', async (e) => {
 
       // Magic system
       case 'enableMagic': await enableMagic(); break;
+      case 'removeMagic': await removeMagic(); break;
       case 'setMagicUpgrade': await setMagicUpgrade(parseInt(value)); break;
 
       // Bottles
@@ -1252,9 +1442,17 @@ document.addEventListener('click', async (e) => {
       // Enemy spawning
       case 'spawnEnemy': await spawnEnemy(button.dataset.enemy); break;
       case 'spawnRandomEnemy': await spawnRandomEnemy(); break;
-      case 'triggerChickenAttack': await triggerChickenAttack(); break;
-      case 'triggerEnemyWaves': await triggerEnemyWaves(); break;
-      case 'triggerBeeSwarmWaves': await triggerBeeSwarmWaves(); break;
+      case 'triggerChickenAttack': await triggerChickenAttack(60); break;
+      case 'triggerEnemyWaves': await triggerEnemyWaves(60); break;
+      case 'triggerBeeSwarmWaves': await triggerBeeSwarmWaves(60); break;
+      case 'makeEnemiesInvisible': await makeEnemiesInvisible(60); break;
+      case 'enableInfiniteMagic': await enableInfiniteMagic(60); break;
+      case 'enableIceWorld': await enableIceWorld(60); break;
+      case 'spawnBossRush': await spawnBossRush(60); break;
+      case 'enableItemLock': await enableItemLock(60); break;
+      case 'enableGlassCannon': await enableGlassCannon(60); break;
+      case 'blessingAndCurse': await blessingAndCurse(); break;
+      case 'deleteAllSaves': await deleteAllSaves(); break;
       case 'spawnBeeSwarm': await spawnBeeSwarm(); break;
 
       // Presets
@@ -1262,14 +1460,19 @@ document.addEventListener('click', async (e) => {
       case 'giveEndgamePack': await giveEndgamePack(); break;
       case 'getInventory': await getInventory(); break;
       case 'warpEastern': await warpEastern(); break;
+      case 'fakeMirror': await fakeMirror(); break;
+      case 'chaosDungeonWarp': await chaosDungeonWarp(); break;
+      case 'toggleWorld': await toggleWorld(); break;
 
       // Item Restoration Testing
       case 'testDisableItem': await testDisableItem(button.dataset.item); break;
 
       default:
+        console.error(`[Button Click] Unknown action: ${action}`);
         log(`Unknown action: ${action}`, 'error');
     }
   } catch (error) {
+    console.error('[Button Click] Error:', error);
     log(`Error: ${error.message}`, 'error');
   } finally {
     // Re-enable button

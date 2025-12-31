@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const fs = require('fs').promises;
 
 // We'll initialize these after creating the window
 let mainWindow;
@@ -11,6 +12,41 @@ let hoellPoller;
 let restorationManager;
 let giftUpdater;
 let sniProcess = null;
+
+// Function to minimize SNI window using PowerShell
+function minimizeSNIWindow() {
+  try {
+    const { exec } = require('child_process');
+    // PowerShell script to find and minimize SNI window
+    const psScript = `
+      Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class Win32 {
+          [DllImport("user32.dll")]
+          public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+          [DllImport("user32.dll")]
+          public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        }
+"@
+      $hwnd = [Win32]::FindWindow($null, "sni")
+      if ($hwnd -ne [IntPtr]::Zero) {
+        [Win32]::ShowWindow($hwnd, 6) | Out-Null
+        Write-Host "SNI window minimized"
+      }
+    `;
+
+    exec(`powershell -Command "${psScript.replace(/"/g, '\\"')}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.log('Could not minimize SNI window (this is normal if SNI has no window):', error.message);
+      } else if (stdout) {
+        console.log('📉', stdout.trim());
+      }
+    });
+  } catch (error) {
+    console.log('SNI window minimize skipped:', error.message);
+  }
+}
 
 // Function to start SNI server
 function startSNIServer() {
@@ -49,6 +85,10 @@ function startSNIServer() {
       // Give SNI time to start (2 seconds)
       setTimeout(() => {
         console.log('✅ SNI server should be ready');
+
+        // Try to minimize SNI window after it starts
+        minimizeSNIWindow();
+
         resolve();
       }, 2000);
 
@@ -57,6 +97,35 @@ function startSNIServer() {
       reject(error);
     }
   });
+}
+
+// Function to restart SNI server
+async function restartSNIServer() {
+  try {
+    console.log('🔄 Restarting SNI server...');
+
+    // Kill existing SNI process if running
+    if (sniProcess) {
+      console.log('🛑 Stopping existing SNI process...');
+      sniProcess.kill();
+      sniProcess = null;
+      // Wait for process to fully terminate
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Start SNI server again
+    await startSNIServer();
+
+    // Wait a bit, then auto-connect
+    setTimeout(() => {
+      autoConnectSNI();
+    }, 1000);
+
+    return { success: true, message: 'SNI server restarted successfully' };
+  } catch (error) {
+    console.error('Failed to restart SNI:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 // Function to auto-connect to SNI and select first device
@@ -141,11 +210,22 @@ function createWindow() {
   restorationManager = new ItemRestorationManager(expandedOps);
   console.log('⏱️ ItemRestorationManager initialized');
 
+  // Load TIKTOK_GIFTS database for the poller
+  let giftDatabase = null;
+  try {
+    const { TIKTOK_GIFTS } = require('./renderer/tiktok-gifts.js');
+    giftDatabase = TIKTOK_GIFTS;
+    console.log('📚 Loaded TIKTOK_GIFTS database for poller');
+  } catch (error) {
+    console.error('⚠️ Failed to load TIKTOK_GIFTS database:', error);
+  }
+
   // Initialize HoellStream poller (but don't start polling yet)
   // Pass both expandedOps and gameOps (basic operations like KO player)
   hoellPoller = new HoellStreamPoller(expandedOps, gameOps, {
     pollIntervalMs: 2000,
-    debugMode: true
+    debugMode: true,
+    giftDatabase: giftDatabase
   });
   console.log('🎁 HoellStream poller initialized (polling will start when device connects)');
 
@@ -161,6 +241,9 @@ function createWindow() {
 
   // Load gift mappings from file on startup
   loadGiftMappingsOnStartup();
+
+  // Load threshold configs from file on startup
+  loadThresholdConfigsOnStartup();
 
   // Open DevTools in development
   if (process.env.NODE_ENV === 'development') {
@@ -197,6 +280,14 @@ ipcMain.handle('select-device', async (event, deviceInfo) => {
     }
 
     return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('restart-sni', async (event) => {
+  try {
+    return await restartSNIServer();
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -246,6 +337,42 @@ ipcMain.handle('warp-eastern', async () => {
     return await gameOps.warpToEasternPalace();
   } catch (error) {
     console.error('Warp error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('fake-mirror', async () => {
+  try {
+    if (!sniClient.deviceURI) {
+      throw new Error('No device selected');
+    }
+    return await expandedOps.fakeMirror();
+  } catch (error) {
+    console.error('Fake Mirror error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('chaos-dungeon-warp', async () => {
+  try {
+    if (!sniClient.deviceURI) {
+      throw new Error('No device selected');
+    }
+    return await expandedOps.chaosDungeonWarp();
+  } catch (error) {
+    console.error('Chaos Dungeon Warp error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('toggle-world', async () => {
+  try {
+    if (!sniClient.deviceURI) {
+      throw new Error('No device selected');
+    }
+    return await expandedOps.toggleWorld();
+  } catch (error) {
+    console.error('Toggle World error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -400,29 +527,67 @@ ipcMain.handle('stop-bee-swarm', async () => {
 });
 
 // Chicken Attack
-ipcMain.handle('trigger-chicken-attack', async () => {
+ipcMain.handle('trigger-chicken-attack', async (event, durationSeconds) => {
   try {
     if (!sniClient.deviceURI) throw new Error('No device selected');
-    return await expandedOps.triggerChickenAttack();
+    return await expandedOps.triggerChickenAttack(durationSeconds);
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
 // Enemy Waves
-ipcMain.handle('trigger-enemy-waves', async () => {
+ipcMain.handle('trigger-enemy-waves', async (event, durationSeconds) => {
   try {
     if (!sniClient.deviceURI) throw new Error('No device selected');
-    return await expandedOps.triggerEnemyWaves();
+    return await expandedOps.triggerEnemyWaves(durationSeconds);
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('trigger-bee-swarm-waves', async () => {
+ipcMain.handle('trigger-bee-swarm-waves', async (event, durationSeconds) => {
   try {
     if (!sniClient.deviceURI) throw new Error('No device selected');
-    return await expandedOps.triggerBeeSwarmWaves();
+    return await expandedOps.triggerBeeSwarmWaves(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Invisible Enemies
+ipcMain.handle('make-enemies-invisible', async (event, durationSeconds) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.makeEnemiesInvisible(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Infinite Magic
+ipcMain.handle('enable-infinite-magic', async (event, durationSeconds) => {
+  console.log(`[Main] enable-infinite-magic IPC handler called with duration: ${durationSeconds}`);
+  try {
+    if (!sniClient.deviceURI) {
+      console.log('[Main] No device selected!');
+      throw new Error('No device selected');
+    }
+    console.log('[Main] Calling expandedOps.enableInfiniteMagic...');
+    const result = await expandedOps.enableInfiniteMagic(durationSeconds);
+    console.log('[Main] enableInfiniteMagic result:', result);
+    return result;
+  } catch (error) {
+    console.error('[Main] enable-infinite-magic error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Delete All Saves
+ipcMain.handle('delete-all-saves', async (event) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.deleteAllSaves();
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -707,6 +872,15 @@ ipcMain.handle('enable-magic', async () => {
   }
 });
 
+ipcMain.handle('remove-magic', async () => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.removeMagic();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('set-magic-upgrade', async (event, level) => {
   try {
     if (!sniClient.deviceURI) throw new Error('No device selected');
@@ -730,6 +904,52 @@ ipcMain.handle('set-hearts', async (event, count) => {
   try {
     if (!sniClient.deviceURI) throw new Error('No device selected');
     return await expandedOps.setHearts(count);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Chaotic Features
+ipcMain.handle('enable-ice-world', async (event, durationSeconds) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.enableIceWorld(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('spawn-boss-rush', async (event, durationSeconds) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.spawnBossRush(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('enable-item-lock', async (event, durationSeconds) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.enableItemLock(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('enable-glass-cannon', async (event, durationSeconds) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.enableGlassCannon(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('blessing-and-curse', async () => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.blessingAndCurse();
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -901,7 +1121,6 @@ ipcMain.handle('remove-arrow', async () => {
 
 // ============= HOELLSTREAM CONTROLS =============
 
-const fs = require('fs').promises;
 const pathModule = require('path');
 const https = require('https');
 
@@ -914,6 +1133,7 @@ const GIFT_MAPPINGS_FILE = pathModule.join(app.getPath('userData'), 'gift-mappin
 const GIFT_NAME_OVERRIDES_FILE = pathModule.join(app.getPath('userData'), 'gift-name-overrides.json');
 const CUSTOM_GIFTS_FILE = pathModule.join(app.getPath('userData'), 'custom-gifts.json');
 const GIFT_IMAGE_OVERRIDES_FILE = pathModule.join(app.getPath('userData'), 'gift-image-overrides.json');
+const THRESHOLD_CONFIGS_FILE = pathModule.join(app.getPath('userData'), 'threshold-configs.json');
 
 // Load gift mappings on startup
 async function loadGiftMappingsOnStartup() {
@@ -929,6 +1149,24 @@ async function loadGiftMappingsOnStartup() {
     } else {
       console.error('Error loading gift mappings on startup:', error);
       hoellPoller.updateMappings({});
+    }
+  }
+}
+
+// Load threshold configs on startup
+async function loadThresholdConfigsOnStartup() {
+  try {
+    const data = await fs.readFile(THRESHOLD_CONFIGS_FILE, 'utf8');
+    const thresholds = JSON.parse(data);
+    await hoellPoller.loadThresholdConfigs(thresholds);
+    console.log(`📂 Loaded ${Object.keys(thresholds).length} threshold configurations on startup`);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.log('📂 No threshold configs file found, starting with empty thresholds');
+      await hoellPoller.loadThresholdConfigs({});
+    } else {
+      console.error('Error loading threshold configs on startup:', error);
+      await hoellPoller.loadThresholdConfigs({});
     }
   }
 }
@@ -1003,6 +1241,79 @@ ipcMain.handle('reload-gift-mappings', async () => {
       return { success: true, count: 0 };
     }
     console.error('Error reloading gift mappings:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============= THRESHOLD CONFIGURATIONS =============
+
+// Save threshold configs to JSON file
+ipcMain.handle('save-threshold-configs', async (event, thresholds) => {
+  try {
+    await fs.writeFile(THRESHOLD_CONFIGS_FILE, JSON.stringify(thresholds, null, 2), 'utf8');
+    console.log(`💾 Saved ${Object.keys(thresholds).length} threshold configs to ${THRESHOLD_CONFIGS_FILE}`);
+    return { success: true, count: Object.keys(thresholds).length };
+  } catch (error) {
+    console.error('Error saving threshold configs:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Load threshold configs from JSON file
+ipcMain.handle('load-threshold-configs', async () => {
+  try {
+    const data = await fs.readFile(THRESHOLD_CONFIGS_FILE, 'utf8');
+    const thresholds = JSON.parse(data);
+    console.log(`📂 Loaded ${Object.keys(thresholds).length} threshold configs from ${THRESHOLD_CONFIGS_FILE}`);
+    return { success: true, thresholds };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist yet - return empty thresholds
+      console.log('📂 No threshold configs file found, starting fresh');
+      return { success: true, thresholds: {} };
+    }
+    console.error('Error loading threshold configs:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Reload threshold configs in the poller
+ipcMain.handle('reload-threshold-configs', async () => {
+  try {
+    if (!hoellPoller) {
+      return { success: false, error: 'HoellStream poller not initialized' };
+    }
+
+    // Load threshold configs from file
+    const data = await fs.readFile(THRESHOLD_CONFIGS_FILE, 'utf8');
+    const thresholds = JSON.parse(data);
+
+    // Update poller with new threshold configs
+    await hoellPoller.loadThresholdConfigs(thresholds);
+
+    console.log(`🔄 Reloaded ${Object.keys(thresholds).length} threshold configs into poller`);
+    return { success: true, count: Object.keys(thresholds).length };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist yet - use empty thresholds
+      await hoellPoller.loadThresholdConfigs({});
+      return { success: true, count: 0 };
+    }
+    console.error('Error reloading threshold configs:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Get current threshold status (progress for all configured thresholds)
+ipcMain.handle('get-threshold-status', async () => {
+  try {
+    if (!hoellPoller) {
+      return { success: false, error: 'HoellStream poller not initialized' };
+    }
+    const status = hoellPoller.getThresholdStatus();
+    return { success: true, status };
+  } catch (error) {
+    console.error('Error getting threshold status:', error);
     return { success: false, error: error.message };
   }
 });
@@ -1135,40 +1446,69 @@ ipcMain.handle('download-all-gift-images', async (event) => {
   try {
     console.log('🖼️ Starting gift images download...');
 
-    // Load gift images data
-    const giftImagesModule = require('./renderer/gift-images.js');
-    const { GIFT_IMAGES } = giftImagesModule;
-
-    // Create gift-images directory in userData
+    // Download to userData directory (writable location)
     const userDataPath = app.getPath('userData');
     const imagesDir = pathModule.join(userDataPath, 'gift-images');
 
     // Create directory if it doesn't exist
     try {
       await fs.mkdir(imagesDir, { recursive: true });
-      console.log(`📁 Created images directory: ${imagesDir}`);
+      console.log(`📁 Using images directory: ${imagesDir}`);
     } catch (err) {
       if (err.code !== 'EEXIST') throw err;
     }
 
-    // Collect all images to download
-    const imagesToDownload = [];
-    for (const [coinValue, gifts] of Object.entries(GIFT_IMAGES)) {
-      for (const [giftName, giftData] of Object.entries(gifts)) {
-        if (giftData && giftData.cdn) {
-          const sanitized = giftName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-          const filename = `${sanitized}_${coinValue}.webp`;
-          imagesToDownload.push({
-            url: giftData.cdn,
-            filename,
-            giftName,
-            coinValue
-          });
+    // Load active gifts database (has all current gifts with image URLs)
+    let imagesToDownload = [];
+
+    if (giftUpdater) {
+      const activeGifts = await giftUpdater.getActiveGifts();
+      if (activeGifts && activeGifts.images) {
+        // Use active-gifts.json which has all gifts from database updates
+        for (const [coinValue, gifts] of Object.entries(activeGifts.images)) {
+          for (const [giftName, giftData] of Object.entries(gifts)) {
+            if (giftData && giftData.cdn) {
+              const sanitized = giftName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+              const filename = `${sanitized}_${coinValue}.webp`;
+              imagesToDownload.push({
+                url: giftData.cdn,
+                filename,
+                giftName,
+                coinValue
+              });
+            }
+          }
         }
       }
     }
 
-    console.log(`📦 Found ${imagesToDownload.length} images to download`);
+    // Fallback to hardcoded GIFT_IMAGES if active gifts not available
+    if (imagesToDownload.length === 0) {
+      console.log('⚠️ Using fallback hardcoded gift images');
+      const giftImagesModule = require('./renderer/gift-images.js');
+      const { GIFT_IMAGES } = giftImagesModule;
+
+      for (const [coinValue, gifts] of Object.entries(GIFT_IMAGES)) {
+        for (const [giftName, giftData] of Object.entries(gifts)) {
+          if (giftData && giftData.cdn) {
+            const sanitized = giftName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const filename = `${sanitized}_${coinValue}.webp`;
+            imagesToDownload.push({
+              url: giftData.cdn,
+              filename,
+              giftName,
+              coinValue
+            });
+          }
+        }
+      }
+    }
+
+    console.log(`📦 Found ${imagesToDownload.length} images to download from active-gifts.json`);
+
+    if (imagesToDownload.length === 0) {
+      console.error('❌ No images found to download! Check if active-gifts.json has images field.');
+    }
 
     // Download images with progress updates
     let downloaded = 0;
@@ -1241,6 +1581,193 @@ ipcMain.handle('get-downloaded-images-path', async () => {
     const imagesDir = pathModule.join(userDataPath, 'gift-images');
     return { success: true, path: imagesDir };
   } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Download a single gift image from URL
+ipcMain.handle('download-single-gift-image', async (event, giftName, coins, url) => {
+  try {
+    console.log(`🖼️ Downloading single image: ${giftName} (${coins} coins) from ${url}`);
+
+    // Download to userData directory
+    const userDataPath = app.getPath('userData');
+    const imagesDir = pathModule.join(userDataPath, 'gift-images');
+
+    // Create directory if it doesn't exist
+    try {
+      await fs.mkdir(imagesDir, { recursive: true });
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+    }
+
+    // Sanitize filename
+    const sanitized = giftName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${sanitized}_${coins}.webp`;
+    const filepath = pathModule.join(imagesDir, filename);
+
+    // Download the image
+    await downloadImage(url, filepath);
+    console.log(`✅ Downloaded: ${filename}`);
+
+    // Update active-gifts.json to include this image
+    if (giftUpdater) {
+      const activeGifts = await giftUpdater.getActiveGifts();
+      if (activeGifts && activeGifts.images) {
+        // Initialize coin value group if it doesn't exist
+        if (!activeGifts.images[coins]) {
+          activeGifts.images[coins] = {};
+        }
+
+        // Update or add the image data
+        activeGifts.images[coins][giftName] = {
+          cdn: url,
+          local: `./gift-images/${filename}`
+        };
+
+        // Save updated active-gifts.json
+        const activeGiftsPath = pathModule.join(userDataPath, 'active-gifts.json');
+        await fs.writeFile(activeGiftsPath, JSON.stringify(activeGifts, null, 2), 'utf8');
+        console.log(`💾 Updated active-gifts.json for ${giftName}`);
+      }
+    }
+
+    return {
+      success: true,
+      filename,
+      filepath
+    };
+  } catch (error) {
+    console.error('Error downloading single gift image:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Download missing gift images only
+ipcMain.handle('download-missing-gift-images', async (event) => {
+  try {
+    console.log('🔍 Checking for missing gift images...');
+
+    // Download to userData directory (writable location)
+    const userDataPath = app.getPath('userData');
+    const imagesDir = pathModule.join(userDataPath, 'gift-images');
+
+    // Create directory if it doesn't exist
+    try {
+      await fs.mkdir(imagesDir, { recursive: true });
+      console.log(`📁 Using images directory: ${imagesDir}`);
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+    }
+
+    // Load active gifts database
+    if (!giftUpdater) {
+      return { success: false, error: 'Gift updater not initialized' };
+    }
+
+    const activeGifts = await giftUpdater.getActiveGifts();
+    if (!activeGifts || !activeGifts.images) {
+      return { success: false, error: 'No active gifts found' };
+    }
+
+    // Check which images are missing
+    let missingImages = [];
+
+    for (const [coinValue, gifts] of Object.entries(activeGifts.images)) {
+      for (const [giftName, giftData] of Object.entries(gifts)) {
+        if (giftData && giftData.cdn && giftData.local) {
+          // Extract filename from local path
+          const filename = giftData.local.replace('./gift-images/', '');
+          const filepath = pathModule.join(imagesDir, filename);
+
+          // Check if file exists
+          try {
+            await fs.access(filepath);
+            // File exists, skip it
+          } catch {
+            // File doesn't exist, add to download list
+            missingImages.push({
+              url: giftData.cdn,
+              filename,
+              filepath,
+              giftName,
+              coinValue
+            });
+          }
+        }
+      }
+    }
+
+    console.log(`📦 Found ${missingImages.length} missing images to download`);
+
+    if (missingImages.length === 0) {
+      return {
+        success: true,
+        downloaded: 0,
+        failed: 0,
+        total: 0,
+        message: 'All images already downloaded'
+      };
+    }
+
+    // Download missing images with progress updates
+    let downloaded = 0;
+    let failed = 0;
+    const total = missingImages.length;
+
+    for (const img of missingImages) {
+      // Send progress update to renderer
+      mainWindow.webContents.send('image-download-progress', {
+        current: downloaded + failed + 1,
+        total,
+        filename: img.filename,
+        giftName: img.giftName,
+        status: 'downloading'
+      });
+
+      try {
+        await downloadImage(img.url, img.filepath);
+        downloaded++;
+        console.log(`✅ Downloaded missing: ${img.filename}`);
+
+        // Send success update
+        mainWindow.webContents.send('image-download-progress', {
+          current: downloaded + failed,
+          total,
+          filename: img.filename,
+          giftName: img.giftName,
+          status: 'success'
+        });
+      } catch (error) {
+        failed++;
+        console.error(`❌ Failed to download ${img.filename}:`, error.message);
+
+        // Send error update
+        mainWindow.webContents.send('image-download-progress', {
+          current: downloaded + failed,
+          total,
+          filename: img.filename,
+          giftName: img.giftName,
+          status: 'error',
+          error: error.message
+        });
+      }
+
+      // Small delay to avoid overwhelming the server
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    console.log(`🎉 Missing images download complete! Success: ${downloaded}, Failed: ${failed}`);
+
+    return {
+      success: true,
+      downloaded,
+      failed,
+      total,
+      imagesDir
+    };
+  } catch (error) {
+    console.error('Error downloading missing gift images:', error);
     return { success: false, error: error.message };
   }
 });
@@ -1471,8 +1998,27 @@ ipcMain.handle('check-mappings-for-archived-gifts', async (event, giftMappings) 
   }
 });
 
-// App event handlers
+// Register protocol as privileged before app is ready
 app.whenReady().then(async () => {
+  // Register custom protocol for serving gift images from userData
+  try {
+    protocol.handle('gift-image', (request) => {
+      const url = new URL(request.url);
+      // For gift-image://filename.webp, the filename is in url.host, not url.pathname
+      let filename = url.host || url.pathname.substring(1);
+      const imagePath = path.join(app.getPath('userData'), 'gift-images', filename);
+      console.log(`[gift-image protocol] Request: ${request.url} -> ${imagePath}`);
+
+      // Convert Windows path separators for file:// URL
+      const fileUrl = `file://${imagePath.replace(/\\/g, '/')}`;
+      console.log(`[gift-image protocol] Fetching: ${fileUrl}`);
+      return net.fetch(fileUrl);
+    });
+    console.log('✅ gift-image:// protocol registered');
+  } catch (error) {
+    console.error('❌ Failed to register gift-image protocol:', error);
+  }
+
   createWindow();
 
   // Start SNI server and auto-connect

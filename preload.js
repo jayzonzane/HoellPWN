@@ -6,10 +6,14 @@ contextBridge.exposeInMainWorld('sniAPI', {
   // Original functions
   connect: (host, port) => ipcRenderer.invoke('connect-sni', host, port),
   selectDevice: (deviceInfo) => ipcRenderer.invoke('select-device', deviceInfo),
+  restartSNI: () => ipcRenderer.invoke('restart-sni'),
   addHeart: () => ipcRenderer.invoke('add-heart'),
   removeHeart: () => ipcRenderer.invoke('remove-heart'),
   killPlayer: () => ipcRenderer.invoke('kill-player'),
   warpEastern: () => ipcRenderer.invoke('warp-eastern'),
+  fakeMirror: () => ipcRenderer.invoke('fake-mirror'),
+  chaosDungeonWarp: () => ipcRenderer.invoke('chaos-dungeon-warp'),
+  toggleWorld: () => ipcRenderer.invoke('toggle-world'),
   testMemory: () => ipcRenderer.invoke('test-memory'),
 
   // Resources
@@ -56,9 +60,18 @@ contextBridge.exposeInMainWorld('sniAPI', {
   spawnRandomEnemy: () => ipcRenderer.invoke('spawn-random-enemy'),
   spawnBeeSwarm: (count) => ipcRenderer.invoke('spawn-bee-swarm', count),
   stopBeeSwarm: () => ipcRenderer.invoke('stop-bee-swarm'),
-  triggerChickenAttack: () => ipcRenderer.invoke('trigger-chicken-attack'),
-  triggerEnemyWaves: () => ipcRenderer.invoke('trigger-enemy-waves'),
-  triggerBeeSwarmWaves: () => ipcRenderer.invoke('trigger-bee-swarm-waves'),
+  triggerChickenAttack: (durationSeconds) => ipcRenderer.invoke('trigger-chicken-attack', durationSeconds),
+  triggerEnemyWaves: (durationSeconds) => ipcRenderer.invoke('trigger-enemy-waves', durationSeconds),
+  triggerBeeSwarmWaves: (durationSeconds) => ipcRenderer.invoke('trigger-bee-swarm-waves', durationSeconds),
+  makeEnemiesInvisible: (durationSeconds) => ipcRenderer.invoke('make-enemies-invisible', durationSeconds),
+  enableInfiniteMagic: (durationSeconds) => ipcRenderer.invoke('enable-infinite-magic', durationSeconds),
+
+  // Chaotic Features
+  enableIceWorld: (durationSeconds) => ipcRenderer.invoke('enable-ice-world', durationSeconds),
+  spawnBossRush: (durationSeconds) => ipcRenderer.invoke('spawn-boss-rush', durationSeconds),
+  enableItemLock: (durationSeconds) => ipcRenderer.invoke('enable-item-lock', durationSeconds),
+  enableGlassCannon: (durationSeconds) => ipcRenderer.invoke('enable-glass-cannon', durationSeconds),
+  blessingAndCurse: () => ipcRenderer.invoke('blessing-and-curse'),
 
   // Magic Items
   toggleFireRod: () => ipcRenderer.invoke('toggle-fire-rod'),
@@ -78,6 +91,7 @@ contextBridge.exposeInMainWorld('sniAPI', {
 
   // Magic System
   enableMagic: () => ipcRenderer.invoke('enable-magic'),
+  removeMagic: () => ipcRenderer.invoke('remove-magic'),
   setMagicUpgrade: (level) => ipcRenderer.invoke('set-magic-upgrade', level),
 
   // Bottles
@@ -121,6 +135,12 @@ contextBridge.exposeInMainWorld('sniAPI', {
   loadGiftMappings: () => ipcRenderer.invoke('load-gift-mappings'),
   reloadGiftMappings: () => ipcRenderer.invoke('reload-gift-mappings'),
 
+  // Threshold Configurations
+  saveThresholdConfigs: (thresholds) => ipcRenderer.invoke('save-threshold-configs', thresholds),
+  loadThresholdConfigs: () => ipcRenderer.invoke('load-threshold-configs'),
+  reloadThresholdConfigs: () => ipcRenderer.invoke('reload-threshold-configs'),
+  getThresholdStatus: () => ipcRenderer.invoke('get-threshold-status'),
+
   // Gift Name Overrides
   saveGiftNameOverrides: (overrides) => ipcRenderer.invoke('save-gift-name-overrides', overrides),
   loadGiftNameOverrides: () => ipcRenderer.invoke('load-gift-name-overrides'),
@@ -135,6 +155,8 @@ contextBridge.exposeInMainWorld('sniAPI', {
 
   // Gift Image Download
   downloadAllGiftImages: () => ipcRenderer.invoke('download-all-gift-images'),
+  downloadMissingGiftImages: () => ipcRenderer.invoke('download-missing-gift-images'),
+  downloadSingleGiftImage: (giftName, coins, url) => ipcRenderer.invoke('download-single-gift-image', giftName, coins, url),
   onImageDownloadProgress: (callback) => ipcRenderer.on('image-download-progress', (event, data) => callback(data)),
   getDownloadedImagesPath: () => ipcRenderer.invoke('get-downloaded-images-path'),
 
@@ -158,6 +180,9 @@ contextBridge.exposeInMainWorld('sniAPI', {
   deleteArchivedGift: (giftName, coins) => ipcRenderer.invoke('delete-archived-gift', giftName, coins),
   checkMappingsForArchivedGifts: (giftMappings) => ipcRenderer.invoke('check-mappings-for-archived-gifts', giftMappings),
   onGiftUpdateProgress: (callback) => ipcRenderer.on('gift-update-progress', (event, data) => callback(data)),
+
+  // Delete Saves
+  deleteAllSaves: () => ipcRenderer.invoke('delete-all-saves'),
 
   // Event listeners
   onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data))

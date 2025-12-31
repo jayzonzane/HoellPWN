@@ -2,8 +2,8 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self';">
-  <title>ALTTP SNI Controller - FULL VERSION</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' gift-image:;">
+  <title>HoellPWN</title>
   <link rel="stylesheet" href="styles-full.css">
 </head>
 <body>
@@ -18,7 +18,7 @@
   </div> -->
 
   <div class="container">
-    <h1>🎮 ALTTP SNI Controller - COMPLETE</h1>
+    <h1>🎮 HoellPWN</h1>
 
     <!-- Connection Section -->
     <div class="section connection-section">
@@ -27,6 +27,7 @@
         <input type="text" id="host" placeholder="localhost" value="localhost">
         <input type="text" id="port" placeholder="8191" value="8191">
         <button id="connect-btn">Connect to SNI</button>
+        <button id="restart-sni-btn" style="background-color: #ff9800;">🔄 Restart SNI</button>
       </div>
       <div id="status" class="status disconnected">Disconnected</div>
       <select id="device-select" style="display: none;">
@@ -52,6 +53,7 @@
         <!-- Subtab Navigation -->
         <div class="subtab-navigation">
           <button class="subtab-btn active" data-subtab="gift-mappings-subtab">📝 Gift Mappings</button>
+          <button class="subtab-btn" data-subtab="thresholds-subtab">🎯 Thresholds</button>
           <button class="subtab-btn" data-subtab="overlay-builder-subtab">🖼️ Overlay Builder</button>
           <button class="subtab-btn" data-subtab="gift-database-subtab">📚 Gift Database & Images</button>
           <button class="subtab-btn" data-subtab="database-updates-subtab">🔄 Database Updates</button>
@@ -84,16 +86,63 @@
                     <input type="text" class="gift-input" data-action="killPlayer" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
+                    <span class="action-name">💀 Delete ALL Saves</span>
+                    <input type="text" class="gift-input" data-action="deleteAllSaves" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item action-item-with-duration">
                     <span class="action-name">🐔 Chicken Attack</span>
-                    <input type="text" class="gift-input" data-action="triggerChickenAttack" placeholder="Enter gift name...">
+                    <input type="text" class="gift-input" data-action="triggerChickenAttack" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="triggerChickenAttack" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🐝 Bee Swarm</span>
+                    <input type="text" class="gift-input" data-action="triggerBeeSwarmWaves" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="triggerBeeSwarmWaves" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">⚔️ Enemy Swarm</span>
+                    <input type="text" class="gift-input" data-action="triggerEnemyWaves" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="triggerEnemyWaves" value="30" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">👻 Invisible Enemies</span>
+                    <input type="text" class="gift-input" data-action="makeEnemiesInvisible" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="makeEnemiesInvisible" value="30" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">💀 Boss Rush</span>
+                    <input type="text" class="gift-input" data-action="spawnBossRush" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="spawnBossRush" value="60" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🔒 Item Lock</span>
+                    <input type="text" class="gift-input" data-action="enableItemLock" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="enableItemLock" value="30" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">💀 Glass Cannon</span>
+                    <input type="text" class="gift-input" data-action="enableGlassCannon" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="enableGlassCannon" value="60" min="5" max="600" placeholder="Sec">
                   </div>
                   <div class="action-item">
-                    <span class="action-name">🐝 Bee Swarm (60s)</span>
-                    <input type="text" class="gift-input" data-action="triggerBeeSwarmWaves" placeholder="Enter gift name...">
+                    <span class="action-name">🎲 Effect Roulette</span>
+                    <input type="text" class="gift-input" data-action="blessingAndCurse" placeholder="Gift name...">
                   </div>
                   <div class="action-item">
-                    <span class="action-name">⚔️ Enemy Swarm (30s)</span>
-                    <input type="text" class="gift-input" data-action="triggerEnemyWaves" placeholder="Enter gift name...">
+                    <span class="action-name">🪞 Fake Mirror</span>
+                    <input type="text" class="gift-input" data-action="fakeMirror" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🎲 Chaos Dungeon Warp</span>
+                    <input type="text" class="gift-input" data-action="chaosDungeonWarp" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌍 Flip World</span>
+                    <input type="text" class="gift-input" data-action="toggleWorld" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐦 Reset Bird</span>
+                    <input type="text" class="gift-input" data-action="deactivateFlute" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
                     <span class="action-name">🎲 Spawn Random Enemy</span>
@@ -335,10 +384,6 @@
                   <div class="action-item">
                     <span class="action-name">🎵 Remove Flute</span>
                     <input type="text" class="gift-input" data-action="removeFlute" placeholder="Enter gift name...">
-                  </div>
-                  <div class="action-item">
-                    <span class="action-name">🐦 Reset Bird</span>
-                    <input type="text" class="gift-input" data-action="deactivateFlute" placeholder="Enter gift name...">
                   </div>
                 </div>
 
@@ -597,6 +642,35 @@
           </div>
           <!-- End Gift Mappings Subtab -->
 
+          <!-- Thresholds Subtab -->
+          <div id="thresholds-subtab" class="subtab-content">
+            <!-- Threshold Actions at Top -->
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; align-items: center;">
+              <button class="btn-primary" id="add-threshold">➕ Add Threshold</button>
+              <button class="btn-reset" id="reset-all-thresholds" style="background: #ef4444;">🗑️ Reset All Thresholds</button>
+              <div style="margin-left: auto; color: rgba(255,255,255,0.7); font-size: 13px;">
+                💡 Thresholds accumulate gifts and trigger actions when the target count is reached. Counters reset each session.
+              </div>
+            </div>
+
+            <!-- Current Threshold Progress -->
+            <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <h3 style="margin-top: 0; margin-bottom: 10px; color: rgba(255,255,255,0.9);">📊 Current Progress (This Session)</h3>
+              <div id="threshold-progress-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="color: rgba(255,255,255,0.5); font-style: italic;">No thresholds configured</div>
+              </div>
+            </div>
+
+            <!-- Configured Thresholds -->
+            <div style="padding: 15px;">
+              <h3 style="margin-top: 0; margin-bottom: 15px; color: rgba(255,255,255,0.9);">🎯 Configured Thresholds</h3>
+              <div id="threshold-config-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="color: rgba(255,255,255,0.5); font-style: italic;">No thresholds configured. Click "Add Threshold" to create one.</div>
+              </div>
+            </div>
+          </div>
+          <!-- End Thresholds Subtab -->
+
           <!-- Overlay Builder Subtab -->
           <div id="overlay-builder-subtab" class="subtab-content">
             <!-- Overlay Actions at Top -->
@@ -625,6 +699,11 @@
                     <label for="overlay-pause">Pause After All (seconds):</label>
                     <input type="number" id="overlay-pause" value="30" min="1" max="120" step="1">
                     <small>Wait time before repeating all gifts</small>
+                  </div>
+                  <div class="config-group">
+                    <label for="overlay-spacing">Gift Spacing (px):</label>
+                    <input type="number" id="overlay-spacing" value="150" min="0" max="500" step="10">
+                    <small>Space between gift images (multiplied by 2x in animation)</small>
                   </div>
                   <div class="config-group">
                     <label class="checkbox-label">
@@ -830,6 +909,7 @@
             <button class="btn-sm" data-action="removeHeart">💔 Remove Heart</button>
             <button class="btn-sm" data-action="addHeartPiece">¼❤️ Heart Piece</button>
             <button class="btn-sm danger" data-action="killPlayer">💀 KO</button>
+            <button class="btn-sm danger" data-action="deleteAllSaves">💀 DELETE SAVES</button>
             <button class="btn-sm" data-action="testMemory">🔍 Test Mem</button>
             <button class="btn-sm special" data-action="toggleInvincibility">⭐ GOD MODE</button>
           </div>
@@ -944,9 +1024,11 @@
           <h3>Magic</h3>
           <div class="button-grid-compact">
             <button class="btn-sm" data-action="enableMagic">✨ Enable</button>
+            <button class="btn-sm danger" data-action="removeMagic">🚫 Remove</button>
             <button class="btn-sm" data-action="setMagicUpgrade" data-value="0">🔮 Normal</button>
             <button class="btn-sm" data-action="setMagicUpgrade" data-value="1">🔮 ½ Magic</button>
             <button class="btn-sm" data-action="setMagicUpgrade" data-value="2">🔮 ¼ Magic</button>
+            <button class="btn-sm special" data-action="enableInfiniteMagic">✨ INF (60s)</button>
           </div>
         </div>
 
@@ -1162,9 +1244,19 @@
             <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier">🗡️ Soldier (HP:6)</button>
             <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier_green">🟢 Soldier (HP:4)</button>
             <button class="btn-sm special" data-action="spawnRandomEnemy">🎲 Random Enemy</button>
-            <button class="btn-sm danger" data-action="triggerChickenAttack">🐔 Chicken Attack</button>
-            <button class="btn-sm danger" data-action="triggerEnemyWaves">⚔️ Enemy Waves (30s)</button>
+
+            <button class="btn-sm danger" data-action="fakeMirror">🪞 Fake Mirror</button>
+            <button class="btn-sm danger" data-action="chaosDungeonWarp">🎲 Chaos Dungeon Warp</button>
+            <button class="btn-sm special" data-action="toggleWorld">🌍 Flip World</button>
+
+            <button class="btn-sm danger" data-action="triggerChickenAttack">🐔 Chicken Attack (60s)</button>
+            <button class="btn-sm danger" data-action="triggerEnemyWaves">⚔️ Enemy Waves (60s)</button>
             <button class="btn-sm danger" data-action="triggerBeeSwarmWaves">🐝 Bee Swarm (60s)</button>
+            <button class="btn-sm danger" data-action="makeEnemiesInvisible">👻 Invisible Enemies (60s)</button>
+            <button class="btn-sm danger" data-action="spawnBossRush">💀 Boss Rush (60s)</button>
+            <button class="btn-sm danger" data-action="enableItemLock">🔒 Item Lock (60s)</button>
+            <button class="btn-sm danger" data-action="enableGlassCannon">💀 Glass Cannon (60s)</button>
+            <button class="btn-sm special" data-action="blessingAndCurse">🎲 Effect Roulette</button>
           </div>
         </div>
       </div>
@@ -1222,5 +1314,6 @@
   <script src="renderer-full.js"></script>
   <script src="gift-settings-modal.js"></script>
   <script src="archived-gifts-modal.js"></script>
+  <script src="threshold-manager.js"></script>
 </body>
 </html>

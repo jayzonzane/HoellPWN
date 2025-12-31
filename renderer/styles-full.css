@@ -1030,9 +1030,10 @@ h3 {
 
 /* Action Items */
 .action-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 200px 250px;
+  gap: 8px;
   align-items: center;
-  gap: 10px;
   margin-bottom: 8px;
   padding: 8px;
   background: rgba(255,255,255,0.05);
@@ -1045,14 +1046,12 @@ h3 {
 }
 
 .action-name {
-  flex: 0 0 200px;
   font-size: 12px;
   font-weight: 600;
   color: #fff;
 }
 
 .gift-input {
-  flex: 1;
   padding: 6px 10px;
   border: 1px solid rgba(255,255,255,0.3);
   border-radius: 4px;
@@ -1060,6 +1059,7 @@ h3 {
   color: #fff;
   font-size: 12px;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .gift-input:focus {
@@ -1078,22 +1078,34 @@ h3 {
   border-color: #4CAF50;
 }
 
-/* Duration Input for Item Disable */
+/* Duration Input for Item Disable and Timed Events */
 .action-item-with-duration {
-  display: grid;
-  grid-template-columns: 200px 1fr 80px;
-  gap: 10px;
+  display: grid !important;
+  grid-template-columns: 200px 250px 70px !important;
+  gap: 8px;
+  align-items: start;
+}
+
+.action-item-with-duration .gift-dropdown-container {
+  grid-column: 2;
+}
+
+.action-item-with-duration .duration-input {
+  grid-column: 3;
 }
 
 .duration-input {
-  padding: 6px 10px;
+  padding: 6px 4px;
   border: 1px solid rgba(255,255,255,0.3);
   border-radius: 4px;
   background: rgba(0,0,0,0.3);
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   transition: all 0.2s;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  display: block !important;
 }
 
 .duration-input:focus {
@@ -1588,10 +1600,10 @@ h3 {
 }
 
 .overlay-gift-item {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 10px;
   background: rgba(255,255,255,0.05);
   border-radius: 4px;
   transition: background 0.2s;
@@ -1605,17 +1617,38 @@ h3 {
   width: 18px;
   height: 18px;
   cursor: pointer;
+  margin-top: 2px;
 }
 
-.overlay-gift-name {
-  flex: 1;
+.overlay-gift-label {
   color: rgba(255,255,255,0.9);
   font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  grid-column: 2;
 }
 
-.overlay-gift-action {
-  color: rgba(255,255,255,0.6);
-  font-size: 12px;
+.overlay-text-input {
+  grid-column: 2;
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.overlay-text-input:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.overlay-text-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .overlay-preview-section {
@@ -2214,25 +2247,25 @@ h3 {
 }
 
 .gift-thumbnail {
-  width: 20px;
-  height: 20px;
+  width: 50px;
+  height: 50px;
   flex-shrink: 0;
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.3);
+  background: #1a1a1a;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .gift-thumbnail img {
-  width: 20px;
-  height: 20px;
-  object-fit: cover;
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
 }
 
 .no-image-icon {
-  font-size: 14px;
+  font-size: 24px;
 }
 
 .gift-info {
@@ -2296,10 +2329,82 @@ h3 {
   background: rgba(0, 0, 0, 0.4);
 }
 
+.image-url-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.image-url-row input[type="text"] {
+  flex: 1;
+}
+
+.download-image-btn {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.download-image-btn:hover {
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.download-image-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.download-image-btn:disabled {
+  background: rgba(100, 100, 100, 0.3);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .url-hint {
   font-size: 10px;
   color: rgba(255, 255, 255, 0.4);
   margin-top: 3px;
+  font-style: italic;
+}
+
+/* Archived Gift Styling in Database */
+.unified-gift-item.archived-gift {
+  background: rgba(255, 152, 0, 0.08);
+  border-left: 3px solid rgba(255, 152, 0, 0.5);
+}
+
+.unified-gift-item.archived-gift:hover {
+  background: rgba(255, 152, 0, 0.12);
+}
+
+.archived-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.3), rgba(255, 87, 34, 0.3));
+  border: 1px solid rgba(255, 152, 0, 0.6);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #FF9800;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Archived Gift Options in Dropdowns */
+select option.archived-option {
+  background: rgba(255, 152, 0, 0.15);
+  color: #FF9800;
   font-style: italic;
 }
 

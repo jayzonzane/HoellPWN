@@ -6,7 +6,8 @@ const {
   ROOM_IDS,
   SPRITE_TYPES,
   SPRITE_ROM_INIT,
-  SNES_WRAM_BASE
+  SNES_WRAM_BASE,
+  SNES_SAVEDATA_BASE
 } = require('./memory-complete');
 
 class ExpandedGameOperations {
@@ -45,6 +46,54 @@ class ExpandedGameOperations {
     this.beeSwarmWavesSlots = [null, null, null, null, null, null, null]; // Track 7 bee sprite slots
     this.beeSwarmWavesInterval = null;
     this.beeSwarmWavesLastRoom = null; // Track room for screen transitions
+
+    // Invisible enemies properties
+    this.invisibleEnemiesActive = false;
+    this.invisibleEnemiesStartTime = null;
+    this.invisibleEnemiesDuration = 30000; // 30 seconds in milliseconds
+    this.invisibleEnemiesInterval = null; // 60fps refresh interval
+    this.invisibleEnemiesTimer = null; // Duration timer
+    this.invisibleEnemiesLastRoom = null; // Track room for screen transitions
+
+    // Infinite magic properties
+    this.infiniteMagicActive = false;
+    this.infiniteMagicStartTime = null;
+    this.infiniteMagicDuration = 60000; // 60 seconds in milliseconds
+    this.infiniteMagicInterval = null; // Refill interval
+    this.infiniteMagicTimer = null; // Duration timer
+
+    // Ice World properties
+    this.iceWorldActive = false;
+    this.iceWorldDuration = 0;
+    this.iceWorldStartTime = null;
+    this.iceWorldInterval = null;
+    this.iceWorldTimer = null;
+
+    // Item Lock properties
+    this.itemLockActive = false;
+    this.itemLockDuration = 0;
+    this.itemLockStartTime = null;
+    this.itemLockInterval = null;
+    this.itemLockTimer = null;
+    this.itemLockOriginalY = null;
+    this.itemLockOriginalX = null;
+
+    // Boss Rush properties (60-second duration with 2 bosses)
+    this.bossRushActive = false;
+    this.bossRushStartTime = null;
+    this.bossRushDuration = 60000; // 60 seconds in milliseconds
+    this.bossRushSlots = [null, null]; // Track 2 boss sprite slots
+    this.bossRushInterval = null;
+    this.bossRushLastRoom = null; // Track room for screen transitions
+
+    // Glass Cannon properties (1 HP + Golden Sword for 60 seconds)
+    this.glassCannonActive = false;
+    this.glassCannonStartTime = null;
+    this.glassCannonDuration = 60000; // 60 seconds in milliseconds
+    this.glassCannonInterval = null;
+    this.glassCannonTimer = null;
+    this.glassCannonOriginalMaxHealth = null;
+    this.glassCannonOriginalSword = null;
   }
 
   // ============= HELPER METHODS =============
@@ -149,6 +198,13 @@ class ExpandedGameOperations {
   async enableMagic() {
     await this.client.writeMemory(MEMORY_ADDRESSES.MAGIC_METER, Buffer.from([0x80]));
     return { success: true, message: 'Magic meter enabled' };
+  }
+
+  async removeMagic() {
+    // Disable magic meter and set magic to 0
+    await this.client.writeMemory(MEMORY_ADDRESSES.MAGIC_METER, Buffer.from([0x00]));
+    await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_MAGIC, Buffer.from([0x00]));
+    return { success: true, message: 'Magic meter removed' };
   }
 
   async setMagicUpgrade(level) {
@@ -934,6 +990,236 @@ class ExpandedGameOperations {
     return { success: true, message: `Warping to ${locationName}` };
   }
 
+  async fakeMirror() {
+    // "Fake Mirror" - Warps you to the entrance of the dungeon you're currently in
+    try {
+      // Read current room ID
+      const roomLowBuffer = await this.client.readMemory(MEMORY_ADDRESSES.CURRENT_ROOM, 1);
+      const roomHighBuffer = await this.client.readMemory(MEMORY_ADDRESSES.CURRENT_ROOM_HIGH, 1);
+      const currentRoom = roomLowBuffer[0] | (roomHighBuffer[0] << 8);
+
+      console.log(`[Fake Mirror] Current room: 0x${currentRoom.toString(16).toUpperCase()}`);
+
+      // Map room ID ranges to dungeon entrances
+      // Based on ALTTP dungeon room layouts
+      const dungeonRanges = [
+        // Hyrule Castle & Escape - rooms 0x00-0x7F in certain ranges
+        { min: 0x60, max: 0x6F, name: 'Hyrule Castle', entrance: 0x61 },
+        { min: 0x70, max: 0x75, name: 'Hyrule Castle', entrance: 0x61 },
+
+        // Eastern Palace - rooms around 0xC0-0xCF
+        { min: 0xC0, max: 0xCF, name: 'Eastern Palace', entrance: ROOM_IDS.EASTERN_PALACE },
+
+        // Desert Palace - rooms around 0x30-0x3F and 0x80-0x8F
+        { min: 0x30, max: 0x3F, name: 'Desert Palace', entrance: ROOM_IDS.DESERT_PALACE_MAIN },
+        { min: 0x80, max: 0x8F, name: 'Desert Palace', entrance: ROOM_IDS.DESERT_PALACE_MAIN },
+
+        // Tower of Hera - rooms around 0x00-0x0F, 0x70-0x7F
+        { min: 0x00, max: 0x1F, name: 'Tower of Hera', entrance: ROOM_IDS.TOWER_HERA },
+        { min: 0x77, max: 0x7F, name: 'Tower of Hera', entrance: ROOM_IDS.TOWER_HERA },
+
+        // Agahnim's Tower - rooms around 0x20-0x2F
+        { min: 0x20, max: 0x2F, name: 'Agahnim Tower', entrance: 0x60 },
+
+        // Palace of Darkness - rooms around 0x40-0x5F
+        { min: 0x40, max: 0x5F, name: 'Palace of Darkness', entrance: ROOM_IDS.PALACE_DARKNESS },
+
+        // Swamp Palace - rooms around 0x00-0x0F (overlap with Hera, but different context)
+        { min: 0x06, max: 0x0B, name: 'Swamp Palace', entrance: ROOM_IDS.SWAMP_PALACE },
+        { min: 0x28, max: 0x2F, name: 'Swamp Palace', entrance: ROOM_IDS.SWAMP_PALACE },
+
+        // Skull Woods - rooms around 0x50-0x5F (can overlap with Palace of Darkness)
+        { min: 0x56, max: 0x5F, name: 'Skull Woods', entrance: ROOM_IDS.SKULL_WOODS },
+
+        // Thieves' Town - rooms around 0xA0-0xAF, 0xD0-0xDF
+        { min: 0xA0, max: 0xAF, name: 'Thieves Town', entrance: ROOM_IDS.THIEVES_TOWN },
+        { min: 0xDB, max: 0xDF, name: 'Thieves Town', entrance: ROOM_IDS.THIEVES_TOWN },
+
+        // Ice Palace - rooms around 0x0E-0x1F (some overlap)
+        { min: 0x0E, max: 0x1F, name: 'Ice Palace', entrance: ROOM_IDS.ICE_PALACE },
+        { min: 0xDE, max: 0xEF, name: 'Ice Palace', entrance: ROOM_IDS.ICE_PALACE },
+
+        // Misery Mire - rooms around 0x90-0x9F
+        { min: 0x90, max: 0x9F, name: 'Misery Mire', entrance: ROOM_IDS.MISERY_MIRE },
+
+        // Turtle Rock - rooms around 0xA0-0xAF, 0xD0-0xDF (overlap with Thieves)
+        { min: 0xD0, max: 0xD9, name: 'Turtle Rock', entrance: ROOM_IDS.TURTLE_ROCK },
+
+        // Ganon's Tower - rooms around 0x00-0x1F (lots of overlap - tricky)
+        { min: 0x0C, max: 0x0D, name: 'Ganons Tower', entrance: ROOM_IDS.GANONS_TOWER }
+      ];
+
+      // Find which dungeon the current room belongs to
+      let dungeonInfo = null;
+      for (const range of dungeonRanges) {
+        if (currentRoom >= range.min && currentRoom <= range.max) {
+          dungeonInfo = range;
+          break;
+        }
+      }
+
+      if (!dungeonInfo) {
+        console.log(`[Fake Mirror] Not in a recognized dungeon room (Room: 0x${currentRoom.toString(16).toUpperCase()})`);
+        return { success: false, error: `Not in a dungeon (Room: 0x${currentRoom.toString(16).toUpperCase()})` };
+      }
+
+      console.log(`[Fake Mirror] Detected ${dungeonInfo.name}, warping to entrance (0x${dungeonInfo.entrance.toString(16).toUpperCase()})`);
+
+      // Set the room ID to the entrance
+      await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_ROOM, Buffer.from([dungeonInfo.entrance & 0xFF]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_ROOM_HIGH, Buffer.from([dungeonInfo.entrance >> 8]));
+
+      // Set indoors flag
+      await this.client.writeMemory(MEMORY_ADDRESSES.INDOORS_FLAG, Buffer.from([0x01]));
+
+      // Trigger transition
+      await this.client.writeMemory(MEMORY_ADDRESSES.MODULE_INDEX, Buffer.from([0x11]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.SUBMODULE_INDEX, Buffer.from([0x00]));
+
+      return { success: true, message: `🪞 Fake Mirror! Sent you to ${dungeonInfo.name} entrance!` };
+    } catch (error) {
+      console.error('[Fake Mirror] Error:', error);
+      return { success: false, error: error.message || 'Unknown error occurred' };
+    }
+  }
+
+  async chaosDungeonWarp() {
+    // "Chaos Dungeon Warp" - Warps you to a random dungeon entrance
+    // Only works when already in a dungeon
+    try {
+      // Check if player is indoors (in a dungeon/building)
+      const indoorsFlag = await this.readWithRetry(MEMORY_ADDRESSES.INDOORS_FLAG, 1);
+      if (indoorsFlag[0] === 0) {
+        console.log('[Chaos Dungeon Warp] Not indoors - must be in a dungeon to use this');
+        return { success: false, error: 'Must be in a dungeon to use Chaos Dungeon Warp' };
+      }
+
+      // Read current room to verify it's a dungeon
+      const roomLowBuffer = await this.client.readMemory(MEMORY_ADDRESSES.CURRENT_ROOM, 1);
+      const roomHighBuffer = await this.client.readMemory(MEMORY_ADDRESSES.CURRENT_ROOM_HIGH, 1);
+      const currentRoom = roomLowBuffer[0] | (roomHighBuffer[0] << 8);
+
+      // Define dungeon room ranges (same as Fake Mirror)
+      const dungeonRanges = [
+        { min: 0x60, max: 0x6F }, // Hyrule Castle
+        { min: 0x70, max: 0x75 }, // Hyrule Castle
+        { min: 0xC0, max: 0xCF }, // Eastern Palace
+        { min: 0x30, max: 0x3F }, // Desert Palace
+        { min: 0x80, max: 0x8F }, // Desert Palace
+        { min: 0x00, max: 0x1F }, // Tower of Hera
+        { min: 0x77, max: 0x7F }, // Tower of Hera
+        { min: 0x20, max: 0x2F }, // Agahnim Tower / Swamp Palace
+        { min: 0x40, max: 0x5F }, // Palace of Darkness
+        { min: 0x06, max: 0x0B }, // Swamp Palace
+        { min: 0x28, max: 0x2F }, // Swamp Palace
+        { min: 0x56, max: 0x5F }, // Skull Woods
+        { min: 0xA0, max: 0xAF }, // Thieves Town
+        { min: 0xDB, max: 0xDF }, // Thieves Town
+        { min: 0x0E, max: 0x1F }, // Ice Palace
+        { min: 0xDE, max: 0xEF }, // Ice Palace
+        { min: 0x90, max: 0x9F }, // Misery Mire
+        { min: 0xD0, max: 0xD9 }, // Turtle Rock
+        { min: 0x0C, max: 0x0D }  // Ganons Tower
+      ];
+
+      // Check if current room is in a dungeon
+      let isInDungeon = false;
+      for (const range of dungeonRanges) {
+        if (currentRoom >= range.min && currentRoom <= range.max) {
+          isInDungeon = true;
+          break;
+        }
+      }
+
+      if (!isInDungeon) {
+        console.log(`[Chaos Dungeon Warp] Not in a recognized dungeon room (Room: 0x${currentRoom.toString(16).toUpperCase()})`);
+        return { success: false, error: `Not in a dungeon (Room: 0x${currentRoom.toString(16).toUpperCase()})` };
+      }
+
+      // List of all dungeons with their entrances
+      const dungeons = [
+        { name: 'Hyrule Castle', entrance: 0x61 },
+        { name: 'Eastern Palace', entrance: ROOM_IDS.EASTERN_PALACE },
+        { name: 'Desert Palace', entrance: ROOM_IDS.DESERT_PALACE_MAIN },
+        { name: 'Tower of Hera', entrance: ROOM_IDS.TOWER_HERA },
+        { name: 'Agahnim Tower', entrance: 0x60 },
+        { name: 'Palace of Darkness', entrance: ROOM_IDS.PALACE_DARKNESS },
+        { name: 'Swamp Palace', entrance: ROOM_IDS.SWAMP_PALACE },
+        { name: 'Skull Woods', entrance: ROOM_IDS.SKULL_WOODS },
+        { name: 'Thieves Town', entrance: ROOM_IDS.THIEVES_TOWN },
+        { name: 'Ice Palace', entrance: ROOM_IDS.ICE_PALACE },
+        { name: 'Misery Mire', entrance: ROOM_IDS.MISERY_MIRE },
+        { name: 'Turtle Rock', entrance: ROOM_IDS.TURTLE_ROCK },
+        { name: 'Ganons Tower', entrance: ROOM_IDS.GANONS_TOWER }
+      ];
+
+      // Randomly select a dungeon
+      const randomDungeon = dungeons[Math.floor(Math.random() * dungeons.length)];
+
+      console.log(`[Chaos Dungeon Warp] Warping to ${randomDungeon.name} (0x${randomDungeon.entrance.toString(16).toUpperCase()})`);
+
+      // Step 1: Use Fake Mirror logic to warp to current dungeon entrance (this works reliably)
+      // This gets us to a dungeon entrance and puts us at the beginning
+
+      // Use current dungeon or default to Hyrule Castle if not in a dungeon
+      let tempEntrance = 0x61; // Default to Hyrule Castle
+
+      // Try to detect current dungeon for initial warp
+      if (currentRoom >= 0xC0 && currentRoom <= 0xCF) tempEntrance = ROOM_IDS.EASTERN_PALACE;
+      else if (currentRoom >= 0x40 && currentRoom <= 0x5F) tempEntrance = ROOM_IDS.PALACE_DARKNESS;
+
+      // First warp using Fake Mirror logic
+      await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_ROOM, Buffer.from([tempEntrance & 0xFF]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_ROOM_HIGH, Buffer.from([tempEntrance >> 8]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.INDOORS_FLAG, Buffer.from([0x01]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.MODULE_INDEX, Buffer.from([0x11]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.SUBMODULE_INDEX, Buffer.from([0x00]));
+
+      // Wait for Fake Mirror warp to complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Step 2: Now change to the random dungeon with loading screen
+      await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_ROOM, Buffer.from([randomDungeon.entrance & 0xFF]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_ROOM_HIGH, Buffer.from([randomDungeon.entrance >> 8]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.INDOORS_FLAG, Buffer.from([0x01]));
+
+      // Use loading module to force graphics reload
+      await this.client.writeMemory(MEMORY_ADDRESSES.MODULE_INDEX, Buffer.from([0x0F]));
+      await this.client.writeMemory(MEMORY_ADDRESSES.SUBMODULE_INDEX, Buffer.from([0x00]));
+
+      return { success: true, message: `🎲 Chaos Warp! Sent you to ${randomDungeon.name}!` };
+    } catch (error) {
+      console.error('[Chaos Dungeon Warp] Error:', error);
+      return { success: false, error: error.message || 'Unknown error occurred' };
+    }
+  }
+
+  async toggleWorld() {
+    // Toggle between Light World and Dark World
+    try {
+      console.log('[Toggle World] Flipping between Light/Dark World...');
+
+      // Dark World flag is at 0x7EF3CA
+      const DARK_WORLD_FLAG = SNES_SAVEDATA_BASE + 0x3CA;
+
+      // Read current world state
+      const currentWorld = await this.readWithRetry(DARK_WORLD_FLAG, 1);
+      const isDarkWorld = currentWorld[0] === 0x40;
+
+      // Toggle it
+      const newWorld = isDarkWorld ? 0x00 : 0x40;
+      await this.client.writeMemory(DARK_WORLD_FLAG, Buffer.from([newWorld]));
+
+      const worldName = isDarkWorld ? 'Light World' : 'Dark World';
+      console.log(`[Toggle World] Switched to ${worldName}`);
+
+      return { success: true, message: `🌍 Warped to ${worldName}!` };
+    } catch (error) {
+      console.error('[Toggle World] Error:', error);
+      return { success: false, error: error.message || 'Unknown error occurred' };
+    }
+  }
+
   // ============= FULL LOADOUTS =============
   async giveStarterPack() {
     // Give basic equipment
@@ -1113,7 +1399,7 @@ class ExpandedGameOperations {
         return { success: false, error: 'No empty sprite slots available' };
       }
 
-      // Get sprite type ID - 10 verified working enemies
+      // Get sprite type ID - 12 verified working enemies + 1 boss
       const spriteTypeMap = {
         'octorok': SPRITE_TYPES.OCTOROK,
         'ballandchain': SPRITE_TYPES.BALL_AND_CHAIN,
@@ -1124,7 +1410,9 @@ class ExpandedGameOperations {
         'minihelmasaur': SPRITE_TYPES.MINI_MOLDORM,
         'bombguy': SPRITE_TYPES.SLUGGULA,
         'soldier': SPRITE_TYPES.SOLDIER_BLUE,
-        'soldier_green': SPRITE_TYPES.SOLDIER_GREEN
+        'soldier_green': SPRITE_TYPES.SOLDIER_GREEN,
+        'lynel': SPRITE_TYPES.LYNEL,
+        'helmasaurking': SPRITE_TYPES.HELMASAUR  // Boss - may be unstable!
       };
 
       const spriteId = spriteTypeMap[enemyType.toLowerCase()] || SPRITE_TYPES.SOLDIER_BLUE;
@@ -1652,18 +1940,31 @@ class ExpandedGameOperations {
   }
 
   // Main trigger function - stores attack if indoors, triggers if outdoors
-  async triggerChickenAttack() {
+  async triggerChickenAttack(durationSeconds = 60) {
     try {
-      // Check if an attack is already active
+      const addedDuration = durationSeconds * 1000; // Convert to milliseconds
+
+      // Check if an attack is already active - ADD TIME instead of rejecting
       if (this.chickenAttackActive) {
-        const remaining = Math.ceil((this.chickenAttackDuration - this.chickenAttackElapsedActive) / 1000);
+        const remainingBefore = Math.ceil((this.chickenAttackDuration - this.chickenAttackElapsedActive) / 1000);
+
+        // Add the new duration to the total allowed duration
+        this.chickenAttackDuration += addedDuration;
+
+        const remainingAfter = Math.ceil((this.chickenAttackDuration - this.chickenAttackElapsedActive) / 1000);
+
+        console.log(`[Chicken Attack] Added ${durationSeconds}s to existing attack. Was ${remainingBefore}s, now ${remainingAfter}s remaining`);
+
         return {
-          success: false,
-          error: `🐔 Chicken attack already in progress! ${remaining}s of active time remaining`,
-          alreadyActive: true,
-          remainingSeconds: remaining
+          success: true,
+          message: `🐔 Added ${durationSeconds}s to chicken attack! Now ${remainingAfter}s remaining`,
+          timeAdded: durationSeconds,
+          totalRemaining: remainingAfter
         };
       }
+
+      // Set initial duration for new attack
+      this.chickenAttackDuration = addedDuration;
 
       // Check if player is indoors
       const indoorsFlag = await this.readWithRetry(MEMORY_ADDRESSES.INDOORS_FLAG, 1);
@@ -1850,21 +2151,34 @@ class ExpandedGameOperations {
 
   /**
    * Main entry point for triggering enemy waves
-   * Prevents duplicate activations
+   * Adds time if already active instead of rejecting
    */
-  async triggerEnemyWaves() {
+  async triggerEnemyWaves(durationSeconds = 30) {
     try {
-      // Check if enemy waves are already active
+      const addedDuration = durationSeconds * 1000; // Convert to milliseconds
+
+      // Check if enemy waves are already active - ADD TIME instead of rejecting
       if (this.enemyWavesActive) {
         const elapsed = Date.now() - this.enemyWavesStartTime;
-        const remaining = Math.ceil((this.enemyWavesDuration - elapsed) / 1000);
+        const remainingBefore = Math.ceil((this.enemyWavesDuration - elapsed) / 1000);
+
+        // Add the new duration to the total duration
+        this.enemyWavesDuration += addedDuration;
+
+        const remainingAfter = Math.ceil((this.enemyWavesDuration - elapsed) / 1000);
+
+        console.log(`[Enemy Waves] Added ${durationSeconds}s to existing waves. Was ${remainingBefore}s, now ${remainingAfter}s remaining`);
+
         return {
-          success: false,
-          error: `⚔️ Enemy waves already in progress! ${remaining}s remaining`,
-          alreadyActive: true,
-          remainingSeconds: remaining
+          success: true,
+          message: `⚔️ Added ${durationSeconds}s to enemy waves! Now ${remainingAfter}s remaining`,
+          timeAdded: durationSeconds,
+          totalRemaining: remainingAfter
         };
       }
+
+      // Set initial duration for new waves
+      this.enemyWavesDuration = addedDuration;
 
       // Spawn enemies anywhere (indoors or outdoors)
       return await this.spawnEnemyWaves();
@@ -2012,13 +2326,13 @@ class ExpandedGameOperations {
             await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_FLAGS4 + slotIndex, Buffer.from([beeRomData.flags4]));
             await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_FLAGS5 + slotIndex, Buffer.from([beeRomData.flags5]));
 
-            // Set random velocity
-            const randomVelX = (Math.floor(Math.random() * 16)) - 8;
-            const randomVelY = (Math.floor(Math.random() * 16)) - 8;
+            // Set aggressive velocity (faster bees!)
+            const randomVelX = (Math.floor(Math.random() * 24)) - 12;
+            const randomVelY = (Math.floor(Math.random() * 24)) - 12;
             await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_X_VEL + slotIndex, Buffer.from([randomVelX & 0xFF]));
             await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_Y_VEL + slotIndex, Buffer.from([randomVelY & 0xFF]));
 
-            // Initialize bee AI state
+            // Initialize bee AI state to normal
             await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_AI_STATE + slotIndex, Buffer.from([0x01]));
 
             // Set sprite state to 0x09 (active)
@@ -2042,11 +2356,19 @@ class ExpandedGameOperations {
       this.beeSwarmWavesInterval = null;
     }
 
-    // Despawn all bees
+    // Despawn all bees (verify they're still bees before despawning)
     for (let i = 0; i < this.beeSwarmWavesSlots.length; i++) {
       const slotIndex = this.beeSwarmWavesSlots[i];
       if (slotIndex !== null) {
-        await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_STATE + slotIndex, Buffer.from([0x00]));
+        try {
+          // Verify this is actually a bee before despawning
+          const spriteType = await this.readWithRetry(MEMORY_ADDRESSES.SPRITE_TYPE + slotIndex, 1);
+          if (spriteType[0] === SPRITE_TYPES.BEE) {
+            await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_STATE + slotIndex, Buffer.from([0x00]));
+          }
+        } catch (error) {
+          console.error(`Error despawning bee in slot ${slotIndex}:`, error);
+        }
       }
     }
 
@@ -2202,26 +2524,786 @@ class ExpandedGameOperations {
 
   /**
    * Trigger bee swarm waves (main entry point)
+   * Adds time if already active instead of rejecting
    */
-  async triggerBeeSwarmWaves() {
+  async triggerBeeSwarmWaves(durationSeconds = 60) {
     try {
-      // Check if already active
+      const addedDuration = durationSeconds * 1000; // Convert to milliseconds
+
+      // Check if already active - ADD TIME instead of rejecting
       if (this.beeSwarmWavesActive) {
         const elapsed = Date.now() - this.beeSwarmWavesStartTime;
-        const remaining = Math.ceil((this.beeSwarmWavesDuration - elapsed) / 1000);
+        const remainingBefore = Math.ceil((this.beeSwarmWavesDuration - elapsed) / 1000);
+
+        // Add the new duration to the total duration
+        this.beeSwarmWavesDuration += addedDuration;
+
+        const remainingAfter = Math.ceil((this.beeSwarmWavesDuration - elapsed) / 1000);
+
+        console.log(`[Bee Swarm Waves] Added ${durationSeconds}s to existing swarm. Was ${remainingBefore}s, now ${remainingAfter}s remaining`);
+
         return {
-          success: false,
-          error: `🐝 Bee swarm waves already in progress! ${remaining}s remaining`,
-          alreadyActive: true,
-          remainingSeconds: remaining
+          success: true,
+          message: `🐝 Added ${durationSeconds}s to bee swarm! Now ${remainingAfter}s remaining`,
+          timeAdded: durationSeconds,
+          totalRemaining: remainingAfter
         };
       }
+
+      // Set initial duration for new swarm
+      this.beeSwarmWavesDuration = addedDuration;
 
       return await this.spawnBeeSwarmWaves();
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
+
+  // ============= INVISIBLE ENEMIES =============
+
+  /**
+   * Delete all save files - instant chaos with no confirmation
+   * Complete corruption by overwriting save data with garbage and breaking checksums
+   */
+  async deleteAllSaves() {
+    try {
+      console.log('💀 Initiating complete save file corruption...');
+
+      // ALTTP save data structure:
+      // Save slot data: 0x500 bytes per slot
+      // Each slot has primary copy and backup copy
+      // We'll corrupt the active WRAM save buffer at 0x7EF000
+
+      const SAVE_DATA_START = 0x7EF000;
+      const SAVE_DATA_SIZE = 0x500; // 1280 bytes
+
+      // Create garbage data (0xFF fills) to completely corrupt the save
+      const garbage = new Uint8Array(SAVE_DATA_SIZE);
+      for (let i = 0; i < SAVE_DATA_SIZE; i++) {
+        garbage[i] = 0xFF; // Fill with 0xFF to corrupt everything
+      }
+
+      // Overwrite the entire save data region with garbage
+      await this.client.writeMemory(SAVE_DATA_START, garbage);
+      console.log('💀 Save data completely corrupted with garbage!');
+
+      // Also corrupt the checksum specifically (at offset 0x4FE-0x4FF)
+      const checksumAddress = 0x7EF4FE;
+      await this.client.writeMemory(checksumAddress, new Uint8Array([0xDE, 0xAD])); // DEAD checksum
+      console.log('💀 Checksum destroyed!');
+
+      // Kill the player to trigger auto-save of corrupted data
+      const LINK_HEALTH = MEMORY_ADDRESSES.LINK_HEALTH;
+      await this.client.writeMemory(LINK_HEALTH, new Uint8Array([0x00]));
+      console.log('💀 Player killed - corrupted save will be written!');
+
+      return {
+        success: true,
+        message: '💀 SAVE FILES COMPLETELY CORRUPTED! No recovery possible.'
+      };
+    } catch (error) {
+      console.error('Error deleting saves:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Make all active enemies invisible by manipulating OAM buffer
+   * Enemies remain fully functional (AI, collision, damage) but are hidden visually
+   * Creates chaos as player can't see threats coming!
+   * Adds time if already active instead of rejecting
+   */
+  async makeEnemiesInvisible(durationSeconds = 30) {
+    try {
+      const addedDuration = durationSeconds * 1000; // Convert to milliseconds
+
+      // Check if already active - ADD TIME instead of rejecting
+      if (this.invisibleEnemiesActive) {
+        const elapsed = Date.now() - this.invisibleEnemiesStartTime;
+        const remainingBefore = Math.ceil((this.invisibleEnemiesDuration - elapsed) / 1000);
+
+        // Add the new duration to the total duration
+        this.invisibleEnemiesDuration += addedDuration;
+
+        const remainingAfter = Math.ceil((this.invisibleEnemiesDuration - elapsed) / 1000);
+
+        console.log(`[Invisible Enemies] Added ${durationSeconds}s to existing invisibility. Was ${remainingBefore}s, now ${remainingAfter}s remaining`);
+
+        return {
+          success: true,
+          message: `👻 Added ${durationSeconds}s to invisible enemies! Now ${remainingAfter}s remaining`,
+          timeAdded: durationSeconds,
+          totalRemaining: remainingAfter
+        };
+      }
+
+      // Set initial duration for new invisibility
+      this.invisibleEnemiesDuration = addedDuration;
+
+      // Get initial room for screen transition tracking
+      const currentRoom = await this.readWithRetry(MEMORY_ADDRESSES.CURRENT_ROOM, 1);
+      this.invisibleEnemiesLastRoom = currentRoom[0];
+
+      // Start OAM refresh at high fps
+      // This continuously hides ALL active enemy sprites regardless of room
+      this.invisibleEnemiesActive = true;
+      this.invisibleEnemiesStartTime = Date.now();
+
+      this.invisibleEnemiesInterval = setInterval(() => {
+        this.refreshInvisibleEnemies();
+      }, 3); // ~333fps for maximum hiding
+
+      // Start duration timer
+      this.startInvisibleEnemiesTimer();
+
+      console.log(`[Invisible Enemies] Activated for ${durationSeconds}s in room ${this.invisibleEnemiesLastRoom}`);
+
+      return {
+        success: true,
+        message: `👻 Enemies invisible for ${durationSeconds} seconds! Works across rooms!`,
+        duration: durationSeconds
+      };
+    } catch (error) {
+      console.error('Error making enemies invisible:', error);
+      await this.stopInvisibleEnemies();
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Refresh invisible enemies by manipulating OAM buffer
+   * Called at high fps to continuously hide sprites across room transitions
+   */
+  async refreshInvisibleEnemies() {
+    try {
+      if (!this.invisibleEnemiesActive) return;
+
+      // Check current room for screen transitions
+      const currentRoom = await this.readWithRetry(MEMORY_ADDRESSES.CURRENT_ROOM, 1);
+      const roomId = currentRoom[0];
+
+      // Detect screen transition for logging
+      if (this.invisibleEnemiesLastRoom !== null && this.invisibleEnemiesLastRoom !== roomId) {
+        console.log(`[Invisible Enemies] Screen transition detected! ${this.invisibleEnemiesLastRoom} -> ${roomId} (continuing effect)`);
+      }
+      this.invisibleEnemiesLastRoom = roomId;
+
+      // OAM buffer is at 0x7E0800 (512 bytes for 128 OAM entries)
+      // Each OAM entry is 4 bytes: X, Y, Tile, Attributes
+      // We'll set both Y off-screen AND blank the tile number
+
+      const OAM_BUFFER = 0x7E0800;
+
+      // Read current OAM buffer
+      const oamBuffer = await this.client.readMemory(OAM_BUFFER, 512);
+
+      // Hide entries 12-120 (more aggressive, avoid Link's sprites at 0-11)
+      // This catches ALL enemies regardless of which room we're in
+      for (let oamIndex = 12; oamIndex < 120; oamIndex++) {
+        const entryOffset = oamIndex * 4;
+        oamBuffer[entryOffset + 1] = 0xF0; // Y off-screen
+        oamBuffer[entryOffset + 2] = 0xFF; // Blank tile
+      }
+
+      // Write modified OAM buffer back
+      await this.client.writeMemory(OAM_BUFFER, oamBuffer);
+
+    } catch (error) {
+      // Silently fail on refresh errors to avoid spam
+      // Main timer will clean up when duration expires
+    }
+  }
+
+  /**
+   * Start the duration timer for invisible enemies
+   */
+  startInvisibleEnemiesTimer() {
+    this.invisibleEnemiesTimer = setInterval(async () => {
+      const elapsed = Date.now() - this.invisibleEnemiesStartTime;
+
+      if (elapsed >= this.invisibleEnemiesDuration) {
+        console.log(`[Invisible Enemies Timer] Duration expired, stopping invisible enemies`);
+        await this.stopInvisibleEnemies();
+      }
+    }, 100); // Check every 100ms
+  }
+
+  /**
+   * Stop invisible enemies effect
+   */
+  async stopInvisibleEnemies() {
+    try {
+      // Stop refresh interval
+      if (this.invisibleEnemiesInterval) {
+        clearInterval(this.invisibleEnemiesInterval);
+        this.invisibleEnemiesInterval = null;
+      }
+
+      // Stop duration timer
+      if (this.invisibleEnemiesTimer) {
+        clearInterval(this.invisibleEnemiesTimer);
+        this.invisibleEnemiesTimer = null;
+      }
+
+      // Reset state
+      this.invisibleEnemiesActive = false;
+      this.invisibleEnemiesLastRoom = null;
+
+      // OAM will naturally restore next frame from game logic
+      // No need to manually restore - the game updates OAM every frame
+
+      console.log('[Invisible Enemies] Stopped - enemies now visible');
+
+      return { success: true, message: 'Enemies are now visible again' };
+    } catch (error) {
+      console.error('Error stopping invisible enemies:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ============= INFINITE MAGIC =============
+
+  /**
+   * Enable infinite magic for a duration
+   * Continuously refills magic meter while active
+   * Adds time if already active instead of rejecting
+   */
+  async enableInfiniteMagic(durationSeconds = 60) {
+    console.log(`[Infinite Magic] Function called with durationSeconds: ${durationSeconds}`);
+    try {
+      const addedDuration = durationSeconds * 1000; // Convert to milliseconds
+      console.log(`[Infinite Magic] Added duration: ${addedDuration}ms`);
+
+      // Check if already active - ADD TIME instead of rejecting
+      if (this.infiniteMagicActive) {
+        const elapsed = Date.now() - this.infiniteMagicStartTime;
+        const remainingBefore = Math.ceil((this.infiniteMagicDuration - elapsed) / 1000);
+
+        // Add the new duration to the total duration
+        this.infiniteMagicDuration += addedDuration;
+
+        const remainingAfter = Math.ceil((this.infiniteMagicDuration - elapsed) / 1000);
+
+        console.log(`[Infinite Magic] Added ${durationSeconds}s to existing infinite magic. Was ${remainingBefore}s, now ${remainingAfter}s remaining`);
+
+        return {
+          success: true,
+          message: `✨ Added ${durationSeconds}s to infinite magic! Now ${remainingAfter}s remaining`,
+          timeAdded: durationSeconds,
+          totalRemaining: remainingAfter
+        };
+      }
+
+      // Set initial duration for new infinite magic
+      this.infiniteMagicDuration = addedDuration;
+
+      // Activate infinite magic
+      this.infiniteMagicActive = true;
+      this.infiniteMagicStartTime = Date.now();
+
+      // Enable magic meter if not already enabled
+      await this.client.writeMemory(MEMORY_ADDRESSES.MAGIC_METER, Buffer.from([0x80]));
+
+      // Start refilling magic continuously (every 50ms = ~20fps)
+      this.infiniteMagicInterval = setInterval(async () => {
+        await this.refillMagic();
+      }, 50);
+
+      // Start duration timer
+      this.startInfiniteMagicTimer();
+
+      console.log(`[Infinite Magic] Activated for ${durationSeconds}s`);
+
+      return {
+        success: true,
+        message: `✨ Infinite magic for ${durationSeconds} seconds!`,
+        duration: durationSeconds
+      };
+    } catch (error) {
+      console.error('Error enabling infinite magic:', error);
+      await this.stopInfiniteMagic();
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Refill magic to full
+   * Called continuously while infinite magic is active
+   */
+  async refillMagic() {
+    try {
+      if (!this.infiniteMagicActive) return;
+
+      // Read current magic value for debugging
+      const currentMagic = await this.readWithRetry(MEMORY_ADDRESSES.CURRENT_MAGIC, 1);
+
+      // Set magic to full (0x80 = 128 = full magic)
+      await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_MAGIC, Buffer.from([0x80]));
+
+      // Verify write
+      const newMagic = await this.readWithRetry(MEMORY_ADDRESSES.CURRENT_MAGIC, 1);
+      console.log(`[Infinite Magic] Before: 0x${currentMagic[0].toString(16).padStart(2, '0')}, After: 0x${newMagic[0].toString(16).padStart(2, '0')} (address: ${MEMORY_ADDRESSES.CURRENT_MAGIC.toString(16)})`);
+    } catch (error) {
+      console.error('[Infinite Magic] Refill error:', error);
+    }
+  }
+
+  /**
+   * Start the duration timer for infinite magic
+   */
+  startInfiniteMagicTimer() {
+    this.infiniteMagicTimer = setInterval(async () => {
+      const elapsed = Date.now() - this.infiniteMagicStartTime;
+
+      if (elapsed >= this.infiniteMagicDuration) {
+        console.log(`[Infinite Magic Timer] Duration expired, stopping infinite magic`);
+        await this.stopInfiniteMagic();
+      }
+    }, 100); // Check every 100ms
+  }
+
+  /**
+   * Stop infinite magic effect
+   */
+  async stopInfiniteMagic() {
+    try {
+      // Stop refill interval
+      if (this.infiniteMagicInterval) {
+        clearInterval(this.infiniteMagicInterval);
+        this.infiniteMagicInterval = null;
+      }
+
+      // Stop duration timer
+      if (this.infiniteMagicTimer) {
+        clearInterval(this.infiniteMagicTimer);
+        this.infiniteMagicTimer = null;
+      }
+
+      // Reset state
+      this.infiniteMagicActive = false;
+      this.infiniteMagicStartTime = null;
+
+      console.log('[Infinite Magic] Stopped - magic consumption resumed');
+
+      return { success: true, message: 'Infinite magic ended - magic consumption resumed' };
+    } catch (error) {
+      console.error('Error stopping infinite magic:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ============= NEW CHAOTIC FEATURES =============
+
+  /**
+   * Ice World - DISABLED (not working reliably)
+   */
+  async enableIceWorld(durationSeconds = 30) {
+    console.log('[Ice World] Feature disabled - ice physics not working reliably');
+    return { success: false, message: '❄️ Ice World disabled (not working)' };
+  }
+
+  async stopIceWorld() {
+    return { success: true, message: 'Ice World not active' };
+  }
+
+  /**
+   * Boss Rush - Spawn 2 strong enemies for 60 seconds with respawn
+   */
+  async spawnBossRush(durationSeconds = 60) {
+    try {
+      console.log('[Boss Rush] Starting 60-second boss rush...');
+
+      // Stop any existing boss rush
+      if (this.bossRushActive) {
+        await this.stopBossRush();
+      }
+
+      this.bossRushActive = true;
+      this.bossRushStartTime = Date.now();
+      this.bossRushDuration = durationSeconds * 1000;
+
+      // Spawn initial 2 bosses
+      const bosses = [];
+      for (let i = 0; i < 2; i++) {
+        const result = await this.spawnBossEnemy();
+        if (result.success) {
+          this.bossRushSlots[i] = result.slot;
+          bosses.push(result.enemy);
+          console.log(`[Boss Rush] Spawned boss ${i + 1}: ${result.enemy} in slot ${result.slot}`);
+        }
+      }
+
+      // Initialize room tracking
+      const currentRoom = await this.readWithRetry(MEMORY_ADDRESSES.CURRENT_ROOM, 1);
+      this.bossRushLastRoom = currentRoom[0];
+
+      // Start the 60-second timer
+      await this.startBossRushTimer();
+
+      return {
+        success: true,
+        message: `💀 BOSS RUSH STARTED! 2 bosses for ${durationSeconds} seconds!`,
+        bosses: bosses,
+        slots: this.bossRushSlots.filter(s => s !== null)
+      };
+    } catch (error) {
+      console.error('[Boss Rush] Error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async spawnBossEnemy() {
+    const bossEnemies = ['cyclops', 'ballandchain', 'snapdragon', 'lynel'];
+    const bossType = bossEnemies[Math.floor(Math.random() * bossEnemies.length)];
+    return await this.spawnEnemyNearLink(bossType);
+  }
+
+  async startBossRushTimer() {
+    console.log('[Boss Rush] Starting 60-second timer...');
+
+    // Maintenance interval - check every 500ms
+    this.bossRushInterval = setInterval(async () => {
+      await this.maintainBossRush();
+    }, 500);
+
+    // Duration countdown
+    const checkInterval = setInterval(async () => {
+      const elapsed = Date.now() - this.bossRushStartTime;
+      const remaining = Math.max(0, this.bossRushDuration - elapsed);
+
+      if (remaining <= 0) {
+        clearInterval(checkInterval);
+        await this.stopBossRush();
+      }
+    }, 1000);
+  }
+
+  async maintainBossRush() {
+    try {
+      if (!this.bossRushActive) return;
+
+      // Get current room
+      const currentRoomByte = await this.readWithRetry(MEMORY_ADDRESSES.CURRENT_ROOM, 1);
+      const currentRoomId = currentRoomByte[0];
+
+      // Check for room change and respawn if needed
+      if (currentRoomId !== this.bossRushLastRoom) {
+        console.log(`[Boss Rush] Room changed from ${this.bossRushLastRoom} to ${currentRoomId}, respawning bosses...`);
+
+        // Get player position for new room
+        const linkXLow = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_X_POS, 1);
+        const linkXHigh = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_X_POS + 1, 1);
+        const linkYLow = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_Y_POS, 1);
+        const linkYHigh = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_Y_POS + 1, 1);
+        const linkX = linkXLow[0] | (linkXHigh[0] << 8);
+        const linkY = linkYLow[0] | (linkYHigh[0] << 8);
+        const linkFloor = await this.readWithRetry(SNES_WRAM_BASE + 0x00EE, 1);
+
+        // Respawn all bosses
+        for (let i = 0; i < this.bossRushSlots.length; i++) {
+          const slotIndex = this.bossRushSlots[i];
+          if (slotIndex === null) continue;
+
+          // Calculate spawn position
+          const angle = (i / 2) * Math.PI * 2;
+          const distance = 80 + Math.random() * 40;
+          const offsetX = Math.cos(angle) * distance;
+          const offsetY = Math.sin(angle) * distance;
+          let spawnX = linkX + offsetX;
+          let spawnY = linkY + offsetY;
+
+          if (spawnX < 0) spawnX = 0;
+          if (spawnX > 0xFFFF) spawnX = 0xFFFF;
+          if (spawnY < 0) spawnY = 0;
+          if (spawnY > 0xFFFF) spawnY = 0xFFFF;
+
+          const spawnXLow = spawnX & 0xFF;
+          const spawnXHigh = (spawnX >> 8) & 0xFF;
+          const spawnYLow = spawnY & 0xFF;
+          const spawnYHigh = (spawnY >> 8) & 0xFF;
+
+          // Update position
+          await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_X_LOW + slotIndex, Buffer.from([spawnXLow]));
+          await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_X_HIGH + slotIndex, Buffer.from([spawnXHigh]));
+          await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_Y_LOW + slotIndex, Buffer.from([spawnYLow]));
+          await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_Y_HIGH + slotIndex, Buffer.from([spawnYHigh]));
+
+          // Update room and floor
+          await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_ROOM + slotIndex, Buffer.from([currentRoomByte[0]]));
+          await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_FLOOR + slotIndex, Buffer.from([linkFloor[0]]));
+        }
+
+        this.bossRushLastRoom = currentRoomId;
+      }
+
+      // Check each boss slot for death and respawn
+      for (let i = 0; i < this.bossRushSlots.length; i++) {
+        const slotIndex = this.bossRushSlots[i];
+        if (slotIndex === null) continue;
+
+        const spriteState = await this.readWithRetry(MEMORY_ADDRESSES.SPRITE_STATE + slotIndex, 1);
+
+        // If boss is dead, respawn it
+        if (spriteState[0] === 0x00) {
+          console.log(`[Boss Rush] Boss in slot ${slotIndex} died, respawning...`);
+
+          const result = await this.spawnBossEnemy();
+          if (result.success) {
+            this.bossRushSlots[i] = result.slot;
+            console.log(`[Boss Rush] Respawned boss: ${result.enemy} in slot ${result.slot}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[Boss Rush] Maintenance error:', error);
+    }
+  }
+
+  async stopBossRush() {
+    console.log('[Boss Rush] Stopping...');
+
+    if (this.bossRushInterval) {
+      clearInterval(this.bossRushInterval);
+      this.bossRushInterval = null;
+    }
+
+    // Despawn all bosses
+    for (let i = 0; i < this.bossRushSlots.length; i++) {
+      const slotIndex = this.bossRushSlots[i];
+      if (slotIndex !== null) {
+        await this.client.writeMemory(MEMORY_ADDRESSES.SPRITE_STATE + slotIndex, Buffer.from([0x00]));
+      }
+    }
+
+    this.bossRushActive = false;
+    this.bossRushStartTime = null;
+    this.bossRushLastRoom = null;
+    this.bossRushSlots = [null, null];
+
+    console.log('[Boss Rush] Stopped and bosses despawned');
+    return { success: true, message: '💀 Boss Rush ended' };
+  }
+
+  /**
+   * Item Lock - Disable Y/X button items temporarily
+   */
+  async enableItemLock(durationSeconds = 30) {
+    const addedDuration = durationSeconds * 1000;
+
+    // Time stacking support
+    if (this.itemLockActive) {
+      this.itemLockDuration += addedDuration;
+      const totalSeconds = Math.floor(this.itemLockDuration / 1000);
+      console.log(`[Item Lock] Extended by ${durationSeconds}s - Total: ${totalSeconds}s`);
+      return { success: true, message: `🔒 Item Lock extended! Total: ${totalSeconds}s`, timeAdded: durationSeconds };
+    }
+
+    this.itemLockActive = true;
+    this.itemLockDuration = addedDuration;
+    this.itemLockStartTime = Date.now();
+
+    // Store original items
+    this.itemLockOriginalY = await this.readWithRetry(MEMORY_ADDRESSES.Y_BUTTON_ITEM, 1);
+    this.itemLockOriginalX = await this.readWithRetry(MEMORY_ADDRESSES.X_BUTTON_ITEM, 1);
+
+    console.log(`[Item Lock] Activated for ${durationSeconds}s`);
+
+    // Constantly disable items
+    this.itemLockInterval = setInterval(async () => {
+      try {
+        await this.client.writeMemory(MEMORY_ADDRESSES.Y_BUTTON_ITEM, Buffer.from([0x00]));
+        await this.client.writeMemory(MEMORY_ADDRESSES.X_BUTTON_ITEM, Buffer.from([0x00]));
+      } catch (error) {
+        console.error('[Item Lock] Error maintaining lock:', error);
+      }
+    }, 100);
+
+    // Duration timer
+    this.itemLockTimer = setInterval(async () => {
+      this.itemLockDuration -= 1000;
+      if (this.itemLockDuration <= 0) {
+        await this.stopItemLock();
+      }
+    }, 1000);
+
+    return { success: true, message: `🔒 Item Lock activated for ${durationSeconds}s!` };
+  }
+
+  async stopItemLock() {
+    if (!this.itemLockActive) return { success: true, message: 'Item Lock not active' };
+
+    console.log('[Item Lock] Stopping...');
+
+    if (this.itemLockInterval) {
+      clearInterval(this.itemLockInterval);
+      this.itemLockInterval = null;
+    }
+
+    if (this.itemLockTimer) {
+      clearInterval(this.itemLockTimer);
+      this.itemLockTimer = null;
+    }
+
+    // Restore original items
+    if (this.itemLockOriginalY) {
+      await this.client.writeMemory(MEMORY_ADDRESSES.Y_BUTTON_ITEM, this.itemLockOriginalY);
+    }
+    if (this.itemLockOriginalX) {
+      await this.client.writeMemory(MEMORY_ADDRESSES.X_BUTTON_ITEM, this.itemLockOriginalX);
+    }
+
+    this.itemLockActive = false;
+    this.itemLockDuration = 0;
+
+    console.log('[Item Lock] Stopped - items restored');
+    return { success: true, message: '🔒 Item Lock ended - items restored' };
+  }
+
+  /**
+   * Glass Cannon - 1 HP + Golden Sword for 60 seconds
+   */
+  async enableGlassCannon(durationSeconds = 60) {
+    const addedDuration = durationSeconds * 1000;
+
+    // Time stacking support
+    if (this.glassCannonActive) {
+      this.glassCannonDuration += addedDuration;
+      const totalSeconds = Math.floor(this.glassCannonDuration / 1000);
+      console.log(`[Glass Cannon] Extended by ${durationSeconds}s - Total: ${totalSeconds}s`);
+      return { success: true, message: `💀 Glass Cannon extended! Total: ${totalSeconds}s`, timeAdded: durationSeconds };
+    }
+
+    this.glassCannonActive = true;
+    this.glassCannonDuration = addedDuration;
+    this.glassCannonStartTime = Date.now();
+
+    // Store original max health and sword
+    this.glassCannonOriginalMaxHealth = await this.readWithRetry(MEMORY_ADDRESSES.MAX_HEALTH, 1);
+    this.glassCannonOriginalSword = await this.readWithRetry(MEMORY_ADDRESSES.SWORD, 1);
+
+    console.log(`[Glass Cannon] Activated for ${durationSeconds}s - Original max health: ${this.glassCannonOriginalMaxHealth[0]}, Sword: ${this.glassCannonOriginalSword[0]}`);
+
+    // Set max health to 1 HP (0x01)
+    await this.client.writeMemory(MEMORY_ADDRESSES.MAX_HEALTH, Buffer.from([0x01]));
+    await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_HEALTH, Buffer.from([0x01]));
+
+    // Give Golden Sword (level 4)
+    await this.client.writeMemory(MEMORY_ADDRESSES.SWORD, Buffer.from([0x04]));
+
+    // Maintenance loop - prevent healing above 1 HP
+    this.glassCannonInterval = setInterval(async () => {
+      try {
+        const currentHealth = await this.readWithRetry(MEMORY_ADDRESSES.CURRENT_HEALTH, 1);
+
+        // If health goes above 1 HP, cap it
+        if (currentHealth[0] > 0x01) {
+          await this.client.writeMemory(MEMORY_ADDRESSES.CURRENT_HEALTH, Buffer.from([0x01]));
+        }
+
+        // Keep max health at 1 HP
+        await this.client.writeMemory(MEMORY_ADDRESSES.MAX_HEALTH, Buffer.from([0x01]));
+
+        // Keep Golden Sword
+        await this.client.writeMemory(MEMORY_ADDRESSES.SWORD, Buffer.from([0x04]));
+      } catch (error) {
+        console.error('[Glass Cannon] Error maintaining:', error);
+      }
+    }, 100);
+
+    // Duration timer
+    this.glassCannonTimer = setInterval(async () => {
+      this.glassCannonDuration -= 1000;
+      if (this.glassCannonDuration <= 0) {
+        await this.stopGlassCannon();
+      }
+    }, 1000);
+
+    return { success: true, message: `💀 GLASS CANNON! 1 HP + Golden Sword for ${durationSeconds}s!` };
+  }
+
+  async stopGlassCannon() {
+    if (!this.glassCannonActive) return { success: true, message: 'Glass Cannon not active' };
+
+    console.log('[Glass Cannon] Stopping...');
+
+    if (this.glassCannonInterval) {
+      clearInterval(this.glassCannonInterval);
+      this.glassCannonInterval = null;
+    }
+
+    if (this.glassCannonTimer) {
+      clearInterval(this.glassCannonTimer);
+      this.glassCannonTimer = null;
+    }
+
+    // Restore original max health
+    if (this.glassCannonOriginalMaxHealth) {
+      await this.client.writeMemory(MEMORY_ADDRESSES.MAX_HEALTH, this.glassCannonOriginalMaxHealth);
+      console.log(`[Glass Cannon] Restored max health to ${this.glassCannonOriginalMaxHealth[0]}`);
+    }
+
+    // Restore original sword
+    if (this.glassCannonOriginalSword) {
+      await this.client.writeMemory(MEMORY_ADDRESSES.SWORD, this.glassCannonOriginalSword);
+      console.log(`[Glass Cannon] Restored sword to level ${this.glassCannonOriginalSword[0]}`);
+    }
+
+    this.glassCannonActive = false;
+    this.glassCannonDuration = 0;
+    this.glassCannonOriginalMaxHealth = null;
+    this.glassCannonOriginalSword = null;
+
+    console.log('[Glass Cannon] Stopped - health and sword restored');
+    return { success: true, message: '💀 Glass Cannon ended - health & sword restored' };
+  }
+
+  /**
+   * Effect Roulette - Trigger 2 random effects
+   */
+  async blessingAndCurse() {
+    try {
+      console.log('[Effect Roulette] Activating...');
+
+      // All possible effects
+      const effects = [
+        { name: 'Chicken Attack', func: async () => await this.triggerChickenAttack(60) },
+        { name: 'Enemy Swarm', func: async () => await this.triggerEnemyWaves(60) },
+        { name: 'Bee Swarm', func: async () => await this.triggerBeeSwarmWaves(60) },
+        { name: 'Invisible Enemies', func: async () => await this.makeEnemiesInvisible(60) },
+        { name: 'Boss Rush', func: async () => await this.spawnBossRush(60) },
+        { name: 'Item Lock', func: async () => await this.enableItemLock(60) },
+        { name: 'Glass Cannon', func: async () => await this.enableGlassCannon(60) },
+        { name: 'Endgame Pack', func: async () => await this.giveEndgamePack() },
+        { name: '1/4 Magic', func: async () => await this.setMagicUpgrade(2) },
+        { name: 'Infinite Magic', func: async () => await this.enableInfiniteMagic(60) },
+        { name: 'God Mode', func: async () => await this.toggleInvincibility() },
+        { name: 'Red Armor', func: async () => await this.setArmor(2) },
+        { name: 'All Medallions', func: async () => await this.toggleAllMedallions() }
+      ];
+
+      // Shuffle and pick 2 random effects
+      const shuffled = effects.sort(() => Math.random() - 0.5);
+      const selectedEffects = shuffled.slice(0, 2);
+
+      const effectNames = [];
+      for (const effect of selectedEffects) {
+        try {
+          await effect.func();
+          effectNames.push(effect.name);
+        } catch (err) {
+          console.error(`[Effect Roulette] Error with ${effect.name}:`, err);
+        }
+      }
+
+      const message = `🎲 ROULETTE: ${effectNames.join(' + ')}`;
+      console.log(`[Effect Roulette] ${message}`);
+      return { success: true, message };
+    } catch (error) {
+      console.error('[Effect Roulette] Error:', error);
+      return { success: false, error: 'Roulette failed' };
+    }
+  }
+
 }
 
 module.exports = ExpandedGameOperations;

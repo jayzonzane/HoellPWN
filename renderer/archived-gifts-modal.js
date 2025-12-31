@@ -6,6 +6,12 @@
 // Show the archived gifts modal
 async function showArchivedGiftsModal() {
   try {
+    // Load the downloaded images path
+    const pathResult = await window.sniAPI.getDownloadedImagesPath();
+    if (pathResult && pathResult.success) {
+      window.downloadedImagesPath = pathResult.path;
+    }
+
     // Load archived gifts
     const result = await window.sniAPI.loadArchivedGifts();
 
@@ -25,7 +31,7 @@ async function showArchivedGiftsModal() {
       <div class="modal-content" style="max-width: 800px; max-height: 80vh;">
         <div class="modal-header">
           <h2>Archived Gifts (${archivedGifts.length})</h2>
-          <button class="close-btn" onclick="closeArchivedGiftsModal()">&times;</button>
+          <button class="close-btn archived-modal-close">&times;</button>
         </div>
 
         <div class="modal-body" style="overflow-y: auto; max-height: calc(80vh - 150px);">
@@ -50,13 +56,43 @@ async function showArchivedGiftsModal() {
         </div>
 
         <div class="modal-footer" style="display: flex; justify-content: space-between;">
-          <button class="btn-secondary" onclick="closeArchivedGiftsModal()">Close</button>
-          ${archivedGifts.length > 0 ? '<button class="btn-danger" onclick="confirmRestoreAll()">Restore All</button>' : ''}
+          <button class="btn-secondary archived-modal-close">Close</button>
+          ${archivedGifts.length > 0 ? '<button class="btn-danger archived-restore-all">Restore All</button>' : ''}
         </div>
       </div>
     `;
 
     document.body.appendChild(modal);
+
+    // Add event listeners for close buttons
+    modal.querySelectorAll('.archived-modal-close').forEach(btn => {
+      btn.addEventListener('click', closeArchivedGiftsModal);
+    });
+
+    // Add event listener for restore all button
+    const restoreAllBtn = modal.querySelector('.archived-restore-all');
+    if (restoreAllBtn) {
+      restoreAllBtn.addEventListener('click', confirmRestoreAll);
+    }
+
+    // Add event delegation for gift actions
+    const giftsList = document.getElementById('archived-gifts-list');
+    if (giftsList) {
+      giftsList.addEventListener('click', (e) => {
+        const restoreBtn = e.target.closest('.archived-gift-restore');
+        const deleteBtn = e.target.closest('.archived-gift-delete');
+
+        if (restoreBtn) {
+          const giftName = restoreBtn.dataset.giftName;
+          const coins = parseInt(restoreBtn.dataset.coins);
+          restoreGift(giftName, coins);
+        } else if (deleteBtn) {
+          const giftName = deleteBtn.dataset.giftName;
+          const coins = parseInt(deleteBtn.dataset.coins);
+          deleteGift(giftName, coins);
+        }
+      });
+    }
 
     // Add search functionality
     if (archivedGifts.length > 0) {
@@ -76,14 +112,24 @@ async function showArchivedGiftsModal() {
 
 // Render archived gifts list
 function renderArchivedGifts(gifts) {
-  return gifts.map(gift => `
+  return gifts.map(gift => {
+    // Convert path to use gift-image:// protocol for downloaded images
+    let imageSrc = gift.imageUrl || './gift-images/placeholder.webp';
+
+    // If it's a relative path to gift-images, use custom protocol
+    if (imageSrc.startsWith('./gift-images/')) {
+      const filename = imageSrc.replace('./gift-images/', '');
+      imageSrc = `gift-image://${filename}`;
+    }
+
+    return `
     <div class="archived-gift-card" data-gift-name="${gift.name}" data-gift-coins="${gift.coins}">
       <div class="archived-gift-info">
         <div class="archived-gift-image">
-          <img src="${gift.imageUrl || './gift-images/placeholder.webp'}"
+          <img src="${imageSrc}"
                alt="${gift.name}"
-               style="width: 50px; height: 50px; object-fit: contain; border-radius: 4px; background: #1a1a1a;"
-               onerror="this.src='./gift-images/rose_1.webp'">
+               title="${gift.name} (${gift.coins} coins)"
+               style="width: 50px; height: 50px; object-fit: contain; border-radius: 4px; background: #1a1a1a;">
         </div>
         <div class="archived-gift-details">
           <div class="archived-gift-name">${gift.name}</div>
@@ -98,15 +144,16 @@ function renderArchivedGifts(gifts) {
         </div>
       </div>
       <div class="archived-gift-actions">
-        <button class="btn-small btn-success" onclick="restoreGift('${escapeHtml(gift.name)}', ${gift.coins})">
+        <button class="btn-small btn-success archived-gift-restore" data-gift-name="${escapeHtml(gift.name)}" data-coins="${gift.coins}">
           ↩️ Restore
         </button>
-        <button class="btn-small btn-danger" onclick="deleteGift('${escapeHtml(gift.name)}', ${gift.coins})">
+        <button class="btn-small btn-danger archived-gift-delete" data-gift-name="${escapeHtml(gift.name)}" data-coins="${gift.coins}">
           🗑️ Delete
         </button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // Filter archived gifts by search term

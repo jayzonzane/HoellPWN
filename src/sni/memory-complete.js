@@ -22,6 +22,7 @@ const MEMORY_ADDRESSES = {
 
   // ============= MAGIC =============
   MAGIC_METER: SNES_SAVEDATA_BASE + 0x36E,        // Magic meter (0x80 = enabled)
+  CURRENT_MAGIC: SNES_SAVEDATA_BASE + 0x373,      // Current magic points (0x80 = full, 0x00 = empty)
   MAGIC_UPGRADE: SNES_SAVEDATA_BASE + 0x37B,      // 0=normal, 1=1/2 magic, 2=1/4 magic
 
   // ============= CURRENCY & AMMO =============
@@ -132,8 +133,8 @@ const MEMORY_ADDRESSES = {
   BG2_V_OFFSET: WRAM_START + 0xE8,                // BG2 Vertical scroll
 
   // ============= INPUT & PHYSICS =============
-  JOYPAD1_INPUT: SNES_WRAM_BASE + 0x00F0,         // Current joypad 1 input
-  JOYPAD1_NEW: SNES_WRAM_BASE + 0x00F2,           // Newly pressed joypad 1 buttons
+  JOYPAD1_INPUT: SNES_WRAM_BASE + 0x00F0,         // Current joypad 1 input (2 bytes)
+  JOYPAD1_NEW: SNES_WRAM_BASE + 0x00F2,           // Newly pressed joypad 1 buttons (2 bytes)
   LINK_STATE: SNES_WRAM_BASE + 0x005D,            // Link's state/animation
   LINK_DIRECTION: SNES_WRAM_BASE + 0x002F,        // Link's facing direction
   TILE_TYPE_UNDER_LINK: SNES_WRAM_BASE + 0x0114,  // Tile type Link is standing on (READ ONLY - game sets this)
@@ -141,9 +142,21 @@ const MEMORY_ADDRESSES = {
   MOVEMENT_LOCK: SNES_WRAM_BASE + 0x02E4,         // Movement lock flag (prevents ALL input including buttons)
   LINK_SPEED_MODIFIER: SNES_WRAM_BASE + 0x002D,   // Link's movement speed modifier
   Y_BUTTON_ITEM: SNES_WRAM_BASE + 0x0303,         // Currently equipped item in Y slot (0x00 = no item)
+  X_BUTTON_ITEM: SNES_WRAM_BASE + 0x0340,         // Currently equipped item in X slot (0x00 = no item)
 
   // Chicken attack sprite type constant
   CHICKEN_SPRITE_TYPE: 0x0B,                      // Chicken/Cucco sprite type ID (set sprite_C=1 for attack mode)
+
+  // ============= OVERLORD ARRAYS (8 slots 0-7) =============
+  // Overlords are special objects that spawn other objects (traps, factories, etc.)
+  OVERLORD_TYPE: SNES_WRAM_BASE + 0x0B00,         // [0x08] Overlord type (0x1A = bomb trap)
+  OVERLORD_X_LOW: SNES_WRAM_BASE + 0x0B08,        // [0x08] Overlord X coordinate (low byte)
+  OVERLORD_X_HIGH: SNES_WRAM_BASE + 0x0B10,       // [0x08] Overlord X coordinate (high byte)
+  OVERLORD_Y_LOW: SNES_WRAM_BASE + 0x0B18,        // [0x08] Overlord Y coordinate (low byte)
+  OVERLORD_Y_HIGH: SNES_WRAM_BASE + 0x0B20,       // [0x08] Overlord Y coordinate (high byte)
+  OVERLORD_FLOOR: SNES_WRAM_BASE + 0x0B28,        // [0x08] Overlord floor/layer
+  OVERLORD_ROOM: SNES_WRAM_BASE + 0x0B30,         // [0x08] Overlord room
+  OVERLORD_SPAWNED_ID: SNES_WRAM_BASE + 0x0B38,   // [0x08] Spawned sprite ID
 
   // ============= SPRITE/ENEMY ARRAYS (16 slots each) =============
   // Position & Movement
@@ -316,6 +329,7 @@ const SPRITE_TYPES = {
   SOLDIER_BLUE: 0x41,     // Blue sword soldier
   SOLDIER_GREEN: 0x42,    // Green sword soldier
   BEE: 0x79,              // Hostile bee (attacks player)
+  LYNEL: 0xD0,            // Lynel - tough fire-breathing centaur (Death Mountain)
 
   // Other sprite types (not for spawning - broken or bosses)
   OCTOROK_4_WAY: 0x0C,
@@ -439,14 +453,37 @@ const SPRITE_ROM_INIT = {
     flags5: 0x91
   },
   [SPRITE_TYPES.BEE]: {
-    health: 1,
-    bumpDamage: 2,
+    health: 2,
+    bumpDamage: 3,
     deflBits: 0x00,
     flags: 0x00,
     flags2: 0x02,
     flags3: 0x1D,
     flags4: 0x00,
     flags5: 0x02
+  },
+  [SPRITE_TYPES.LYNEL]: {
+    health: 28,      // Very tough enemy
+    bumpDamage: 8,   // Heavy contact damage
+    deflBits: 0x00,
+    flags: 0x00,
+    flags2: 0x05,
+    flags3: 0x01,
+    flags4: 0x03,
+    flags5: 0x94
+  },
+
+  // Boss: Helmasaur King (0x5A) - Palace of Darkness boss
+  // WARNING: May be unstable outside boss room
+  [0x5A]: {
+    health: 24,      // Boss-level health
+    bumpDamage: 8,   // Heavy contact damage
+    deflBits: 0x00,
+    flags: 0x00,
+    flags2: 0x05,
+    flags3: 0x01,
+    flags4: 0x03,
+    flags5: 0x94
   },
 
   // Chicken/Cucco (0x0B) - From ROM table kSpriteInit_DeflBits[0x0B] = 0x48
