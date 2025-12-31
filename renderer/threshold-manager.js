@@ -3,27 +3,75 @@
 // Track threshold configurations
 let thresholdConfigs = {};
 
-// Available actions for thresholds (same as gift mappings)
+// Available actions for thresholds (SMW actions)
 const THRESHOLD_ACTIONS = [
-  { action: 'killPlayer', name: '💀 KO Player', params: [] },
-  { action: 'deleteAllSaves', name: '💀 Delete ALL Saves', params: [] },
-  { action: 'triggerChickenAttack', name: '🐔 Chicken Attack', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 60}] },
-  { action: 'triggerBeeSwarmWaves', name: '🐝 Bee Swarm', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 60}] },
-  { action: 'triggerEnemyWaves', name: '⚔️ Enemy Swarm', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
-  { action: 'makeEnemiesInvisible', name: '👻 Invisible Enemies', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  // Core Actions
+  { action: 'killPlayer', name: '💀 KO Mario', params: [] },
+  { action: 'addLife', name: '💚 Add Life', params: [] },
+  { action: 'removeLife', name: '💔 Remove Life', params: [] },
+  { action: 'addCoins', name: '🪙 Add Coins', params: [{key: 'amount', label: 'Amount', type: 'number', default: 10}] },
+  { action: 'removeCoins', name: '🪙 Remove Coins', params: [{key: 'amount', label: 'Amount', type: 'number', default: 10}] },
+
+  // Power-Ups
+  { action: 'giveMushroom', name: '🍄 Give Mushroom', params: [] },
+  { action: 'giveFireFlower', name: '🔥 Give Fire Flower', params: [] },
+  { action: 'giveCapeFeather', name: '🪶 Give Cape Feather', params: [] },
+  { action: 'giveStarman', name: '⭐ Give Star Power', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+  { action: 'removePowerup', name: '⬇️ Downgrade Power-Up', params: [] },
+  { action: 'activatePSwitch', name: '⏱️ Activate P-Switch', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 9}] },
+
+  // Yoshi
+  { action: 'giveYoshi', name: '💚 Give Yoshi', params: [{key: 'color', label: 'Color (0-3)', type: 'number', default: 0}] },
+  { action: 'removeYoshi', name: '🚫 Remove Yoshi', params: [] },
+
+  // Individual Enemy Spawns
   { action: 'spawnRandomEnemy', name: '🎲 Spawn Random Enemy', params: [] },
-  { action: 'addHeart', name: '❤️ Add Heart Container', params: [] },
-  { action: 'removeHeart', name: '💔 Remove Heart Container', params: [] },
-  { action: 'addHeartPiece', name: '¼❤️ Add Heart Piece', params: [] },
-  { action: 'toggleInvincibility', name: '⭐ Toggle Invincibility', params: [] },
-  { action: 'giveStarterPack', name: '🎁 Starter Pack', params: [] },
-  { action: 'giveEndgamePack', name: '🏆 Endgame Pack', params: [] },
-  { action: 'addRupee', name: '💰 Add 1 Rupee', params: [] },
-  { action: 'removeRupee', name: '💸 Remove 1 Rupee', params: [] },
-  { action: 'addBomb', name: '💣 Add 1 Bomb', params: [] },
-  { action: 'removeBomb', name: '💥 Remove 1 Bomb', params: [] },
-  { action: 'addArrow', name: '🏹 Add 1 Arrow', params: [] },
-  { action: 'removeArrow', name: '🎯 Remove 1 Arrow', params: [] }
+  { action: 'spawnBooCircle', name: '👻 Spawn Boo Circle', params: [] },
+  { action: 'spawnThwomp', name: '🗿 Spawn Thwomp', params: [] },
+  { action: 'spawnCharginChuck', name: '🏈 Spawn Chargin\' Chuck', params: [] },
+  { action: 'spawnBobOmb', name: '💣 Spawn Bob-omb', params: [] },
+  { action: 'spawnMagikoopa', name: '🧙 Spawn Magikoopa', params: [] },
+  { action: 'spawnDryBones', name: '💀 Spawn Dry Bones', params: [] },
+  { action: 'spawnRex', name: '🦖 Spawn Rex', params: [] },
+  { action: 'spawnWiggler', name: '🐛 Spawn Wiggler', params: [] },
+  { action: 'clearAllEnemies', name: '🗑️ Clear All Enemies', params: [] },
+
+  // Enemy Waves
+  { action: 'spawnEnemyWave', name: '🌊 Enemy Wave', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'spawnKoopaWave', name: '🐢 Koopa Wave', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+  { action: 'spawnBuzzyBeetleWave', name: '🐞 Buzzy Beetle Wave', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+  { action: 'spawnPiranhaPlantWave', name: '🌺 Piranha Plant Wave', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+  { action: 'spawnBulletBillBarrage', name: '🚀 Bullet Bill Barrage', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 15}] },
+  { action: 'spawnBoss', name: '🐉 Spawn Boss', params: [{key: 'bossType', label: 'Boss (reznor/bowser)', type: 'text', default: 'reznor'}] },
+
+  // Enemy Effects
+  { action: 'makeEnemiesInvisible', name: '👁️ Invisible Enemies', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'doubleEnemySpeed', name: '⚡ Double Enemy Speed', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+
+  // Level Warping
+  { action: 'warpToWorld1', name: '🏝️ Warp to World 1', params: [] },
+  { action: 'warpToWorld2', name: '🍩 Warp to World 2', params: [] },
+  { action: 'warpToWorld3', name: '🏔️ Warp to World 3', params: [] },
+  { action: 'warpToWorld4', name: '🌉 Warp to World 4', params: [] },
+  { action: 'warpToWorld5', name: '🌲 Warp to World 5', params: [] },
+  { action: 'warpToWorld6', name: '🍫 Warp to World 6', params: [] },
+  { action: 'warpToWorld7', name: '🌋 Warp to World 7', params: [] },
+  { action: 'warpToSpecialWorld', name: '⭐ Warp to Star World', params: [] },
+  { action: 'warpToBowserCastle', name: '🏰 Warp to Bowser\'s Castle', params: [] },
+  { action: 'warpToRandomLevel', name: '🎲 Random Level Warp', params: [] },
+
+  // Physics Chaos
+  { action: 'halfSpeed', name: '🐌 Half Speed', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'doubleSpeed', name: '⚡ Double Speed', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'moonJump', name: '🌙 Moon Jump', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'tinyJump', name: '🦐 Tiny Jump', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'lowGravity', name: '🪐 Low Gravity', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'highGravity', name: '🪨 High Gravity', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'reverseControls', name: '🔄 Reverse Controls', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+  { action: 'enableIcePhysics', name: '❄️ Ice Physics', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+  { action: 'disableRunning', name: '🚫 Disable Running', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+  { action: 'forceContinuousRun', name: '🏃 Force Continuous Run', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
+  { action: 'randomPhysicsChaos', name: '🎲 Random Physics Chaos', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] }
 ];
 
 // Initialize threshold manager
