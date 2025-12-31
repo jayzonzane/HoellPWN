@@ -1,11 +1,11 @@
 {
-  "name": "snes-controller",
-  "productName": "SNES Controller",
-  "version": "1.11.0",
+  "name": "zanes-world",
+  "productName": "Zane's World",
+  "version": "1.0.0",
   "main": "main.js",
   "author": "",
   "license": "ISC",
-  "description": "ALTTP SNI Controller with TikTok Integration - Bee Swarm Waves",
+  "description": "Super Mario World TikTok Crowd Control - HoellStream Integration",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder"
@@ -19,8 +19,8 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.alttp.sni-controller",
-    "productName": "SNES Controller",
+    "appId": "com.zanesworld.crowd-control",
+    "productName": "Zane's World",
     "directories": {
       "output": "dist",
       "buildResources": "assets"
@@ -61,10 +61,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "SNES Controller"
+      "shortcutName": "Zane's World"
     },
     "portable": {
-      "artifactName": "SNES_Controller.exe"
+      "artifactName": "Zanes_World.exe"
     },
     "linux": {
       "target": ["AppImage", "deb"],
