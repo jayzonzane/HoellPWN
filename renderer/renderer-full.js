@@ -1354,122 +1354,35 @@ document.addEventListener('click', async (e) => {
   button.disabled = true;
 
   try {
-    console.log(`[Button Click] Action: ${action}, Value: ${value}, Dungeon: ${dungeon}`);
+    console.log(`[Button Click] Action: ${action}, Value: ${value}`);
 
-    // Route to appropriate function based on action
-    switch(action) {
-      // Core functions
-      case 'addHeart': await addHeart(); break;
-      case 'removeHeart': await removeHeart(); break;
-      case 'addHeartPiece': await addHeartPiece(); break;
-      case 'killPlayer': await killPlayer(); break;
-      case 'testMemory': await testMemory(); break;
-      case 'toggleInvincibility': await toggleInvincibility(); break;
+    // Handle legacy killPlayer action (for compatibility)
+    if (action === 'killPlayer') {
+      await killPlayer();
+    }
+    // All other actions are SMW operations - use generic handler
+    else {
+      // Get parameters from button dataset
+      const duration = button.dataset.duration ? parseInt(button.dataset.duration) : undefined;
+      const amount = button.dataset.amount ? parseInt(button.dataset.amount) : undefined;
+      const color = button.dataset.color ? parseInt(button.dataset.color) : undefined;
+      const bossType = button.dataset.bossType ? parseInt(button.dataset.bossType) : undefined;
 
-      // Resources
-      case 'setRupees': await setRupees(parseInt(value)); break;
-      case 'addRupees': await addRupees(parseInt(value)); break;
-      case 'addRupee': await addRupee(); break;
-      case 'removeRupee': await removeRupee(); break;
-      case 'setBombs': await setBombs(parseInt(value)); break;
-      case 'addBomb': await addBomb(); break;
-      case 'removeBomb': await removeBomb(); break;
-      case 'setArrows': await setArrows(parseInt(value)); break;
-      case 'addArrow': await addArrow(); break;
-      case 'removeArrow': await removeArrow(); break;
+      // Build arguments array based on what's available
+      const args = [];
+      if (amount !== undefined) args.push(amount);
+      if (duration !== undefined) args.push(duration);
+      if (color !== undefined) args.push(color);
+      if (bossType !== undefined) args.push(bossType);
 
-      // Equipment
-      case 'setSword': await setSword(parseInt(value)); break;
-      case 'setShield': await setShield(parseInt(value)); break;
-      case 'setArmor': await setArmor(parseInt(value)); break;
-      case 'setGloves': await setGloves(parseInt(value)); break;
+      // Execute the SMW operation
+      const result = await window.sniAPI.executeSMWOperation(action, ...args);
 
-      // Toggles
-      case 'toggleBoots': await toggleBoots(); break;
-      case 'toggleFlippers': await toggleFlippers(); break;
-      case 'toggleMoonPearl': await toggleMoonPearl(); break;
-      case 'toggleHookshot': await toggleHookshot(); break;
-      case 'toggleLamp': await toggleLamp(); break;
-      case 'toggleHammer': await toggleHammer(); break;
-      case 'toggleBook': await toggleBook(); break;
-      case 'toggleBugNet': await toggleBugNet(); break;
-      case 'toggleSomaria': await toggleSomaria(); break;
-      case 'toggleByrna': await toggleByrna(); break;
-      case 'toggleMirror': await toggleMirror(); break;
-      case 'toggleBoomerang': await toggleBoomerang(); break;
-
-      // Magic items
-      case 'toggleFireRod': await toggleFireRod(); break;
-      case 'giveFireRod': await giveFireRod(); break;
-      case 'toggleIceRod': await toggleIceRod(); break;
-      case 'giveIceRod': await giveIceRod(); break;
-      case 'giveCapes': await giveCapes(); break;
-      case 'giveFlute': await giveFlute(); break;
-      case 'removeFlute': await removeFlute(); break;
-      case 'deactivateFlute': await deactivateFlute(); break;
-      case 'toggleMedallion': await toggleMedallion(value); break;
-      case 'toggleAllMedallions': await toggleAllMedallions(); break;
-      case 'giveAllMedallions': await giveAllMedallions(); break;
-
-      // Magic system
-      case 'enableMagic': await enableMagic(); break;
-      case 'removeMagic': await removeMagic(); break;
-      case 'setMagicUpgrade': await setMagicUpgrade(parseInt(value)); break;
-
-      // Bottles
-      case 'addBottle': await addBottle(); break;
-      case 'removeBottle': await removeBottle(); break;
-      case 'fillBottles': await fillBottles(value); break;
-
-      // Hearts
-      case 'setHearts': await setHearts(parseInt(value)); break;
-
-      // Progress
-      case 'togglePendant': await togglePendant(value); break;
-      case 'toggleAllPendants': await toggleAllPendants(); break;
-      case 'giveAllPendants': await giveAllPendants(); break;
-      case 'toggleCrystal': await toggleCrystal(parseInt(value)); break;
-      case 'toggleAllCrystals': await toggleAllCrystals(); break;
-      case 'giveAllCrystals': await giveAllCrystals(); break;
-
-      // Keys
-      case 'addSmallKey': await addSmallKey(dungeon); break;
-      case 'removeSmallKey': await removeSmallKey(dungeon); break;
-      case 'toggleBigKey': await toggleBigKey(dungeon); break;
-      case 'giveKeys': await giveKeys(dungeon, parseInt(value)); break;
-      case 'giveBigKey': await giveBigKey(dungeon); break;
-
-      // Enemy spawning
-      case 'spawnEnemy': await spawnEnemy(button.dataset.enemy); break;
-      case 'spawnRandomEnemy': await spawnRandomEnemy(); break;
-      case 'triggerChickenAttack': await triggerChickenAttack(60); break;
-      case 'triggerEnemyWaves': await triggerEnemyWaves(60); break;
-      case 'triggerBeeSwarmWaves': await triggerBeeSwarmWaves(60); break;
-      case 'makeEnemiesInvisible': await makeEnemiesInvisible(60); break;
-      case 'enableInfiniteMagic': await enableInfiniteMagic(60); break;
-      case 'enableIceWorld': await enableIceWorld(60); break;
-      case 'spawnBossRush': await spawnBossRush(60); break;
-      case 'enableItemLock': await enableItemLock(60); break;
-      case 'enableGlassCannon': await enableGlassCannon(60); break;
-      case 'blessingAndCurse': await blessingAndCurse(); break;
-      case 'deleteAllSaves': await deleteAllSaves(); break;
-      case 'spawnBeeSwarm': await spawnBeeSwarm(); break;
-
-      // Presets
-      case 'giveStarterPack': await giveStarterPack(); break;
-      case 'giveEndgamePack': await giveEndgamePack(); break;
-      case 'getInventory': await getInventory(); break;
-      case 'warpEastern': await warpEastern(); break;
-      case 'fakeMirror': await fakeMirror(); break;
-      case 'chaosDungeonWarp': await chaosDungeonWarp(); break;
-      case 'toggleWorld': await toggleWorld(); break;
-
-      // Item Restoration Testing
-      case 'testDisableItem': await testDisableItem(button.dataset.item); break;
-
-      default:
-        console.error(`[Button Click] Unknown action: ${action}`);
-        log(`Unknown action: ${action}`, 'error');
+      if (result.success) {
+        log(`${action} executed successfully`, 'success');
+      } else {
+        log(`Failed: ${result.error}`, 'error');
+      }
     }
   } catch (error) {
     console.error('[Button Click] Error:', error);

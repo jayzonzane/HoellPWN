@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('sniAPI', {
+  // Generic SMW operation executor
+  executeSMWOperation: (operationName, ...args) => ipcRenderer.invoke('execute-smw-operation', operationName, ...args),
+
   // Original functions
   connect: (host, port) => ipcRenderer.invoke('connect-sni', host, port),
   selectDevice: (deviceInfo) => ipcRenderer.invoke('select-device', deviceInfo),

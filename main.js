@@ -293,6 +293,27 @@ ipcMain.handle('restart-sni', async (event) => {
   }
 });
 
+// Generic SMW operation handler
+ipcMain.handle('execute-smw-operation', async (event, operationName, ...args) => {
+  try {
+    if (!sniClient.deviceURI) {
+      throw new Error('No device selected');
+    }
+
+    // Check if the operation exists on expandedOps
+    if (typeof expandedOps[operationName] !== 'function') {
+      throw new Error(`Unknown operation: ${operationName}`);
+    }
+
+    // Execute the operation with provided arguments
+    const result = await expandedOps[operationName](...args);
+    return { success: true, result };
+  } catch (error) {
+    console.error(`Error executing ${operationName}:`, error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('add-heart', async () => {
   try {
     if (!sniClient.deviceURI) {
