@@ -899,404 +899,263 @@
       <!-- Controls Tab -->
       <div id="controls-tab" class="tab-content active">
 
-      <!-- Row 1: Core Functions & Resources -->
+      <!-- Row 1: Core Actions & Power-Ups -->
       <div class="control-row">
-        <!-- Core Functions -->
+        <!-- Core Actions -->
         <div class="control-group">
           <h3>Core</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addHeart">❤️+ Add Heart</button>
-            <button class="btn-sm" data-action="removeHeart">💔 Remove Heart</button>
-            <button class="btn-sm" data-action="addHeartPiece">¼❤️ Heart Piece</button>
-            <button class="btn-sm danger" data-action="killPlayer">💀 KO</button>
-            <button class="btn-sm danger" data-action="deleteAllSaves">💀 DELETE SAVES</button>
-            <button class="btn-sm" data-action="testMemory">🔍 Test Mem</button>
-            <button class="btn-sm special" data-action="toggleInvincibility">⭐ GOD MODE</button>
+            <button class="btn-sm danger" data-action="killPlayer">💀 KO Mario</button>
+            <button class="btn-sm" data-action="addLife">💚 +Life</button>
+            <button class="btn-sm" data-action="removeLife">💔 -Life</button>
+            <button class="btn-sm" data-action="addCoins" data-value="10">🪙 +10 Coins</button>
+            <button class="btn-sm" data-action="removeCoins" data-value="10">🪙 -10 Coins</button>
+            <button class="btn-sm" data-action="addCoins" data-value="50">🪙 +50 Coins</button>
           </div>
         </div>
 
-        <!-- Resources -->
+        <!-- Power-Ups -->
         <div class="control-group">
-          <h3>Resources</h3>
+          <h3>Power-Ups</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="setRupees" data-value="100">💰 100</button>
-            <button class="btn-sm" data-action="setRupees" data-value="500">💰 500</button>
-            <button class="btn-sm" data-action="setRupees" data-value="9999">💰 MAX</button>
-            <button class="btn-sm" data-action="setBombs" data-value="10">💣 10</button>
-            <button class="btn-sm" data-action="setBombs" data-value="50">💣 MAX</button>
-            <button class="btn-sm" data-action="setArrows" data-value="30">🏹 30</button>
-            <button class="btn-sm" data-action="setArrows" data-value="70">🏹 MAX</button>
-            <button class="btn-sm" data-action="addRupees" data-value="50">💰 +50</button>
-            <button class="btn-sm" data-action="addRupee">💰 +1</button>
-            <button class="btn-sm" data-action="removeRupee">💰 -1</button>
-            <button class="btn-sm" data-action="addBomb">💣 +1</button>
-            <button class="btn-sm" data-action="removeBomb">💣 -1</button>
-            <button class="btn-sm" data-action="addArrow">🏹 +1</button>
-            <button class="btn-sm" data-action="removeArrow">🏹 -1</button>
+            <button class="btn-sm" data-action="giveMushroom">🍄 Mushroom</button>
+            <button class="btn-sm" data-action="giveFireFlower">🔥 Fire Flower</button>
+            <button class="btn-sm" data-action="giveCapeFeather">🪶 Cape Feather</button>
+            <button class="btn-sm special" data-action="giveStarman">⭐ Star Power</button>
+            <button class="btn-sm" data-action="removePowerup">⬇️ Downgrade</button>
+            <button class="btn-sm" data-action="activatePSwitch">⏱️ P-Switch</button>
+          </div>
+        </div>
+
+        <!-- Yoshi & Reserve -->
+        <div class="control-group">
+          <h3>Yoshi</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="giveYoshi" data-value="0">💚 Green</button>
+            <button class="btn-sm" data-action="giveYoshi" data-value="1">💛 Yellow</button>
+            <button class="btn-sm" data-action="giveYoshi" data-value="2">❤️ Red</button>
+            <button class="btn-sm" data-action="giveYoshi" data-value="3">💙 Blue</button>
+            <button class="btn-sm" data-action="removeYoshi">🚫 Remove</button>
+            <button class="btn-sm" data-action="clearReserveItem">🗑️ Clear Reserve</button>
           </div>
         </div>
       </div>
 
-      <!-- Row 2: Equipment -->
+      <!-- Row 2: Individual Enemy Spawns -->
       <div class="control-row">
-        <!-- Swords -->
+        <!-- Common Enemies -->
         <div class="control-group">
-          <h3>Swords</h3>
+          <h3>Common Enemies</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="setSword" data-value="0">❌ None</button>
-            <button class="btn-sm" data-action="setSword" data-value="1">⚔️ Fighter</button>
-            <button class="btn-sm" data-action="setSword" data-value="2">⚔️ Master</button>
-            <button class="btn-sm" data-action="setSword" data-value="3">⚔️ Tempered</button>
-            <button class="btn-sm gold" data-action="setSword" data-value="4">⚔️ Golden</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="1">🐢 Green Koopa</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="2">🔴 Red Koopa</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="11">🍄 Goomba</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="8">🐞 Buzzy Beetle</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="9">🦔 Spiny</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="12">🌺 Piranha Plant</button>
           </div>
         </div>
 
-        <!-- Shields -->
+        <!-- Special Enemies -->
         <div class="control-group">
-          <h3>Shields</h3>
+          <h3>Special Enemies</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="setShield" data-value="0">❌ None</button>
-            <button class="btn-sm" data-action="setShield" data-value="1">🛡️ Blue</button>
-            <button class="btn-sm" data-action="setShield" data-value="2">🛡️ Red</button>
-            <button class="btn-sm" data-action="setShield" data-value="3">🛡️ Mirror</button>
+            <button class="btn-sm" data-action="spawnBooCircle">👻 Boo Circle</button>
+            <button class="btn-sm" data-action="spawnThwomp">🗿 Thwomp</button>
+            <button class="btn-sm" data-action="spawnCharginChuck">🏈 Chargin' Chuck</button>
+            <button class="btn-sm" data-action="spawnBobOmb">💣 Bob-omb</button>
+            <button class="btn-sm" data-action="spawnMagikoopa">🧙 Magikoopa</button>
+            <button class="btn-sm" data-action="spawnDryBones">💀 Dry Bones</button>
           </div>
         </div>
 
-        <!-- Armor -->
+        <!-- More Enemies -->
         <div class="control-group">
-          <h3>Armor</h3>
+          <h3>More Enemies</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="setArmor" data-value="0">👕 Green</button>
-            <button class="btn-sm" data-action="setArmor" data-value="1">👕 Blue</button>
-            <button class="btn-sm" data-action="setArmor" data-value="2">👕 Red</button>
-          </div>
-        </div>
-
-        <!-- Gloves -->
-        <div class="control-group">
-          <h3>Gloves</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="setGloves" data-value="0">❌ None</button>
-            <button class="btn-sm" data-action="setGloves" data-value="1">🧤 Power</button>
-            <button class="btn-sm" data-action="setGloves" data-value="2">🧤 Titan</button>
+            <button class="btn-sm" data-action="spawnRex">🦖 Rex</button>
+            <button class="btn-sm" data-action="spawnWiggler">🐛 Wiggler</button>
+            <button class="btn-sm" data-action="spawnRandomEnemy">🎲 Random</button>
+            <button class="btn-sm danger" data-action="clearAllEnemies">🗑️ Clear All</button>
           </div>
         </div>
       </div>
 
-      <!-- Row 3: Toggle Items & Medallions -->
+      <!-- Row 3: Enemy Waves & Barrages -->
       <div class="control-row">
-        <div class="control-group wide">
-          <h3>Toggle Items</h3>
+        <!-- Enemy Waves -->
+        <div class="control-group">
+          <h3>Enemy Waves</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="toggleBoots">👟 Boots</button>
-            <button class="btn-sm" data-action="toggleFlippers">🏊 Flippers</button>
-            <button class="btn-sm" data-action="toggleMoonPearl">🌙 Pearl</button>
-            <button class="btn-sm" data-action="toggleHookshot">🪝 Hookshot</button>
-            <button class="btn-sm" data-action="toggleLamp">🔦 Lamp</button>
-            <button class="btn-sm" data-action="toggleHammer">🔨 Hammer</button>
-            <button class="btn-sm" data-action="toggleBook">📖 Book</button>
-            <button class="btn-sm" data-action="toggleBugNet">🦋 Net</button>
-            <button class="btn-sm" data-action="toggleSomaria">🟥 Somaria</button>
-            <button class="btn-sm" data-action="toggleByrna">🟦 Byrna</button>
-            <button class="btn-sm" data-action="toggleMirror">🪞 Mirror</button>
-            <button class="btn-sm" data-action="toggleBoomerang">🪃 Boomerang</button>
-            <button class="btn-sm" data-action="toggleFireRod">🔥 Fire Rod</button>
-            <button class="btn-sm" data-action="toggleIceRod">❄️ Ice Rod</button>
+            <button class="btn-sm special" data-action="spawnEnemyWave">🌊 Random Wave (30s)</button>
+            <button class="btn-sm" data-action="spawnKoopaWave">🐢 Koopa Wave (20s)</button>
+            <button class="btn-sm" data-action="spawnBuzzyBeetleWave">🐞 Buzzy Wave (20s)</button>
+            <button class="btn-sm" data-action="spawnPiranhaPlantWave">🌺 Piranha Wave (20s)</button>
+            <button class="btn-sm" data-action="spawnBulletBillBarrage">🚀 Bullet Barrage (15s)</button>
           </div>
         </div>
 
-        <!-- Medallions -->
+        <!-- Boss Spawns -->
         <div class="control-group">
-          <h3>Medallions</h3>
+          <h3>Bosses</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="toggleMedallion" data-value="bombos">💥 Bombos</button>
-            <button class="btn-sm" data-action="toggleMedallion" data-value="ether">⚡ Ether</button>
-            <button class="btn-sm" data-action="toggleMedallion" data-value="quake">🌋 Quake</button>
-            <button class="btn-sm" data-action="toggleAllMedallions">💫 All</button>
+            <button class="btn-sm gold" data-action="spawnBoss" data-value="reznor">🦖 Reznor</button>
+            <button class="btn-sm gold" data-action="spawnBoss" data-value="bowser">🐉 Bowser</button>
+          </div>
+        </div>
+
+        <!-- Enemy Effects -->
+        <div class="control-group">
+          <h3>Enemy Effects</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="makeEnemiesInvisible">👁️ Invisible (30s)</button>
+            <button class="btn-sm" data-action="doubleEnemySpeed">⚡ 2x Speed (20s)</button>
           </div>
         </div>
       </div>
 
-      <!-- Row 4: Magic & Bottles -->
+      <!-- Row 4: Level Warping - Worlds 1-4 -->
       <div class="control-row">
-        <!-- Magic -->
+        <!-- Yoshi's Island -->
         <div class="control-group">
-          <h3>Magic</h3>
+          <h3>🏝️ World 1</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="enableMagic">✨ Enable</button>
-            <button class="btn-sm danger" data-action="removeMagic">🚫 Remove</button>
-            <button class="btn-sm" data-action="setMagicUpgrade" data-value="0">🔮 Normal</button>
-            <button class="btn-sm" data-action="setMagicUpgrade" data-value="1">🔮 ½ Magic</button>
-            <button class="btn-sm" data-action="setMagicUpgrade" data-value="2">🔮 ¼ Magic</button>
-            <button class="btn-sm special" data-action="enableInfiniteMagic">✨ INF (60s)</button>
+            <button class="btn-sm" data-action="warpToWorld1">Yoshi's Island</button>
           </div>
         </div>
 
-        <!-- Bottles -->
+        <!-- Donut Plains -->
         <div class="control-group">
-          <h3>Bottles</h3>
+          <h3>🍩 World 2</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addBottle">🍾 Add</button>
-            <button class="btn-sm" data-action="removeBottle">🍾 Remove</button>
-            <button class="btn-sm" data-action="fillBottles" data-value="red">🧪 Red</button>
-            <button class="btn-sm" data-action="fillBottles" data-value="green">🧪 Green</button>
-            <button class="btn-sm" data-action="fillBottles" data-value="blue">🧪 Blue</button>
+            <button class="btn-sm" data-action="warpToWorld2">Donut Plains</button>
           </div>
         </div>
 
-        <!-- Flute -->
+        <!-- Vanilla Dome -->
         <div class="control-group">
-          <h3>Flute</h3>
+          <h3>🏔️ World 3</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="giveFlute">🎵 Add</button>
-            <button class="btn-sm" data-action="removeFlute">🎵 Remove</button>
-            <button class="btn-sm" data-action="deactivateFlute">🐦 Reset Bird</button>
+            <button class="btn-sm" data-action="warpToWorld3">Vanilla Dome</button>
           </div>
         </div>
 
-        <!-- Progress -->
+        <!-- Twin Bridges -->
         <div class="control-group">
-          <h3>Pendants</h3>
+          <h3>🌉 World 4</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="togglePendant" data-value="red">🔴 Red</button>
-            <button class="btn-sm" data-action="togglePendant" data-value="blue">🔵 Blue</button>
-            <button class="btn-sm" data-action="togglePendant" data-value="green">🟢 Green</button>
-            <button class="btn-sm" data-action="toggleAllPendants">💎 All</button>
-          </div>
-        </div>
-
-        <!-- Crystals -->
-        <div class="control-group">
-          <h3>Crystals</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="toggleCrystal" data-value="1">💠 1</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="2">💠 2</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="3">💠 3</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="4">💠 4</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="5">💠 5</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="6">💠 6</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="7">💠 7</button>
-            <button class="btn-sm" data-action="toggleAllCrystals">💠 All</button>
+            <button class="btn-sm" data-action="warpToWorld4">Twin Bridges</button>
           </div>
         </div>
       </div>
 
-      <!-- Row 5: Hearts -->
+      <!-- Row 5: Level Warping - Worlds 5-7 & Special -->
       <div class="control-row">
-        <div class="control-group wide">
-          <h3>Set Hearts</h3>
+        <!-- Forest of Illusion -->
+        <div class="control-group">
+          <h3>🌲 World 5</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="setHearts" data-value="3">❤️×3</button>
-            <button class="btn-sm" data-action="setHearts" data-value="5">❤️×5</button>
-            <button class="btn-sm" data-action="setHearts" data-value="7">❤️×7</button>
-            <button class="btn-sm" data-action="setHearts" data-value="10">❤️×10</button>
-            <button class="btn-sm" data-action="setHearts" data-value="12">❤️×12</button>
-            <button class="btn-sm" data-action="setHearts" data-value="15">❤️×15</button>
-            <button class="btn-sm" data-action="setHearts" data-value="18">❤️×18</button>
-            <button class="btn-sm" data-action="setHearts" data-value="20">❤️×20</button>
+            <button class="btn-sm" data-action="warpToWorld5">Forest of Illusion</button>
+          </div>
+        </div>
+
+        <!-- Chocolate Island -->
+        <div class="control-group">
+          <h3>🍫 World 6</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="warpToWorld6">Chocolate Island</button>
+          </div>
+        </div>
+
+        <!-- Valley of Bowser -->
+        <div class="control-group">
+          <h3>🌋 World 7</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="warpToWorld7">Valley of Bowser</button>
+          </div>
+        </div>
+
+        <!-- Special Warps -->
+        <div class="control-group">
+          <h3>Special Warps</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="warpToSpecialWorld">⭐ Star World</button>
+            <button class="btn-sm gold" data-action="warpToBowserCastle">🏰 Bowser's Castle</button>
+            <button class="btn-sm" data-action="warpToGhostHouse">👻 Ghost House</button>
+            <button class="btn-sm" data-action="warpToRandomLevel">🎲 Random Level</button>
           </div>
         </div>
       </div>
 
-      <!-- Row 6: Dungeon Keys Light World -->
+      <!-- Row 6: Physics Chaos - Speed & Jump -->
       <div class="control-row">
+        <!-- Speed Modifiers -->
         <div class="control-group">
-          <h3>🏰 Eastern</h3>
+          <h3>Speed</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="eastern">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="eastern">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="eastern">🔑</button>
+            <button class="btn-sm" data-action="halfSpeed">🐌 Half Speed (30s)</button>
+            <button class="btn-sm" data-action="doubleSpeed">⚡ Double Speed (30s)</button>
           </div>
         </div>
 
+        <!-- Jump Modifiers -->
         <div class="control-group">
-          <h3>🏜️ Desert</h3>
+          <h3>Jump Height</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="desert">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="desert">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="desert">🔑</button>
+            <button class="btn-sm" data-action="moonJump">🌙 Moon Jump (30s)</button>
+            <button class="btn-sm" data-action="tinyJump">🦐 Tiny Jump (30s)</button>
           </div>
         </div>
 
+        <!-- Gravity Modifiers -->
         <div class="control-group">
-          <h3>⛰️ Hera</h3>
-          <button class="btn-sm" data-action="addSmallKey" data-dungeon="hera">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="hera">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="hera">🔑</button>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <h3>👑 Tower</h3>
+          <h3>Gravity</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="tower">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="tower">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="tower">🔑</button>
+            <button class="btn-sm" data-action="lowGravity">🪐 Low Gravity (30s)</button>
+            <button class="btn-sm" data-action="highGravity">🪨 High Gravity (30s)</button>
           </div>
         </div>
       </div>
 
-      <!-- Row 7: Dungeon Keys Dark World -->
+      <!-- Row 7: Physics Chaos - Controls & Special -->
       <div class="control-row">
+        <!-- Control Modifiers -->
         <div class="control-group">
-          <h3>🌙 Darkness</h3>
+          <h3>Control Chaos</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="darkness">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="darkness">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="darkness">🔑</button>
+            <button class="btn-sm danger" data-action="reverseControls">🔄 Reverse Controls (20s)</button>
+            <button class="btn-sm" data-action="enableIcePhysics">❄️ Ice Physics (30s)</button>
           </div>
         </div>
 
+        <!-- Running Modifiers -->
         <div class="control-group">
-          <h3>🐸 Swamp</h3>
+          <h3>Running</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="swamp">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="swamp">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="swamp">🔑</button>
+            <button class="btn-sm" data-action="disableRunning">🚫 No Running (20s)</button>
+            <button class="btn-sm" data-action="forceContinuousRun">🏃 Force Run (20s)</button>
           </div>
         </div>
 
+        <!-- Random Chaos -->
         <div class="control-group">
-          <h3>💀 Skull</h3>
+          <h3>Random Chaos</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="skull">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="skull">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="skull">🔑</button>
+            <button class="btn-sm special" data-action="randomPhysicsChaos">🎲 Random Physics (30s)</button>
           </div>
         </div>
 
+        <!-- Level Utilities -->
         <div class="control-group">
-          <h3>🏴‍☠️ Thieves</h3>
+          <h3>Level Utils</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="thieves">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="thieves">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="thieves">🔑</button>
+            <button class="btn-sm" data-action="setCheckpoint">🚩 Set Checkpoint</button>
+            <button class="btn-sm" data-action="clearCheckpoint">🗑️ Clear Checkpoint</button>
+            <button class="btn-sm" data-action="forceSecretExit">🔓 Secret Exit</button>
+            <button class="btn-sm" data-action="returnToWorldMap">🗺️ To World Map</button>
           </div>
         </div>
       </div>
-
-      <!-- Row 8: More Dungeon Keys -->
-      <div class="control-row">
-        <div class="control-group">
-          <h3>❄️ Ice</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="ice">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ice">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ice">🔑</button>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <h3>🌫️ Misery</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="misery">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="misery">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="misery">🔑</button>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <h3>🐢 Turtle</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="turtle">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="turtle">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="turtle">🔑</button>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <h3>👹 Ganon</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="ganon">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ganon">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ganon">🔑</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 9: Preset Loadouts -->
-      <div class="control-row">
-        <div class="control-group wide">
-          <h3>Preset Loadouts</h3>
-          <div class="button-grid-compact">
-            <button class="btn-lg special" data-action="giveStarterPack">📦 STARTER PACK</button>
-            <button class="btn-lg gold" data-action="giveEndgamePack">👑 ENDGAME PACK</button>
-            <button class="btn-lg" data-action="getInventory">📊 Show Inventory</button>
-            <button class="btn-lg danger" data-action="warpEastern">🏰 Warp Eastern</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 10: Enemy Spawning -->
-      <div class="control-row">
-        <!-- Enemy Spawning -->
-        <div class="control-group wide">
-          <h3>Enemy Spawning</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="octorok">🐙 Octorok (HP:2)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="ballandchain">⚔️ Ball & Chain (HP:16)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="snapdragon">🌺 Snapdragon (HP:12)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="octoballoon">🎈 Octoballoon (HP:2)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="cyclops">👁️ Cyclops (HP:20)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="helmasaur">🦎 Mini Helmasaur (HP:4)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="minihelmasaur">🐍 Mini Moldorm (HP:3)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="bombguy">💣 Bomb Guy (HP:8)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier">🗡️ Soldier (HP:6)</button>
-            <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier_green">🟢 Soldier (HP:4)</button>
-            <button class="btn-sm special" data-action="spawnRandomEnemy">🎲 Random Enemy</button>
-
-            <button class="btn-sm danger" data-action="fakeMirror">🪞 Fake Mirror</button>
-            <button class="btn-sm danger" data-action="chaosDungeonWarp">🎲 Chaos Dungeon Warp</button>
-            <button class="btn-sm special" data-action="toggleWorld">🌍 Flip World</button>
-
-            <button class="btn-sm danger" data-action="triggerChickenAttack">🐔 Chicken Attack (60s)</button>
-            <button class="btn-sm danger" data-action="triggerEnemyWaves">⚔️ Enemy Waves (60s)</button>
-            <button class="btn-sm danger" data-action="triggerBeeSwarmWaves">🐝 Bee Swarm (60s)</button>
-            <button class="btn-sm danger" data-action="makeEnemiesInvisible">👻 Invisible Enemies (60s)</button>
-            <button class="btn-sm danger" data-action="spawnBossRush">💀 Boss Rush (60s)</button>
-            <button class="btn-sm danger" data-action="enableItemLock">🔒 Item Lock (60s)</button>
-            <button class="btn-sm danger" data-action="enableGlassCannon">💀 Glass Cannon (60s)</button>
-            <button class="btn-sm special" data-action="blessingAndCurse">🎲 Effect Roulette</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 11: Item Disable Testing -->
-      <div class="control-row">
-        <div class="control-group wide">
-          <h3>⏱️ Item Disable Testing</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="testDisableItem" data-item="bow">🏹 Bow</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="boomerang">🪃 Boomerang</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="hookshot">🪝 Hookshot</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="powder">🍄 Powder</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="firerod">🔥 Fire Rod</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="icerod">❄️ Ice Rod</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="bombos">💥 Bombos</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="ether">⚡ Ether</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="quake">🌋 Quake</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="lamp">🔦 Lamp</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="hammer">🔨 Hammer</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="shovel">🪓 Shovel</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="net">🦋 Net</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="book">📖 Book</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="somaria">🟥 Somaria</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="byrna">🟦 Byrna</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="cape">🧥 Cape</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="mirror">🪞 Mirror</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="boots">👟 Boots</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="gloves">🧤 Gloves</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="flippers">🏊 Flippers</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="moonpearl">🌙 Moon Pearl</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="sword">⚔️ Sword</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="shield">🛡️ Shield</button>
-            <button class="btn-sm" data-action="testDisableItem" data-item="armor">👕 Armor</button>
-          </div>
-        </div>
-      </div>
-
-      </div>
-      <!-- End Controls Tab -->
 
     </div>
     <!-- End Tab Content Container -->
