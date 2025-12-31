@@ -71,7 +71,11 @@ const THRESHOLD_ACTIONS = [
   { action: 'enableIcePhysics', name: '❄️ Ice Physics', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
   { action: 'disableRunning', name: '🚫 Disable Running', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
   { action: 'forceContinuousRun', name: '🏃 Force Continuous Run', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] },
-  { action: 'randomPhysicsChaos', name: '🎲 Random Physics Chaos', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] }
+  { action: 'randomPhysicsChaos', name: '🎲 Random Physics Chaos', params: [{key: 'duration', label: 'Duration (sec)', type: 'number', default: 30}] },
+
+  // Chaos Effects
+  { action: 'spawnRandomBlocks', name: '🧱 Spawn Random Blocks', params: [{key: 'amount', label: 'Block Count', type: 'number', default: 5}] },
+  { action: 'removeFloorBlocks', name: '🕳️ Floor Hazards', params: [{key: 'amount', label: 'Hazard Count', type: 'number', default: 3}, {key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] }
 ];
 
 // Initialize threshold manager

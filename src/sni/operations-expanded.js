@@ -233,11 +233,10 @@ class ExpandedGameOperations {
       // Set Yoshi color
       await this.writeWithRetry(MEMORY_ADDRESSES.YOSHI_COLOR, Buffer.from([color]));
 
-      // Spawn Yoshi egg near Mario
-      const pos = await this.getMarioPosition();
-      await this.spawnSpriteAtPosition(SPRITE_TYPES.YOSHI_EGG, pos.x + 16, pos.y);
+      // Directly set riding Yoshi flag (address $187A: 0=not riding, 1=riding)
+      await this.writeWithRetry(0x7E187A, Buffer.from([0x01]));
 
-      console.log(`[giveYoshi] Spawned ${Object.keys(YOSHI_COLORS)[color]} Yoshi egg`);
+      console.log(`[giveYoshi] Gave ${Object.keys(YOSHI_COLORS)[color]} Yoshi - Mario should now be riding Yoshi`);
       return true;
     } catch (error) {
       console.error('[giveYoshi] Error:', error.message);
@@ -1175,6 +1174,75 @@ class ExpandedGameOperations {
       return true;
     } catch (error) {
       console.error('[killPlayer] Error:', error.message);
+      return false;
+    }
+  }
+
+  // ============= CATEGORY 5: CHAOS EFFECTS (Block/Floor Manipulation) =============
+
+  // Spawn random blocks around Mario
+  async spawnRandomBlocks(count = 5) {
+    try {
+      console.log(`[spawnRandomBlocks] Spawning ${count} random blocks around Mario`);
+
+      const pos = await this.getMarioPosition();
+
+      for (let i = 0; i < count; i++) {
+        // Random offset around Mario
+        const offsetX = Math.floor(Math.random() * 128) - 64;
+        const offsetY = Math.floor(Math.random() * 80) - 40;
+
+        // Spawn various block-like sprites
+        const blockTypes = [
+          SPRITE_TYPES.SPRINGBOARD,      // Springboard
+          SPRITE_TYPES.P_SWITCH,         // P-Switch
+          SPRITE_TYPES.TRAMPOLINE,       // Trampoline
+          SPRITE_TYPES.MOVING_PLATFORM,  // Moving platform
+          SPRITE_TYPES.FALLING_PLATFORM  // Falling platform (creates chaos!)
+        ];
+
+        const randomBlock = blockTypes[Math.floor(Math.random() * blockTypes.length)];
+        await this.spawnSpriteAtPosition(randomBlock, pos.x + offsetX, pos.y + offsetY);
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      console.log(`[spawnRandomBlocks] Spawned ${count} random blocks`);
+      return true;
+    } catch (error) {
+      console.error('[spawnRandomBlocks] Error:', error.message);
+      return false;
+    }
+  }
+
+  // Remove floor blocks beneath Mario (spawn munchers to create obstacles)
+  async removeFloorBlocks(count = 3, duration = 20) {
+    try {
+      console.log(`[removeFloorBlocks] Creating ${count} floor hazards for ${duration} seconds`);
+
+      const interval = setInterval(async () => {
+        const pos = await this.getMarioPosition();
+
+        // Spawn munchers (spiky obstacles) beneath Mario
+        for (let i = 0; i < count; i++) {
+          const offsetX = Math.floor(Math.random() * 64) - 32;
+
+          // Spawn muncher sprites near floor (these act like "removed floor")
+          // Sprite type 0x89 = Muncher (spiky floor hazard)
+          await this.spawnSpriteAtPosition(0x89, pos.x + offsetX, pos.y + 32);
+        }
+      }, 3000); // Spawn every 3 seconds
+
+      this.activeTimers.set('floorRemoval', interval);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        this.activeTimers.delete('floorRemoval');
+        console.log('[removeFloorBlocks] Floor hazard spawning ended');
+      }, duration * 1000);
+
+      return true;
+    } catch (error) {
+      console.error('[removeFloorBlocks] Error:', error.message);
       return false;
     }
   }
