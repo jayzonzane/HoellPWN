@@ -150,8 +150,8 @@
                   <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #f97316;">
-                  <div style="font-weight: 600; margin-bottom: 6px; color: #f97316;">🧱 MarioMod Blocks (4)</div>
-                  <div style="font-size: 12px; opacity: 0.8;">Kaizo blocks, Munchers</div>
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #f97316;">🧱 MarioMod Blocks (5)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Kaizo blocks, Munchers, custom blocks</div>
                   <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #ec4899;">
@@ -1082,6 +1082,10 @@
                     <input type="text" class="gift-input" data-action="spawnMuncherOnJump" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
+                    <span class="action-name">🎁 Spawn Custom Block</span>
+                    <input type="text" class="gift-input" data-action="spawnCustomBlock" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
                     <span class="action-name">🎲 Replace Random Sprite</span>
                     <input type="text" class="gift-input" data-action="replaceRandomSprite" placeholder="Enter gift name...">
                   </div>
@@ -1539,6 +1543,176 @@
         </div>
       </div>
 
+      <!-- ============================================================ -->
+      <!-- HOELLCC OPERATIONS - 120 Extended SMW Operations -->
+      <!-- ============================================================ -->
+
+      <!-- Row: Environmental Effects + Speed Control + Silver P-Switch -->
+      <div class="control-row">
+        <!-- Environmental Effects -->
+        <div class="control-group">
+          <h3>🌊 Environmental (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="setWaterMode">🌊 Water Mode</button>
+            <button class="btn-sm" data-action="setLandMode">🏖️ Land Mode</button>
+            <button class="btn-sm" data-action="setWaterModeTimed">🌊 Water 30s</button>
+            <button class="btn-sm" data-action="setIceMode">🧊 Ice Mode</button>
+            <button class="btn-sm" data-action="setDryMode">☀️ Dry Mode</button>
+            <button class="btn-sm" data-action="setIceModeTimed">🧊 Ice 30s</button>
+            <button class="btn-sm danger" data-action="freezePlayer">🥶 Freeze Player</button>
+            <button class="btn-sm" data-action="unfreezePlayer">🔥 Unfreeze</button>
+          </div>
+        </div>
+
+        <!-- Speed Control -->
+        <div class="control-group">
+          <h3>⚡ Speed Control (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="kickRight">➡️ Kick Right</button>
+            <button class="btn-sm" data-action="kickLeft">⬅️ Kick Left</button>
+            <button class="btn-sm" data-action="kickUp">⬆️ Kick Up</button>
+            <button class="btn-sm" data-action="pushRight">👉 Push Right</button>
+            <button class="btn-sm" data-action="pushLeft">👈 Push Left</button>
+          </div>
+        </div>
+
+        <!-- Silver P-Switch -->
+        <div class="control-group">
+          <h3>🪙 Silver P-Switch (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="activateSilverPSwitch">⚡ Activate Silver P</button>
+            <button class="btn-sm" data-action="spawnSilverPSwitch">🪙 Spawn Silver P</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row: Enemy Spawns Part 1 - Classic Enemies -->
+      <div class="control-row">
+        <div class="control-group">
+          <h3>👾 Spawn: Classic (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="spawnGreenKoopa">🐢 Green Koopa</button>
+            <button class="btn-sm" data-action="spawnRedKoopa">🔴 Red Koopa</button>
+            <button class="btn-sm" data-action="spawnSpiny">🦔 Spiny</button>
+            <button class="btn-sm" data-action="spawnGoomba">🍄 Goomba</button>
+            <button class="btn-sm" data-action="spawnGreenParatroopa">🪂 Green Paratroopa</button>
+            <button class="btn-sm" data-action="spawnRedParatroopa">🔴 Red Paratroopa</button>
+            <button class="btn-sm" data-action="spawnRex">🦖 Rex</button>
+            <button class="btn-sm" data-action="spawnNinji">🥷 Ninji</button>
+            <button class="btn-sm" data-action="spawnParaGoomba">🪂 Para-Goomba</button>
+            <button class="btn-sm" data-action="spawnMontyMole">🦫 Monty Mole</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>👾 Spawn: Special (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm danger" data-action="spawnBobOmb">💣 Bob-omb</button>
+            <button class="btn-sm" data-action="spawnMagikoopa">🪄 Magikoopa</button>
+            <button class="btn-sm" data-action="spawnMagikoopa2">🪄 Magikoopa 2</button>
+            <button class="btn-sm" data-action="spawnWiggler">🐛 Wiggler</button>
+            <button class="btn-sm" data-action="spawnLakitu">☁️ Lakitu</button>
+            <button class="btn-sm" data-action="spawnFishingLakitu">🎣 Fishing Lakitu</button>
+            <button class="btn-sm" data-action="spawnPiranhaPlant">🌱 Piranha Plant</button>
+            <button class="btn-sm" data-action="spawnBulletBill">🚀 Bullet Bill</button>
+            <button class="btn-sm danger" data-action="spawnBanzaiBill">💥 Banzai Bill</button>
+            <button class="btn-sm" data-action="spawnHammerBro">🔨 Hammer Bro</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>👾 Spawn: Tough (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm danger" data-action="spawnThwomp">🧱 Thwomp</button>
+            <button class="btn-sm" data-action="spawnThwimp">🪨 Thwimp</button>
+            <button class="btn-sm" data-action="spawnBoo">👻 Boo</button>
+            <button class="btn-sm special" data-action="spawnBigBoo">👻 Big Boo</button>
+            <button class="btn-sm" data-action="spawnFishinBoo">🎣 Fishin' Boo</button>
+            <button class="btn-sm" data-action="spawnSumoBro">🏋️ Sumo Bro</button>
+            <button class="btn-sm" data-action="spawnPokey">🌵 Pokey</button>
+            <button class="btn-sm" data-action="spawnDinoRhino">🦏 Dino Rhino</button>
+            <button class="btn-sm" data-action="spawnDryBones">💀 Dry Bones</button>
+            <button class="btn-sm" data-action="spawnBonyBeetle">🪲 Bony Beetle</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>👾 Spawn: Chucks/Bosses (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="spawnReznor">🦕 Reznor</button>
+            <button class="btn-sm" data-action="spawnSwooper">🦇 Swooper</button>
+            <button class="btn-sm" data-action="spawnChargingChuck">⚡ Charging Chuck</button>
+            <button class="btn-sm" data-action="spawnClappingChuck">👏 Clapping Chuck</button>
+            <button class="btn-sm" data-action="spawnSplittingChuck">✂️ Splitting Chuck</button>
+            <button class="btn-sm" data-action="spawnJumpingChuck">🦘 Jumping Chuck</button>
+            <button class="btn-sm danger" data-action="spawnKoopaKid">🐢 Koopa Kid</button>
+            <button class="btn-sm" data-action="spawnHotHead">🔥 Hot Head</button>
+            <button class="btn-sm" data-action="spawnMechaKoopa">🤖 Mecha-Koopa</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row: Water Enemies + Power-ups + Helpers -->
+      <div class="control-row">
+        <div class="control-group">
+          <h3>🐟 Spawn: Water (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="spawnCheepCheep">🐟 Cheep-Cheep</button>
+            <button class="btn-sm" data-action="spawnBlurp">🫧 Blurp</button>
+            <button class="btn-sm" data-action="spawnPorcupuffer">🐡 Porcupuffer</button>
+            <button class="btn-sm" data-action="spawnBeachKoopa">🏖️ Beach Koopa</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>⭐ Spawn: Power-ups (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="spawnStar">⭐ Star</button>
+            <button class="btn-sm" data-action="spawnFeather">🪶 Cape Feather</button>
+            <button class="btn-sm" data-action="spawnFireFlower">🔥 Fire Flower</button>
+            <button class="btn-sm" data-action="spawnPBalloon">🎈 P-Balloon</button>
+            <button class="btn-sm gold" data-action="spawnItemBox">📦 Item Box</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🦕 Spawn: Helpers (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="spawnYoshi">🦕 Yoshi</button>
+            <button class="btn-sm" data-action="spawnBabyYoshi">🥚 Baby Yoshi</button>
+            <button class="btn-sm" data-action="spawnLakituCloud">☁️ Lakitu Cloud</button>
+            <button class="btn-sm" data-action="spawnBluePSwitch">🔵 Blue P-Switch</button>
+            <button class="btn-sm" data-action="spawnBeanstalk">🌱 Beanstalk</button>
+            <button class="btn-sm" data-action="spawnKey">🔑 Key</button>
+            <button class="btn-sm" data-action="spawnSpringboard">🪜 Springboard</button>
+            <button class="btn-sm" data-action="spawnPSwitch">⏱️ P-Switch</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row: MarioMod Blocks + Chaos Effects -->
+      <div class="control-row">
+        <div class="control-group">
+          <h3>🧱 MarioMod Blocks (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm danger" data-action="spawnKaizoBlock">🚫 Kaizo Block</button>
+            <button class="btn-sm danger" data-action="spawnMuncher">🌵 Muncher</button>
+            <button class="btn-sm danger" data-action="spawnMuncherOnJump">🌵 Muncher on Jump</button>
+            <button class="btn-sm" data-action="spawnCustomBlock">🎁 Custom Block</button>
+            <button class="btn-sm special" data-action="replaceRandomSprite">🎲 Replace Sprite</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🎲 Chaos Effects (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="spawnRandomEnemy">🎲 Random Enemy</button>
+            <button class="btn-sm danger" data-action="spawnBulletBillStorm">💥 Bullet Storm (30s)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- End HoellCC Operations -->
 
     </div>
     <!-- End Tab Content Container -->
