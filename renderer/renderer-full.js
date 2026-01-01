@@ -25,6 +25,81 @@ function log(message, type = 'info') {
   }
 }
 
+// Toast Notification System (HoellCC)
+function showOperationToast(operationName, success = true, message = '') {
+  const container = document.getElementById('operation-toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    padding: 12px 16px;
+    background: ${success ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'};
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease-out;
+    min-width: 280px;
+  `;
+
+  const icon = success ? '✅' : '❌';
+  const actionText = operationName.replace(/([A-Z])/g, ' $1').trim();
+  const displayMessage = message || (success ? `${actionText} executed` : `${actionText} failed`);
+
+  toast.innerHTML = `
+    <span style="font-size: 18px;">${icon}</span>
+    <div style="flex: 1;">
+      <div style="font-weight: 600;">${actionText}</div>
+      ${message ? `<div style="font-size: 11px; opacity: 0.9; margin-top: 2px;">${message}</div>` : ''}
+    </div>
+  `;
+
+  container.appendChild(toast);
+
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-in';
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
+}
+
+// Add CSS animations for toasts
+if (!document.getElementById('toast-animations')) {
+  const style = document.createElement('style');
+  style.id = 'toast-animations';
+  style.textContent = `
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 // Connection handling
 connectBtn.addEventListener('click', async () => {
   const host = document.getElementById('host').value || 'localhost';
@@ -137,6 +212,98 @@ document.addEventListener('DOMContentLoaded', () => {
     recheckBtn.addEventListener('click', () => {
       log('🔄 Rechecking MarioMod patch...', 'info');
       checkMarioModPatch();
+    });
+  }
+
+  // Quick Guide toggle handler
+  const toggleGuideBtn = document.getElementById('toggle-hoellcc-guide');
+  const guidePanel = document.getElementById('hoellcc-quick-guide');
+  if (toggleGuideBtn && guidePanel) {
+    toggleGuideBtn.addEventListener('click', () => {
+      const isVisible = guidePanel.style.display !== 'none';
+      guidePanel.style.display = isVisible ? 'none' : 'block';
+      toggleGuideBtn.textContent = isVisible ? '📖 Quick Guide' : '📕 Hide Guide';
+    });
+  }
+
+  // Operation Search/Filter
+  const searchInput = document.getElementById('operation-search');
+  const searchCount = document.getElementById('search-count');
+  const searchResultsDiv = document.getElementById('search-results-count');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+
+      if (query === '') {
+        // Reset: show all operations and categories
+        document.querySelectorAll('.action-item').forEach(item => {
+          item.style.display = '';
+        });
+        document.querySelectorAll('.settings-category').forEach(cat => {
+          cat.style.display = '';
+        });
+        searchResultsDiv.style.display = 'none';
+        return;
+      }
+
+      // Search through all action items
+      let matchCount = 0;
+      const categories = new Set();
+
+      document.querySelectorAll('.action-item').forEach(item => {
+        const actionName = item.querySelector('.action-name');
+        const giftInput = item.querySelector('.gift-input');
+
+        if (actionName) {
+          const nameText = actionName.textContent.toLowerCase();
+          const actionAttr = giftInput ? giftInput.getAttribute('data-action') : '';
+          const actionText = actionAttr ? actionAttr.toLowerCase() : '';
+
+          const matches = nameText.includes(query) || actionText.includes(query);
+
+          if (matches) {
+            item.style.display = '';
+            matchCount++;
+
+            // Find and mark the parent category
+            const parentCategory = item.closest('.settings-category');
+            if (parentCategory) {
+              categories.add(parentCategory);
+            }
+          } else {
+            item.style.display = 'none';
+          }
+        }
+      });
+
+      // Show/hide categories based on whether they have matches
+      document.querySelectorAll('.settings-category').forEach(cat => {
+        if (categories.has(cat)) {
+          cat.style.display = '';
+        } else {
+          cat.style.display = 'none';
+        }
+      });
+
+      // Update results count
+      if (searchCount) {
+        searchCount.textContent = matchCount;
+      }
+      searchResultsDiv.style.display = matchCount > 0 || query ? 'block' : 'none';
+
+      // Log search
+      if (query && matchCount > 0) {
+        log(`🔍 Found ${matchCount} operations matching "${query}"`, 'info');
+      }
+    });
+
+    // Clear search on Escape key
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+      }
     });
   }
 });

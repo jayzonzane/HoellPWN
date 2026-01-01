@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="styles-full.css">
 </head>
 <body>
+  <!-- Operation Notification Toast Container -->
+  <div id="operation-toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; max-width: 400px;"></div>
+
   <!-- Menu Bar - removed, tabs replace this -->
   <!-- <div class="menu-bar">
     <div class="menu-item">
@@ -85,6 +88,84 @@
               </div>
             </div>
 
+            <!-- HoellCC Operations Info Panel -->
+            <div id="hoellcc-info-panel" style="padding: 12px 15px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-bottom: 1px solid rgba(255,255,255,0.1); color: white;">
+              <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 20px;">🎮</span>
+                  <div>
+                    <div style="font-weight: 600; font-size: 14px;">HoellCC Extended Operations</div>
+                    <div style="font-size: 12px; opacity: 0.9;">120 additional SMW operations available</div>
+                  </div>
+                </div>
+                <div style="flex: 1; display: flex; gap: 15px; justify-content: flex-end; flex-wrap: wrap; font-size: 12px;">
+                  <div style="text-align: center; padding: 4px 10px; background: rgba(255,255,255,0.15); border-radius: 4px;">
+                    <div style="font-weight: 600;">15</div>
+                    <div style="opacity: 0.9;">No Patch Req.</div>
+                  </div>
+                  <div style="text-align: center; padding: 4px 10px; background: rgba(255,255,255,0.15); border-radius: 4px;">
+                    <div style="font-weight: 600;">56</div>
+                    <div style="opacity: 0.9;">Spawn Ops</div>
+                  </div>
+                  <div style="text-align: center; padding: 4px 10px; background: rgba(255,255,255,0.15); border-radius: 4px;">
+                    <div style="font-weight: 600;">9</div>
+                    <div style="opacity: 0.9;">Categories</div>
+                  </div>
+                  <button id="toggle-hoellcc-guide" class="btn-secondary" style="background: rgba(255,255,255,0.2); padding: 4px 10px; font-size: 12px; white-space: nowrap;">📖 Quick Guide</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- HoellCC Quick Reference Guide (Collapsible) -->
+            <div id="hoellcc-quick-guide" style="display: none; padding: 15px; background: rgba(99,102,241,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #06b6d4;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #06b6d4;">🌊 Environmental (8)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Water/ice physics, freeze player</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #10b981;">✓ Works without MarioMod</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #eab308;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #eab308;">⚡ Speed Control (5)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Kick launches, directional push</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #10b981;">✓ Works without MarioMod</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #f59e0b;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #f59e0b;">🪙 Silver P-Switch (2)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Turns enemies to silver coins</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #10b981;">✓ Activate works / ⚠ Spawn requires patch</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #ef4444;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #ef4444;">👾 Enemy Spawns (43)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">All SMW enemies with positioning</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #8b5cf6;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #8b5cf6;">⭐ Power-up Spawns (5)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Star, Cape, Fire Flower, etc.</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #14b8a6;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #14b8a6;">🦕 Helper Spawns (8)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Yoshi, items, switches</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #f97316;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #f97316;">🧱 MarioMod Blocks (4)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Kaizo blocks, Munchers</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #ec4899;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #ec4899;">🎲 Chaos Effects (2)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Random enemy, Bullet Bill storm</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
+                </div>
+              </div>
+              <div style="margin-top: 12px; padding: 8px 12px; background: rgba(99,102,241,0.1); border-radius: 4px; font-size: 12px;">
+                <strong>💡 Tip:</strong> Scroll down to see all HoellCC categories at the bottom of the action list. Operations marked with "(HoellCC)" are from this integration.
+                <a href="#" onclick="window.sniAPI && window.open('HOELLCC_INTEGRATION.md'); return false;" style="color: #60a5fa; margin-left: 8px;">Read full documentation →</a>
+              </div>
+            </div>
+
         <div class="tab-body">
           <div class="settings-container">
             <!-- Left Column: Actions -->
@@ -93,6 +174,20 @@
                 <h3 style="margin: 0;">Available Actions</h3>
                 <button class="btn-secondary" id="collapse-all-categories" style="background: #6366f1; padding: 6px 12px; font-size: 13px;">📁 Collapse All</button>
               </div>
+
+              <!-- Operation Search/Filter -->
+              <div style="margin-bottom: 12px;">
+                <input
+                  type="text"
+                  id="operation-search"
+                  placeholder="🔍 Search operations (e.g., spawn, water, enemy)..."
+                  style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white; font-size: 13px;"
+                />
+                <div id="search-results-count" style="margin-top: 6px; font-size: 12px; color: rgba(255,255,255,0.6); display: none;">
+                  <span id="search-count">0</span> operations found
+                </div>
+              </div>
+
               <div class="settings-scroll">
                 <!-- Core Actions -->
                 <div class="settings-category">
