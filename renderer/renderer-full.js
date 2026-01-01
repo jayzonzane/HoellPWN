@@ -91,6 +91,9 @@ deviceSelect.addEventListener('change', async (e) => {
         selectedDevice = device;
         controlsSection.style.display = 'block';
         log(`Selected device: ${device.displayName || device.uri}`, 'success');
+
+        // Check for MarioMod patch (HoellCC spawning requirement)
+        checkMarioModPatch();
       }
     } catch (error) {
       log(`Failed to select device: ${error.message}`, 'error');
@@ -98,6 +101,43 @@ deviceSelect.addEventListener('change', async (e) => {
   } else {
     controlsSection.style.display = 'none';
     selectedDevice = null;
+  }
+});
+
+// MarioMod Patch Detection (HoellCC)
+async function checkMarioModPatch() {
+  try {
+    const result = await window.sniAPI.checkMarioModPatch();
+    const banner = document.getElementById('mariomod-warning-banner');
+
+    if (result.success) {
+      if (result.installed) {
+        // MarioMod detected - hide warning
+        banner.style.display = 'none';
+        log('✅ MarioMod patch detected - All spawn operations available', 'success');
+      } else {
+        // MarioMod NOT detected - show warning
+        banner.style.display = 'block';
+        log('⚠️ MarioMod patch not detected - Spawn operations unavailable', 'warning');
+      }
+    } else {
+      // Error checking - hide banner
+      banner.style.display = 'none';
+      log(`MarioMod check failed: ${result.error}`, 'warning');
+    }
+  } catch (error) {
+    log(`Error checking MarioMod: ${error.message}`, 'error');
+  }
+}
+
+// Recheck MarioMod button handler
+document.addEventListener('DOMContentLoaded', () => {
+  const recheckBtn = document.getElementById('recheck-mariomod');
+  if (recheckBtn) {
+    recheckBtn.addEventListener('click', () => {
+      log('🔄 Rechecking MarioMod patch...', 'info');
+      checkMarioModPatch();
+    });
   }
 });
 

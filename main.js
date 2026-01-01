@@ -8,6 +8,7 @@ let mainWindow;
 let sniClient;
 let gameOps;
 let expandedOps;
+let hoellOps;
 let hoellPoller;
 let restorationManager;
 let giftUpdater;
@@ -198,6 +199,7 @@ function createWindow() {
   const SNIClient = require('./src/sni/client');
   const GameOperations = require('./src/sni/operations');
   const WorkingSMWOperations = require('./src/sni/operations-working');
+  const HoellCCOperations = require('./src/sni/operations-hoellcc');
   const HoellStreamPoller = require('./src/hoellstream/poller');
   const ItemRestorationManager = require('./src/item-restoration/restoration-manager');
   const GiftUpdater = require('./src/gift-updater');
@@ -205,6 +207,8 @@ function createWindow() {
   sniClient = new SNIClient();
   gameOps = new GameOperations(sniClient);
   expandedOps = new WorkingSMWOperations(sniClient);
+  hoellOps = new HoellCCOperations(sniClient);
+  console.log('🎮 HoellCC operations initialized');
 
   // Initialize ItemRestorationManager
   restorationManager = new ItemRestorationManager(expandedOps);
@@ -293,21 +297,27 @@ ipcMain.handle('restart-sni', async (event) => {
   }
 });
 
-// Generic SMW operation handler
+// Generic SMW operation handler with HoellCC fallback
 ipcMain.handle('execute-smw-operation', async (event, operationName, ...args) => {
   try {
     if (!sniClient.deviceURI) {
       throw new Error('No device selected');
     }
 
-    // Check if the operation exists on expandedOps
-    if (typeof expandedOps[operationName] !== 'function') {
-      throw new Error(`Unknown operation: ${operationName}`);
+    // Try ZanesWorld operations first (expandedOps)
+    if (typeof expandedOps[operationName] === 'function') {
+      const result = await expandedOps[operationName](...args);
+      return { success: true, result };
     }
 
-    // Execute the operation with provided arguments
-    const result = await expandedOps[operationName](...args);
-    return { success: true, result };
+    // Fallback to HoellCC operations
+    if (hoellOps && typeof hoellOps[operationName] === 'function') {
+      const result = await hoellOps[operationName](...args);
+      return { success: true, result };
+    }
+
+    // Operation not found in either module
+    throw new Error(`Unknown operation: ${operationName}`);
   } catch (error) {
     console.error(`Error executing ${operationName}:`, error);
     return { success: false, error: error.message };
@@ -611,6 +621,26 @@ ipcMain.handle('delete-all-saves', async (event) => {
     return await expandedOps.deleteAllSaves();
   } catch (error) {
     return { success: false, error: error.message };
+  }
+});
+
+// MarioMod Detection (HoellCC)
+ipcMain.handle('check-mariomod-patch', async () => {
+  try {
+    if (!sniClient.deviceURI) {
+      return { success: false, error: 'No device selected', installed: false };
+    }
+
+    const isInstalled = await hoellOps.spawner.checkMarioModPresent();
+    return {
+      success: true,
+      installed: isInstalled,
+      message: isInstalled
+        ? 'MarioMod patch detected - All spawn operations available'
+        : 'MarioMod patch NOT detected - Spawn operations will not work'
+    };
+  } catch (error) {
+    return { success: false, error: error.message, installed: false };
   }
 });
 

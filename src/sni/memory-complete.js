@@ -124,9 +124,36 @@ const MEMORY_ADDRESSES = {
 
   // ============= SPECIAL TIMERS & FLAGS =============
   P_SWITCH_TIMER: SNES_WRAM_BASE + 0x14AD,        // P-Switch timer (9 seconds = ~0x200 frames)
+  SILVER_PSWITCH_TIMER: SNES_WRAM_BASE + 0x14AE,  // Silver P-Switch timer (turns enemies to silver coins)
   STAR_POWER_TIMER: SNES_WRAM_BASE + 0x1490,      // Star power invincibility timer
   ON_OFF_SWITCH_STATE: SNES_WRAM_BASE + 0x14B0,   // ON/OFF switch state
   CAPE_SPIN_TIMER: SNES_WRAM_BASE + 0x1410,       // Cape spin attack timer
+
+  // ============= ENVIRONMENTAL EFFECTS (HoellCC) =============
+  UNDERWATER_FLAG: SNES_WRAM_BASE + 0x0085,       // Swimming physics flag (0=land, 1=water)
+  ICE_FLAG: SNES_WRAM_BASE + 0x0086,              // Slippery physics flag (0=normal, 1=ice)
+  PLAYER_FROZEN: SNES_WRAM_BASE + 0x0088,         // Player frozen flag (0=normal, 1=frozen)
+
+  // ============= MARIOMOD SPRITE SPAWNING (HoellCC) =============
+  // Requires MarioMod ASM patch applied to ROM
+  MARIOMOD_SPAWN_SPRITE_FLAG: SNES_WRAM_BASE + 0x188E,       // Write 0x01 to trigger sprite spawn
+  MARIOMOD_SPAWN_SPRITE_ID: SNES_WRAM_BASE + 0x1869,         // Sprite ID to spawn (0-200)
+  MARIOMOD_SPAWN_SPRITE_IS_CUSTOM: SNES_WRAM_BASE + 0x1868,  // 0=normal sprite, 1=custom sprite
+  MARIOMOD_SPAWN_SPRITE_X_OFFSET_POS: SNES_WRAM_BASE + 0x146C, // Positive X offset (pixels right of Mario)
+  MARIOMOD_SPAWN_SPRITE_X_OFFSET_NEG: SNES_WRAM_BASE + 0x146D, // Negative X offset (pixels left of Mario)
+  MARIOMOD_SPAWN_SPRITE_Y_OFFSET_POS: SNES_WRAM_BASE + 0x146E, // Positive Y offset (pixels down from Mario)
+  MARIOMOD_SPAWN_SPRITE_Y_OFFSET_NEG: SNES_WRAM_BASE + 0x146F, // Negative Y offset (pixels up from Mario)
+
+  // ============= MARIOMOD BLOCK SPAWNING (HoellCC) =============
+  // Requires MarioMod ASM patch applied to ROM
+  MARIOMOD_SPAWN_BLOCK_FLAG: SNES_WRAM_BASE + 0x188A,        // Write 0x01 to trigger block spawn
+  MARIOMOD_SPAWN_BLOCK_ID: SNES_WRAM_BASE + 0x1870,          // Block/tile ID to spawn
+  MARIOMOD_SPAWN_BLOCK_X_OFFSET_POS: SNES_WRAM_BASE + 0x1476, // Positive X offset for block
+  MARIOMOD_SPAWN_BLOCK_X_OFFSET_NEG: SNES_WRAM_BASE + 0x1477, // Negative X offset for block
+  MARIOMOD_SPAWN_BLOCK_Y_OFFSET_POS: SNES_WRAM_BASE + 0x1478, // Positive Y offset for block
+  MARIOMOD_SPAWN_BLOCK_Y_OFFSET_NEG: SNES_WRAM_BASE + 0x1479, // Negative Y offset for block
+  MARIOMOD_KAIZO_BLOCK_TRIGGER: SNES_WRAM_BASE + 0x1DEF,     // Kaizo block spawn trigger (0x01=spawn on jump, 0x02=muncher on jump)
+  MARIOMOD_SPRITE_REPLACE_TRIGGER: SNES_WRAM_BASE + 0x1DF0,  // Random sprite replace trigger (chaos effect)
 
   // ============= RNG & SYSTEM =============
   RNG_BYTE_1: SNES_WRAM_BASE + 0x148D,            // Random number generator (byte 1)

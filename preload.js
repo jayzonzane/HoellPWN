@@ -187,6 +187,73 @@ contextBridge.exposeInMainWorld('sniAPI', {
   // Delete Saves
   deleteAllSaves: () => ipcRenderer.invoke('delete-all-saves'),
 
+  // MarioMod Detection (HoellCC)
+  checkMarioModPatch: () => ipcRenderer.invoke('check-mariomod-patch'),
+
   // Event listeners
-  onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data))
+  onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data)),
+
+  /* ========================================================================
+   * HOELLCC EXTENDED OPERATIONS (120 operations)
+   * Available via executeSMWOperation(operationName, ...args)
+   * Requires MarioMod ASM patch for spawn operations
+   * ======================================================================== */
+
+  // ENVIRONMENTAL EFFECTS (7 operations)
+  // - setWaterMode, setLandMode, setWaterModeTimed
+  // - setIceMode, setDryMode, setIceModeTimed
+  // - freezePlayer, unfreezePlayer
+
+  // SPEED CONTROL (5 operations)
+  // - kickRight, kickLeft, kickUp
+  // - pushRight, pushLeft
+
+  // SILVER P-SWITCH (2 operations)
+  // - activateSilverPSwitch, spawnSilverPSwitch
+
+  // ENEMY SPAWNS (43 operations - MarioMod required)
+  // - spawnGreenKoopa, spawnRedKoopa, spawnSpiny, spawnGoomba
+  // - spawnGreenParatroopa, spawnRedParatroopa, spawnBobOmb
+  // - spawnRex, spawnNinji, spawnParaGoomba, spawnLakitu
+  // - spawnMontyMole, spawnMagikoopa, spawnWiggler
+  // - spawnPiranhaPlant, spawnBulletBill, spawnHammerBro
+  // - spawnSumoBro, spawnThwomp, spawnBoo, spawnBigBoo
+  // - spawnBanzaiBill, spawnFishinBoo, spawnThwimp, spawnPokey
+  // - spawnDinoRhino, spawnDryBones, spawnBonyBeetle
+  // - spawnMagikoopa2, spawnReznor, spawnFishingLakitu
+  // - spawnSwooper, spawnChargingChuck, spawnClappingChuck
+  // - spawnSplittingChuck, spawnJumpingChuck, spawnKoopaKid
+  // - spawnHotHead, spawnMechaKoopa, spawnCheepCheep
+  // - spawnBlurp, spawnPorcupuffer, spawnBeachKoopa
+
+  // POWER-UP SPAWNS (5 operations - MarioMod required)
+  // - spawnStar, spawnFeather, spawnFireFlower
+  // - spawnPBalloon, spawnItemBox
+
+  // HELPER SPAWNS (8 operations - MarioMod required)
+  // - spawnYoshi, spawnBabyYoshi, spawnLakituCloud
+  // - spawnBluePSwitch, spawnBeanstalk, spawnKey
+  // - spawnSpringboard, spawnPSwitch
+
+  // MARIOMOD BLOCK OPERATIONS (5 operations - MarioMod required)
+  // - spawnKaizoBlock, spawnMuncher, spawnMuncherOnJump
+  // - spawnCustomBlock, replaceRandomSprite
+
+  // CHAOS/RANDOM (2 operations)
+  // - spawnRandomEnemy, spawnBulletBillStorm
+
+  /* ========================================================================
+   * OPERATION CATEGORIES OBJECT
+   * For programmatic access to operation lists
+   * ======================================================================== */
+  hoellCCCategories: {
+    environmental: ['setWaterMode', 'setLandMode', 'setWaterModeTimed', 'setIceMode', 'setDryMode', 'setIceModeTimed', 'freezePlayer', 'unfreezePlayer'],
+    speed: ['kickRight', 'kickLeft', 'kickUp', 'pushRight', 'pushLeft'],
+    silverPSwitch: ['activateSilverPSwitch', 'spawnSilverPSwitch'],
+    enemySpawns: ['spawnGreenKoopa', 'spawnRedKoopa', 'spawnSpiny', 'spawnGoomba', 'spawnGreenParatroopa', 'spawnRedParatroopa', 'spawnBobOmb', 'spawnRex', 'spawnNinji', 'spawnParaGoomba', 'spawnLakitu', 'spawnMontyMole', 'spawnMagikoopa', 'spawnWiggler', 'spawnPiranhaPlant', 'spawnBulletBill', 'spawnHammerBro', 'spawnSumoBro', 'spawnThwomp', 'spawnBoo', 'spawnBigBoo', 'spawnBanzaiBill', 'spawnFishinBoo', 'spawnThwimp', 'spawnPokey', 'spawnDinoRhino', 'spawnDryBones', 'spawnBonyBeetle', 'spawnMagikoopa2', 'spawnReznor', 'spawnFishingLakitu', 'spawnSwooper', 'spawnChargingChuck', 'spawnClappingChuck', 'spawnSplittingChuck', 'spawnJumpingChuck', 'spawnKoopaKid', 'spawnHotHead', 'spawnMechaKoopa', 'spawnCheepCheep', 'spawnBlurp', 'spawnPorcupuffer', 'spawnBeachKoopa'],
+    powerUpSpawns: ['spawnStar', 'spawnFeather', 'spawnFireFlower', 'spawnPBalloon', 'spawnItemBox'],
+    helperSpawns: ['spawnYoshi', 'spawnBabyYoshi', 'spawnLakituCloud', 'spawnBluePSwitch', 'spawnBeanstalk', 'spawnKey', 'spawnSpringboard', 'spawnPSwitch'],
+    marioModBlocks: ['spawnKaizoBlock', 'spawnMuncher', 'spawnMuncherOnJump', 'spawnCustomBlock', 'replaceRandomSprite'],
+    chaos: ['spawnRandomEnemy', 'spawnBulletBillStorm']
+  }
 });

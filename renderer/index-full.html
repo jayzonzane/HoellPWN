@@ -69,6 +69,22 @@
               <button class="btn-reset" id="reset-all-gift-mappings" style="background: #ef4444;">🗑️ Reset All Gifts</button>
             </div>
 
+            <!-- MarioMod Warning Banner (HoellCC) -->
+            <div id="mariomod-warning-banner" style="display: none; padding: 12px 15px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-bottom: 1px solid rgba(255,255,255,0.1); color: white;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">⚠️</span>
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; margin-bottom: 4px;">MarioMod Patch Not Detected</div>
+                  <div style="font-size: 13px; opacity: 0.95;">
+                    Enemy/power-up/helper spawning operations require the MarioMod ASM patch.
+                    <strong>Environmental effects and speed control will still work.</strong>
+                    Block operations and sprite spawning will not function without the patch.
+                  </div>
+                </div>
+                <button id="recheck-mariomod" class="btn-secondary" style="background: rgba(255,255,255,0.2); padding: 6px 12px; font-size: 13px; white-space: nowrap;">🔄 Recheck</button>
+              </div>
+            </div>
+
         <div class="tab-body">
           <div class="settings-container">
             <!-- Left Column: Actions -->
@@ -635,6 +651,361 @@
                     <input type="number" class="duration-input" data-item="moonpearl" value="120" min="5" max="600" placeholder="Sec">
                   </div>
                 </div>
+
+                <!-- ========== HOELLCC EXTENDED SMW OPERATIONS ========== -->
+                <!-- Requires MarioMod ASM patch for spawn operations -->
+
+                <!-- Environmental Effects -->
+                <div class="settings-category">
+                  <h4>🌊 Environmental Effects (HoellCC)</h4>
+                  <div class="action-item">
+                    <span class="action-name">🏊 Enable Water Mode</span>
+                    <input type="text" class="gift-input" data-action="setWaterMode" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏃 Enable Land Mode</span>
+                    <input type="text" class="gift-input" data-action="setLandMode" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🌊 Water Mode (Timed)</span>
+                    <input type="text" class="gift-input" data-action="setWaterModeTimed" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="setWaterModeTimed" value="30" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🧊 Enable Ice Mode</span>
+                    <input type="text" class="gift-input" data-action="setIceMode" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌡️ Disable Ice Mode</span>
+                    <input type="text" class="gift-input" data-action="setDryMode" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">❄️ Ice Mode (Timed)</span>
+                    <input type="text" class="gift-input" data-action="setIceModeTimed" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="setIceModeTimed" value="30" min="5" max="600" placeholder="Sec">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🥶 Freeze Player</span>
+                    <input type="text" class="gift-input" data-action="freezePlayer" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔥 Unfreeze Player</span>
+                    <input type="text" class="gift-input" data-action="unfreezePlayer" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Speed Control -->
+                <div class="settings-category">
+                  <h4>⚡ Speed Control (HoellCC)</h4>
+                  <div class="action-item">
+                    <span class="action-name">➡️ Kick Right</span>
+                    <input type="text" class="gift-input" data-action="kickRight" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⬅️ Kick Left</span>
+                    <input type="text" class="gift-input" data-action="kickLeft" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⬆️ Kick Up</span>
+                    <input type="text" class="gift-input" data-action="kickUp" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">▶️ Push Right</span>
+                    <input type="text" class="gift-input" data-action="pushRight" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">◀️ Push Left</span>
+                    <input type="text" class="gift-input" data-action="pushLeft" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Silver P-Switch -->
+                <div class="settings-category">
+                  <h4>🪙 Silver P-Switch (HoellCC)</h4>
+                  <div class="action-item">
+                    <span class="action-name">⏱️ Activate Silver P-Switch</span>
+                    <input type="text" class="gift-input" data-action="activateSilverPSwitch" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">📦 Spawn Silver P-Switch</span>
+                    <input type="text" class="gift-input" data-action="spawnSilverPSwitch" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Enemy Spawns -->
+                <div class="settings-category">
+                  <h4>👾 Enemy Spawns (HoellCC MarioMod)</h4>
+                  <div class="action-item">
+                    <span class="action-name">🐢 Spawn Green Koopa</span>
+                    <input type="text" class="gift-input" data-action="spawnGreenKoopa" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐢 Spawn Red Koopa</span>
+                    <input type="text" class="gift-input" data-action="spawnRedKoopa" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦔 Spawn Spiny</span>
+                    <input type="text" class="gift-input" data-action="spawnSpiny" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🍄 Spawn Goomba</span>
+                    <input type="text" class="gift-input" data-action="spawnGoomba" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦜 Spawn Green Paratroopa</span>
+                    <input type="text" class="gift-input" data-action="spawnGreenParatroopa" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦜 Spawn Red Paratroopa</span>
+                    <input type="text" class="gift-input" data-action="spawnRedParatroopa" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💣 Spawn Bob-omb</span>
+                    <input type="text" class="gift-input" data-action="spawnBobOmb" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦖 Spawn Rex</span>
+                    <input type="text" class="gift-input" data-action="spawnRex" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🥷 Spawn Ninji</span>
+                    <input type="text" class="gift-input" data-action="spawnNinji" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🍄 Spawn Para Goomba</span>
+                    <input type="text" class="gift-input" data-action="spawnParaGoomba" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">☁️ Spawn Lakitu</span>
+                    <input type="text" class="gift-input" data-action="spawnLakitu" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦫 Spawn Monty Mole</span>
+                    <input type="text" class="gift-input" data-action="spawnMontyMole" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🪄 Spawn Magikoopa</span>
+                    <input type="text" class="gift-input" data-action="spawnMagikoopa" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐛 Spawn Wiggler</span>
+                    <input type="text" class="gift-input" data-action="spawnWiggler" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌺 Spawn Piranha Plant</span>
+                    <input type="text" class="gift-input" data-action="spawnPiranhaPlant" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔫 Spawn Bullet Bill</span>
+                    <input type="text" class="gift-input" data-action="spawnBulletBill" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔨 Spawn Hammer Bro</span>
+                    <input type="text" class="gift-input" data-action="spawnHammerBro" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🥊 Spawn Sumo Bro</span>
+                    <input type="text" class="gift-input" data-action="spawnSumoBro" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🧱 Spawn Thwomp</span>
+                    <input type="text" class="gift-input" data-action="spawnThwomp" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">👻 Spawn Boo</span>
+                    <input type="text" class="gift-input" data-action="spawnBoo" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">👹 Spawn Big Boo</span>
+                    <input type="text" class="gift-input" data-action="spawnBigBoo" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🚀 Spawn Banzai Bill</span>
+                    <input type="text" class="gift-input" data-action="spawnBanzaiBill" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🎣 Spawn Fishin' Boo</span>
+                    <input type="text" class="gift-input" data-action="spawnFishinBoo" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">⚡ Spawn Thwimp</span>
+                    <input type="text" class="gift-input" data-action="spawnThwimp" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌵 Spawn Pokey</span>
+                    <input type="text" class="gift-input" data-action="spawnPokey" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦎 Spawn Dino Rhino</span>
+                    <input type="text" class="gift-input" data-action="spawnDinoRhino" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">💀 Spawn Dry Bones</span>
+                    <input type="text" class="gift-input" data-action="spawnDryBones" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐞 Spawn Bony Beetle</span>
+                    <input type="text" class="gift-input" data-action="spawnBonyBeetle" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🪄 Spawn Magikoopa 2</span>
+                    <input type="text" class="gift-input" data-action="spawnMagikoopa2" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦴 Spawn Reznor</span>
+                    <input type="text" class="gift-input" data-action="spawnReznor" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🎣 Spawn Fishing Lakitu</span>
+                    <input type="text" class="gift-input" data-action="spawnFishingLakitu" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦇 Spawn Swooper</span>
+                    <input type="text" class="gift-input" data-action="spawnSwooper" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏈 Spawn Charging Chuck</span>
+                    <input type="text" class="gift-input" data-action="spawnChargingChuck" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">👏 Spawn Clapping Chuck</span>
+                    <input type="text" class="gift-input" data-action="spawnClappingChuck" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">✂️ Spawn Splitting Chuck</span>
+                    <input type="text" class="gift-input" data-action="spawnSplittingChuck" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦘 Spawn Jumping Chuck</span>
+                    <input type="text" class="gift-input" data-action="spawnJumpingChuck" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">👑 Spawn Koopa Kid</span>
+                    <input type="text" class="gift-input" data-action="spawnKoopaKid" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔥 Spawn Hot Head</span>
+                    <input type="text" class="gift-input" data-action="spawnHotHead" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🤖 Spawn Mecha Koopa</span>
+                    <input type="text" class="gift-input" data-action="spawnMechaKoopa" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐟 Spawn Cheep Cheep</span>
+                    <input type="text" class="gift-input" data-action="spawnCheepCheep" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🐠 Spawn Blurp</span>
+                    <input type="text" class="gift-input" data-action="spawnBlurp" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦔 Spawn Porcupuffer</span>
+                    <input type="text" class="gift-input" data-action="spawnPorcupuffer" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🏖️ Spawn Beach Koopa</span>
+                    <input type="text" class="gift-input" data-action="spawnBeachKoopa" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Power-up Spawns -->
+                <div class="settings-category">
+                  <h4>⭐ Power-up Spawns (HoellCC MarioMod)</h4>
+                  <div class="action-item">
+                    <span class="action-name">⭐ Spawn Star</span>
+                    <input type="text" class="gift-input" data-action="spawnStar" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🪶 Spawn Feather (Cape)</span>
+                    <input type="text" class="gift-input" data-action="spawnFeather" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌺 Spawn Fire Flower</span>
+                    <input type="text" class="gift-input" data-action="spawnFireFlower" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🎈 Spawn P-Balloon</span>
+                    <input type="text" class="gift-input" data-action="spawnPBalloon" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">📦 Spawn Item Box</span>
+                    <input type="text" class="gift-input" data-action="spawnItemBox" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Helper Spawns -->
+                <div class="settings-category">
+                  <h4>🦕 Helper Spawns (HoellCC MarioMod)</h4>
+                  <div class="action-item">
+                    <span class="action-name">🦕 Spawn Yoshi</span>
+                    <input type="text" class="gift-input" data-action="spawnYoshi" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🥚 Spawn Baby Yoshi</span>
+                    <input type="text" class="gift-input" data-action="spawnBabyYoshi" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">☁️ Spawn Lakitu Cloud</span>
+                    <input type="text" class="gift-input" data-action="spawnLakituCloud" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔵 Spawn Blue P-Switch</span>
+                    <input type="text" class="gift-input" data-action="spawnBluePSwitch" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌱 Spawn Beanstalk</span>
+                    <input type="text" class="gift-input" data-action="spawnBeanstalk" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔑 Spawn Key</span>
+                    <input type="text" class="gift-input" data-action="spawnKey" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔼 Spawn Springboard</span>
+                    <input type="text" class="gift-input" data-action="spawnSpringboard" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🔘 Spawn P-Switch</span>
+                    <input type="text" class="gift-input" data-action="spawnPSwitch" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- MarioMod Block Operations -->
+                <div class="settings-category">
+                  <h4>🧱 MarioMod Block Operations</h4>
+                  <div class="action-item">
+                    <span class="action-name">👁️ Spawn Kaizo Block (On Jump)</span>
+                    <input type="text" class="gift-input" data-action="spawnKaizoBlock" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🌿 Spawn Muncher</span>
+                    <input type="text" class="gift-input" data-action="spawnMuncher" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🦷 Spawn Muncher (On Jump)</span>
+                    <input type="text" class="gift-input" data-action="spawnMuncherOnJump" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🎲 Replace Random Sprite</span>
+                    <input type="text" class="gift-input" data-action="replaceRandomSprite" placeholder="Enter gift name...">
+                  </div>
+                </div>
+
+                <!-- Chaos Effects -->
+                <div class="settings-category">
+                  <h4>🎲 Chaos & Random (HoellCC)</h4>
+                  <div class="action-item">
+                    <span class="action-name">🎰 Spawn Random Enemy</span>
+                    <input type="text" class="gift-input" data-action="spawnRandomEnemy" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🔫 Bullet Bill Storm</span>
+                    <input type="text" class="gift-input" data-action="spawnBulletBillStorm" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="spawnBulletBillStorm" value="30" min="5" max="120" placeholder="Sec">
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
