@@ -197,14 +197,14 @@ function createWindow() {
   // Initialize SNI client after window is created
   const SNIClient = require('./src/sni/client');
   const GameOperations = require('./src/sni/operations');
-  const ExpandedGameOperations = require('./src/sni/operations-expanded');
+  const WorkingSMWOperations = require('./src/sni/operations-working');
   const HoellStreamPoller = require('./src/hoellstream/poller');
   const ItemRestorationManager = require('./src/item-restoration/restoration-manager');
   const GiftUpdater = require('./src/gift-updater');
 
   sniClient = new SNIClient();
   gameOps = new GameOperations(sniClient);
-  expandedOps = new ExpandedGameOperations(sniClient);
+  expandedOps = new WorkingSMWOperations(sniClient);
 
   // Initialize ItemRestorationManager
   restorationManager = new ItemRestorationManager(expandedOps);

@@ -930,6 +930,78 @@
       </div>
 
       <!-- ROWS 2 & 3: REMOVED - Sprite spawning broken (enemies, blocks, Yoshi) -->
+      <div class="control-row">
+        <!-- Common Enemies -->
+        <div class="control-group">
+          <h3>Common Enemies</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="1">🐢 Green Koopa</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="2">🔴 Red Koopa</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="11">🍄 Goomba</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="8">🐞 Buzzy Beetle</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="9">🦔 Spiny</button>
+            <button class="btn-sm" data-action="spawnEnemyNearMario" data-value="12">🌺 Piranha Plant</button>
+          </div>
+        </div>
+
+        <!-- Special Enemies -->
+        <div class="control-group">
+          <h3>Special Enemies</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="spawnBooCircle">👻 Boo Circle</button>
+            <button class="btn-sm" data-action="spawnThwomp">🗿 Thwomp</button>
+            <button class="btn-sm" data-action="spawnCharginChuck">🏈 Chargin' Chuck</button>
+            <button class="btn-sm" data-action="spawnBobOmb">💣 Bob-omb</button>
+            <button class="btn-sm" data-action="spawnMagikoopa">🧙 Magikoopa</button>
+            <button class="btn-sm" data-action="spawnDryBones">💀 Dry Bones</button>
+          </div>
+        </div>
+
+        <!-- More Enemies -->
+        <div class="control-group">
+          <h3>More Enemies</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="spawnRex">🦖 Rex</button>
+            <button class="btn-sm" data-action="spawnWiggler">🐛 Wiggler</button>
+            <button class="btn-sm" data-action="spawnRandomEnemy">🎲 Random</button>
+            <button class="btn-sm danger" data-action="clearAllEnemies">🗑️ Clear All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Enemy Waves & Barrages -->
+      <div class="control-row">
+        <!-- Enemy Waves -->
+        <div class="control-group">
+          <h3>Enemy Waves</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="spawnEnemyWave">🌊 Random Wave (30s)</button>
+            <button class="btn-sm" data-action="spawnKoopaWave">🐢 Koopa Wave (20s)</button>
+            <button class="btn-sm" data-action="spawnBuzzyBeetleWave">🐞 Buzzy Wave (20s)</button>
+            <button class="btn-sm" data-action="spawnPiranhaPlantWave">🌺 Piranha Wave (20s)</button>
+            <button class="btn-sm" data-action="spawnBulletBillBarrage">🚀 Bullet Barrage (15s)</button>
+          </div>
+        </div>
+
+        <!-- Boss Spawns -->
+        <div class="control-group">
+          <h3>Bosses</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm gold" data-action="spawnBoss" data-value="reznor">🦖 Reznor</button>
+            <button class="btn-sm gold" data-action="spawnBoss" data-value="bowser">🐉 Bowser</button>
+          </div>
+        </div>
+
+        <!-- Enemy Effects -->
+        <div class="control-group">
+          <h3>Enemy Effects</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm" data-action="makeEnemiesInvisible">👁️ Invisible (30s)</button>
+            <button class="btn-sm" data-action="doubleEnemySpeed">⚡ 2x Speed (20s)</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Row 4: Level Warping - Worlds 1-4 -->
       <div class="control-row">
         <!-- Yoshi's Island -->
@@ -1073,6 +1145,26 @@
         </div>
       </div>
 
+      <!-- Row 8: Chaos Effects - Block & Floor Manipulation -->
+      <div class="control-row">
+        <!-- Block Spawning -->
+        <div class="control-group">
+          <h3>Block Chaos</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm danger" data-action="spawnRandomBlocks" data-amount="5">🧱 Spawn 5 Random Blocks</button>
+            <button class="btn-sm danger" data-action="spawnRandomBlocks" data-amount="10">🧱 Spawn 10 Random Blocks</button>
+          </div>
+        </div>
+
+        <!-- Floor Removal -->
+        <div class="control-group">
+          <h3>Floor Hazards</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm danger" data-action="removeFloorBlocks">🕳️ Floor Hazards (20s)</button>
+            <button class="btn-sm danger" data-action="removeFloorBlocks" data-duration="30">🕳️ Floor Hazards (30s)</button>
+          </div>
+        </div>
+      </div>
 
     </div>
     <!-- End Tab Content Container -->
@@ -1090,6 +1182,6 @@
   <script src="renderer-full.js"></script>
   <script src="gift-settings-modal.js"></script>
   <script src="archived-gifts-modal.js"></script>
-  <script src="threshold-manager-working.js"></script>
+  <script src="threshold-manager.js"></script>
 </body>
 </html>
