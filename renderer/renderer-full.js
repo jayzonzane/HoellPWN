@@ -1,15 +1,33 @@
 // UI Elements
 const connectBtn = document.getElementById('connect-btn');
-const restartSniBtn = document.getElementById('restart-sni-btn');
 const statusDiv = document.getElementById('status');
 const deviceSelect = document.getElementById('device-select');
 const controlsSection = document.getElementById('controls-tab');
 const logDiv = document.getElementById('log');
+const sniStatusLight = document.getElementById('sni-status-light');
+const hoellStreamStatusLight = document.getElementById('hoellstream-status-light');
 
 // State
 let connected = false;
 let selectedDevice = null;
 let devices = [];
+
+// Status Light Control
+function updateSNIStatus(isConnected) {
+  if (isConnected) {
+    sniStatusLight.classList.add('connected');
+  } else {
+    sniStatusLight.classList.remove('connected');
+  }
+}
+
+function updateHoellStreamStatus(isConnected) {
+  if (isConnected) {
+    hoellStreamStatusLight.classList.add('connected');
+  } else {
+    hoellStreamStatusLight.classList.remove('connected');
+  }
+}
 
 // Logger
 function log(message, type = 'info') {
@@ -43,6 +61,7 @@ connectBtn.addEventListener('click', async () => {
       statusDiv.textContent = 'Connected to SNI';
       statusDiv.className = 'status connected';
       log('Connected successfully!', 'success');
+      updateSNIStatus(true);
 
       // Populate device list
       if (result.devices && result.devices.length > 0) {
@@ -75,6 +94,7 @@ connectBtn.addEventListener('click', async () => {
     statusDiv.textContent = 'Connection failed';
     statusDiv.className = 'status error';
     connected = false;
+    updateSNIStatus(false);
   } finally {
     connectBtn.disabled = false;
   }
@@ -101,31 +121,7 @@ deviceSelect.addEventListener('change', async (e) => {
   }
 });
 
-// Restart SNI button handler
-restartSniBtn.addEventListener('click', async () => {
-  try {
-    log('🔄 Restarting SNI server...', 'info');
-    statusDiv.textContent = 'Restarting SNI...';
-    statusDiv.className = 'status connecting';
-    restartSniBtn.disabled = true;
-
-    const result = await window.sniAPI.restartSNI();
-
-    if (result.success) {
-      log('✅ SNI server restarted successfully!', 'success');
-      statusDiv.textContent = 'SNI Restarted - Reconnecting...';
-      // The auto-connect will happen on the backend
-    } else {
-      throw new Error(result.error || 'Restart failed');
-    }
-  } catch (error) {
-    log(`❌ Failed to restart SNI: ${error.message}`, 'error');
-    statusDiv.textContent = 'Restart failed';
-    statusDiv.className = 'status error';
-  } finally {
-    restartSniBtn.disabled = false;
-  }
-});
+// Restart SNI button removed - SNI must be run externally
 
 // ============= CORE FUNCTIONS =============
 
@@ -1557,6 +1553,10 @@ document.addEventListener('click', (e) => {
   // Populate overlay builder - always refresh to show latest mappings
   if (targetSubtab === 'overlay-builder-subtab' && typeof populateOverlayGiftSelection === 'function') {
     populateOverlayGiftSelection();
+    // Populate thresholds
+    if (typeof populateOverlayThresholdSelection === 'function') {
+      populateOverlayThresholdSelection();
+    }
     // Load and display the current overlay save path
     if (typeof loadOverlaySavePath === 'function') {
       loadOverlaySavePath();
@@ -1574,5 +1574,25 @@ document.addEventListener('click', (e) => {
   if (targetSubtab === 'database-updates-subtab' && !databaseUpdatesPopulated && typeof initDatabaseUpdatesTab === 'function') {
     initDatabaseUpdatesTab();
     databaseUpdatesPopulated = true;
+  }
+});
+
+// Listen for SNI auto-connection events
+window.sniAPI.onSNIAutoConnected((data) => {
+  if (data.success) {
+    log('✅ Auto-connected to SNI', 'success');
+    updateSNIStatus(true);
+  } else {
+    log(`⚠️ Auto-connection failed: ${data.error}`, 'warning');
+  }
+});
+
+// Listen for HoellStream status changes
+window.sniAPI.onHoellStreamStatus((data) => {
+  updateHoellStreamStatus(data.connected);
+  if (data.connected) {
+    log('✅ HoellStream connected', 'success');
+  } else {
+    log('⚠️ HoellStream disconnected', 'warning');
   }
 });

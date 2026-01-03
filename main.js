@@ -11,122 +11,7 @@ let expandedOps;
 let hoellPoller;
 let restorationManager;
 let giftUpdater;
-let sniProcess = null;
-
-// Function to minimize SNI window using PowerShell
-function minimizeSNIWindow() {
-  try {
-    const { exec } = require('child_process');
-    // PowerShell script to find and minimize SNI window
-    const psScript = `
-      Add-Type @"
-        using System;
-        using System.Runtime.InteropServices;
-        public class Win32 {
-          [DllImport("user32.dll")]
-          public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-          [DllImport("user32.dll")]
-          public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-        }
-"@
-      $hwnd = [Win32]::FindWindow($null, "sni")
-      if ($hwnd -ne [IntPtr]::Zero) {
-        [Win32]::ShowWindow($hwnd, 6) | Out-Null
-        Write-Host "SNI window minimized"
-      }
-    `;
-
-    exec(`powershell -Command "${psScript.replace(/"/g, '\\"')}"`, (error, stdout, stderr) => {
-      if (error) {
-        console.log('Could not minimize SNI window (this is normal if SNI has no window):', error.message);
-      } else if (stdout) {
-        console.log('📉', stdout.trim());
-      }
-    });
-  } catch (error) {
-    console.log('SNI window minimize skipped:', error.message);
-  }
-}
-
-// Function to start SNI server
-function startSNIServer() {
-  return new Promise((resolve, reject) => {
-    try {
-      // In production, extraResources are in process.resourcesPath
-      // In development, they're in __dirname
-      const sniPath = app.isPackaged
-        ? path.join(process.resourcesPath, 'bin', 'sni.exe')
-        : path.join(__dirname, 'bin', 'sni.exe');
-      console.log('🚀 Starting SNI server from:', sniPath);
-
-      sniProcess = spawn(sniPath, [], {
-        stdio: 'pipe',
-        windowsHide: true
-      });
-
-      sniProcess.stdout.on('data', (data) => {
-        console.log(`SNI: ${data.toString().trim()}`);
-      });
-
-      sniProcess.stderr.on('data', (data) => {
-        console.error(`SNI Error: ${data.toString().trim()}`);
-      });
-
-      sniProcess.on('error', (error) => {
-        console.error('Failed to start SNI:', error);
-        reject(error);
-      });
-
-      sniProcess.on('exit', (code) => {
-        console.log(`SNI process exited with code ${code}`);
-        sniProcess = null;
-      });
-
-      // Give SNI time to start (2 seconds)
-      setTimeout(() => {
-        console.log('✅ SNI server should be ready');
-
-        // Try to minimize SNI window after it starts
-        minimizeSNIWindow();
-
-        resolve();
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error starting SNI:', error);
-      reject(error);
-    }
-  });
-}
-
-// Function to restart SNI server
-async function restartSNIServer() {
-  try {
-    console.log('🔄 Restarting SNI server...');
-
-    // Kill existing SNI process if running
-    if (sniProcess) {
-      console.log('🛑 Stopping existing SNI process...');
-      sniProcess.kill();
-      sniProcess = null;
-      // Wait for process to fully terminate
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
-    // Start SNI server again
-    await startSNIServer();
-
-    // Wait a bit, then auto-connect
-    setTimeout(() => {
-      autoConnectSNI();
-    }, 1000);
-
-    return { success: true, message: 'SNI server restarted successfully' };
-  } catch (error) {
-    console.error('Failed to restart SNI:', error);
-    return { success: false, error: error.message };
-  }
-}
+// Built-in SNI controller removed - please run SNI externally on port 8191
 
 // Function to auto-connect to SNI and select first device
 async function autoConnectSNI() {
@@ -143,6 +28,12 @@ async function autoConnectSNI() {
       if (hoellPoller && !hoellPoller.isPolling) {
         hoellPoller.start();
         console.log('✅ HoellStream polling started');
+        startThresholdStatusWriter();
+
+        // Notify renderer about HoellStream connection
+        if (mainWindow && mainWindow.webContents) {
+          mainWindow.webContents.send('hoellstream-status', { connected: true });
+        }
       }
 
       // Start indoors monitoring for stored chicken attacks
@@ -306,6 +197,12 @@ ipcMain.handle('select-device', async (event, deviceInfo) => {
     if (hoellPoller && !hoellPoller.isPolling) {
       hoellPoller.start();
       console.log('✅ HoellStream polling started');
+      startThresholdStatusWriter();
+
+      // Notify renderer about HoellStream connection
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('hoellstream-status', { connected: true });
+      }
     }
 
     // Start indoors monitoring for stored chicken attacks
@@ -320,13 +217,7 @@ ipcMain.handle('select-device', async (event, deviceInfo) => {
   }
 });
 
-ipcMain.handle('restart-sni', async (event) => {
-  try {
-    return await restartSNIServer();
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
+// restart-sni IPC handler removed - SNI must be run externally
 
 ipcMain.handle('add-heart', async () => {
   try {
@@ -1355,6 +1246,53 @@ ipcMain.handle('get-threshold-status', async () => {
   }
 });
 
+// Periodically write threshold status to JSON file for overlay polling
+let thresholdStatusInterval = null;
+
+async function writeThresholdStatusFile() {
+  try {
+    if (!hoellPoller) return;
+
+    // Get current overlay save path
+    let savePath = app.getPath('downloads');
+    try {
+      const settingsData = await fs.readFile(OVERLAY_SETTINGS_FILE, 'utf8');
+      const settings = JSON.parse(settingsData);
+      if (settings.savePath) savePath = settings.savePath;
+    } catch (error) {
+      // Use default downloads path
+    }
+
+    const status = hoellPoller.getThresholdStatus();
+    const statusFilePath = pathModule.join(savePath, 'threshold-status.json');
+
+    await fs.writeFile(statusFilePath, JSON.stringify({ status }, null, 2), 'utf8');
+  } catch (error) {
+    // Silently fail - this is a background task
+    console.warn('Failed to write threshold status file:', error.message);
+  }
+}
+
+// Start periodic threshold status writing when HoellStream is connected
+function startThresholdStatusWriter() {
+  if (thresholdStatusInterval) {
+    clearInterval(thresholdStatusInterval);
+  }
+  // Write immediately
+  writeThresholdStatusFile();
+  // Then write every 2 seconds
+  thresholdStatusInterval = setInterval(writeThresholdStatusFile, 2000);
+  console.log('📊 Started threshold status writer (2s interval)');
+}
+
+function stopThresholdStatusWriter() {
+  if (thresholdStatusInterval) {
+    clearInterval(thresholdStatusInterval);
+    thresholdStatusInterval = null;
+    console.log('📊 Stopped threshold status writer');
+  }
+}
+
 // ============= GIFT NAME OVERRIDES =============
 
 // Save gift name overrides to JSON file
@@ -1919,9 +1857,23 @@ ipcMain.handle('toggle-hoellstream', async () => {
 
     if (hoellPoller.isPolling) {
       hoellPoller.stop();
+      stopThresholdStatusWriter();
+
+      // Notify renderer about HoellStream disconnection
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('hoellstream-status', { connected: false });
+      }
+
       return { success: true, polling: false, message: 'HoellStream polling stopped' };
     } else {
       hoellPoller.start();
+      startThresholdStatusWriter();
+
+      // Notify renderer about HoellStream connection
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('hoellstream-status', { connected: true });
+      }
+
       return { success: true, polling: true, message: 'HoellStream polling started' };
     }
   } catch (error) {
@@ -2142,16 +2094,10 @@ app.whenReady().then(async () => {
 
   createWindow();
 
-  // Start SNI server and auto-connect
-  try {
-    await startSNIServer();
-    // Wait a bit more for window to be fully loaded
-    setTimeout(() => {
-      autoConnectSNI();
-    }, 1000);
-  } catch (error) {
-    console.error('Failed to start SNI server:', error);
-  }
+  // Auto-connect to external SNI (assumes SNI is already running on port 8191)
+  setTimeout(() => {
+    autoConnectSNI();
+  }, 1000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -2176,10 +2122,5 @@ app.on('before-quit', () => {
     restorationManager.cleanup();
     console.log('⏱️ ItemRestorationManager cleaned up');
   }
-  // Kill SNI process
-  if (sniProcess) {
-    console.log('🛑 Stopping SNI server...');
-    sniProcess.kill();
-    sniProcess = null;
-  }
+  // SNI process management removed - external SNI will continue running
 });

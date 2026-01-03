@@ -188,5 +188,6 @@ contextBridge.exposeInMainWorld('sniAPI', {
   deleteAllSaves: () => ipcRenderer.invoke('delete-all-saves'),
 
   // Event listeners
-  onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data))
+  onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data)),
+  onHoellStreamStatus: (callback) => ipcRenderer.on('hoellstream-status', (event, data) => callback(data))
 });
