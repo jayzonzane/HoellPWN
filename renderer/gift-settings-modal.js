@@ -817,6 +817,16 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'generate-overlay') {
     generateOverlay();
   }
+
+  // Handle Browse Overlay Path button
+  if (e.target.id === 'browse-overlay-path') {
+    browseOverlayPath();
+  }
+
+  // Handle Reset Overlay Path button
+  if (e.target.id === 'reset-overlay-path') {
+    resetOverlayPath();
+  }
 });
 
 // Function to open modal
@@ -1336,6 +1346,7 @@ window.sniAPI.onImageDownloadProgress((data) => {
 // Track last known gift list and overlay state
 let lastKnownGiftList = null;
 let overlayGiftState = {}; // { giftName: { checked: true/false, customText: "..." } }
+let overlayGiftOrder = []; // Array of gift names in custom order
 
 // Save current overlay state
 function saveOverlayState() {
@@ -1343,11 +1354,18 @@ function saveOverlayState() {
   const textInputs = document.querySelectorAll('.overlay-text-input');
 
   overlayGiftState = {};
+  overlayGiftOrder = [];
 
-  checkboxes.forEach(checkbox => {
-    const giftName = checkbox.value;
-    overlayGiftState[giftName] = overlayGiftState[giftName] || {};
-    overlayGiftState[giftName].checked = checkbox.checked;
+  // Save order based on DOM position
+  const items = document.querySelectorAll('.overlay-gift-item');
+  items.forEach(item => {
+    const checkbox = item.querySelector('.overlay-gift-checkbox');
+    if (checkbox) {
+      const giftName = checkbox.value;
+      overlayGiftOrder.push(giftName);
+      overlayGiftState[giftName] = overlayGiftState[giftName] || {};
+      overlayGiftState[giftName].checked = checkbox.checked;
+    }
   });
 
   textInputs.forEach(input => {
@@ -1355,6 +1373,32 @@ function saveOverlayState() {
     overlayGiftState[giftName] = overlayGiftState[giftName] || {};
     overlayGiftState[giftName].customText = input.value;
   });
+}
+
+// Move gift up in the list
+function moveGiftUp(giftName) {
+  const container = document.getElementById('overlay-gift-list');
+  const items = Array.from(container.querySelectorAll('.overlay-gift-item'));
+  const index = items.findIndex(item => item.querySelector('.overlay-gift-checkbox').value === giftName);
+
+  if (index > 0) {
+    // Swap with previous item
+    container.insertBefore(items[index], items[index - 1]);
+    saveOverlayState();
+  }
+}
+
+// Move gift down in the list
+function moveGiftDown(giftName) {
+  const container = document.getElementById('overlay-gift-list');
+  const items = Array.from(container.querySelectorAll('.overlay-gift-item'));
+  const index = items.findIndex(item => item.querySelector('.overlay-gift-checkbox').value === giftName);
+
+  if (index < items.length - 1) {
+    // Swap with next item
+    container.insertBefore(items[index + 1], items[index]);
+    saveOverlayState();
+  }
 }
 
 // Populate overlay gift selection from mapped gifts
@@ -1388,9 +1432,69 @@ async function populateOverlayGiftSelection(forceRefresh = false) {
     lastKnownGiftList = currentGiftList;
 
     container.innerHTML = '';
-    Object.entries(result.mappings).forEach(([giftName, mapping]) => {
+
+    // Sort gifts based on saved order, or alphabetically
+    let sortedEntries = Object.entries(result.mappings);
+    if (overlayGiftOrder.length > 0) {
+      // Sort by saved order, putting new gifts at the end
+      sortedEntries = sortedEntries.sort(([nameA], [nameB]) => {
+        const indexA = overlayGiftOrder.indexOf(nameA);
+        const indexB = overlayGiftOrder.indexOf(nameB);
+        if (indexA === -1 && indexB === -1) return nameA.localeCompare(nameB);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+    }
+
+    sortedEntries.forEach(([giftName, mapping]) => {
       const item = document.createElement('div');
       item.className = 'overlay-gift-item';
+      item.style.display = 'flex';
+      item.style.alignItems = 'center';
+      item.style.gap = '8px';
+
+      // Reorder buttons container
+      const reorderButtons = document.createElement('div');
+      reorderButtons.className = 'overlay-reorder-buttons';
+      reorderButtons.style.display = 'flex';
+      reorderButtons.style.flexDirection = 'column';
+      reorderButtons.style.gap = '2px';
+
+      const upButton = document.createElement('button');
+      upButton.className = 'btn-reorder btn-reorder-up';
+      upButton.innerHTML = '▲';
+      upButton.title = 'Move up';
+      upButton.style.padding = '2px 8px';
+      upButton.style.fontSize = '10px';
+      upButton.style.background = '#4a5568';
+      upButton.style.border = 'none';
+      upButton.style.color = 'white';
+      upButton.style.cursor = 'pointer';
+      upButton.style.borderRadius = '3px';
+      upButton.onclick = (e) => {
+        e.preventDefault();
+        moveGiftUp(giftName);
+      };
+
+      const downButton = document.createElement('button');
+      downButton.className = 'btn-reorder btn-reorder-down';
+      downButton.innerHTML = '▼';
+      downButton.title = 'Move down';
+      downButton.style.padding = '2px 8px';
+      downButton.style.fontSize = '10px';
+      downButton.style.background = '#4a5568';
+      downButton.style.border = 'none';
+      downButton.style.color = 'white';
+      downButton.style.cursor = 'pointer';
+      downButton.style.borderRadius = '3px';
+      downButton.onclick = (e) => {
+        e.preventDefault();
+        moveGiftDown(giftName);
+      };
+
+      reorderButtons.appendChild(upButton);
+      reorderButtons.appendChild(downButton);
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -1402,6 +1506,11 @@ async function populateOverlayGiftSelection(forceRefresh = false) {
       checkbox.checked = overlayGiftState[giftName]?.checked !== undefined
         ? overlayGiftState[giftName].checked
         : true;
+
+      const contentDiv = document.createElement('div');
+      contentDiv.style.flex = '1';
+      contentDiv.style.display = 'flex';
+      contentDiv.style.flexDirection = 'column';
 
       const label = document.createElement('label');
       label.className = 'overlay-gift-label';
@@ -1428,15 +1537,80 @@ async function populateOverlayGiftSelection(forceRefresh = false) {
       textLabel.style.opacity = '0.7';
       textLabel.textContent = 'Overlay display text:';
 
+      contentDiv.appendChild(label);
+      contentDiv.appendChild(textLabel);
+      contentDiv.appendChild(textInput);
+
+      item.appendChild(reorderButtons);
       item.appendChild(checkbox);
-      item.appendChild(label);
-      item.appendChild(textLabel);
-      item.appendChild(textInput);
+      item.appendChild(contentDiv);
       container.appendChild(item);
     });
   } catch (error) {
     console.error('Error loading mappings for overlay:', error);
     container.innerHTML = '<div style="color: #f44; text-align: center; padding: 20px;">Error loading gift mappings.</div>';
+  }
+}
+
+// Load and display current overlay save path
+async function loadOverlaySavePath() {
+  try {
+    const result = await window.sniAPI.getOverlaySavePath();
+    if (result.success) {
+      const pathInput = document.getElementById('overlay-save-path');
+      if (pathInput) {
+        pathInput.value = result.savePath;
+        pathInput.placeholder = result.savePath;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading overlay save path:', error);
+  }
+}
+
+// Browse for overlay save path
+async function browseOverlayPath() {
+  try {
+    const result = await window.sniAPI.browseOverlayPath();
+    if (result.success && result.path) {
+      // Set the new path
+      const setResult = await window.sniAPI.setOverlaySavePath(result.path);
+      if (setResult.success) {
+        // Update the display
+        const pathInput = document.getElementById('overlay-save-path');
+        if (pathInput) {
+          pathInput.value = result.path;
+          pathInput.placeholder = result.path;
+        }
+        log(`Overlay save location updated to: ${result.path}`, 'success');
+      } else {
+        log(`Failed to set path: ${setResult.error}`, 'error');
+      }
+    }
+  } catch (error) {
+    log(`Error browsing for path: ${error.message}`, 'error');
+  }
+}
+
+// Reset overlay save path to default
+async function resetOverlayPath() {
+  try {
+    // Reset to default (empty string deletes the settings file)
+    const result = await window.sniAPI.setOverlaySavePath('');
+
+    if (result.success) {
+      // Update the display with the default path
+      const pathInput = document.getElementById('overlay-save-path');
+      if (pathInput) {
+        pathInput.value = result.savePath;
+        pathInput.placeholder = result.savePath;
+      }
+      log('Overlay save location reset to Downloads folder', 'success');
+    } else {
+      log(`Failed to reset path: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error resetting path: ${error.message}`, 'error');
   }
 }
 
@@ -1452,9 +1626,17 @@ async function generateOverlay() {
     const spacing = parseInt(document.getElementById('overlay-spacing').value) || 150;
     const continuousLoop = document.getElementById('overlay-continuous-loop').checked;
 
-    // Get selected gifts
-    const checkboxes = document.querySelectorAll('.overlay-gift-checkbox:checked');
-    if (checkboxes.length === 0) {
+    // Get selected gifts in DOM order (respects custom ordering)
+    const giftItems = document.querySelectorAll('.overlay-gift-item');
+    const selectedGifts = [];
+    giftItems.forEach(item => {
+      const checkbox = item.querySelector('.overlay-gift-checkbox');
+      if (checkbox && checkbox.checked) {
+        selectedGifts.push(checkbox.value);
+      }
+    });
+
+    if (selectedGifts.length === 0) {
       log('Please select at least one gift for the overlay', 'error');
       return;
     }
@@ -1466,10 +1648,9 @@ async function generateOverlay() {
       return;
     }
 
-    // Build gifts array for overlay
+    // Build gifts array for overlay (in DOM order)
     const gifts = [];
-    checkboxes.forEach(checkbox => {
-      const giftName = checkbox.value;
+    selectedGifts.forEach(giftName => {
       const mapping = result.mappings[giftName];
       if (!mapping) return;
 
@@ -1520,8 +1701,9 @@ async function generateOverlay() {
 }
 
 // Generate overlay HTML content
-function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100) {
+function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100, selectedThresholds = []) {
   const giftsJSON = JSON.stringify(gifts, null, 2);
+  const thresholdsJSON = JSON.stringify(selectedThresholds, null, 2);
   const count = gifts.length;
   const period = stagger * count;
   const loop = period + pause;
@@ -1608,10 +1790,93 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
       0 0 6px rgba(0,0,0,.85),
       0 0 14px rgba(0,0,0,.55);
   }
+
+  /* Threshold Styles */
+  .thresholds-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    padding: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  .threshold-item {
+    margin-bottom: 12px;
+  }
+
+  .threshold-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .threshold-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  }
+
+  .threshold-name {
+    flex: 1;
+  }
+
+  .threshold-progress-text {
+    margin-left: 10px;
+    font-weight: 700;
+    color: #4ade80;
+  }
+
+  .threshold-bar-container {
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .threshold-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+  }
+
+  .threshold-bar.completed {
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+
+  .threshold-action {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 2px;
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
   <div class="lane" id="lane" aria-label="TikTok Gift Actions"></div>
+
+  ${selectedThresholds.length > 0 ? `<div class="thresholds-container" id="thresholds">
+    ${selectedThresholds.map(t => `
+    <div class="threshold-item" data-gift="${t.giftName}">
+      <div class="threshold-label">
+        <span class="threshold-name">${t.displayName}</span>
+        <span class="threshold-progress-text" data-progress="${t.giftName}">0/${t.target}</span>
+      </div>
+      <div class="threshold-bar-container">
+        <div class="threshold-bar" data-bar="${t.giftName}" style="width: 0%"></div>
+      </div>
+      <div class="threshold-action">${t.action}</div>
+    </div>
+    `).join('')}
+  </div>` : ''}
 
 <script>
 /* -------- CONFIG -------- */
@@ -1720,6 +1985,62 @@ els.forEach(el => {
   const img = el.querySelector('img');
   img.addEventListener('load', measure, { once: true });
 });
+
+/* -------- THRESHOLD TRACKING -------- */
+const thresholds = ${thresholdsJSON};
+
+if (thresholds.length > 0) {
+  // Poll threshold status from a JSON file every 2 seconds
+  async function updateThresholdProgress() {
+    try {
+      // Fetch threshold status from a file in the same directory
+      const response = await fetch('./threshold-status.json?t=' + Date.now());
+      if (!response.ok) {
+        console.warn('Could not load threshold status');
+        return;
+      }
+
+      const data = await response.json();
+      if (!data.status || !Array.isArray(data.status)) {
+        return;
+      }
+
+      // Update each threshold's progress bar
+      data.status.forEach(item => {
+        const progressText = document.querySelector(\`[data-progress="\${item.giftName}"]\`);
+        const progressBar = document.querySelector(\`[data-bar="\${item.giftName}"]\`);
+
+        if (progressText && progressBar) {
+          const current = item.current || 0;
+          const target = item.target || 1;
+          const percentage = Math.min(100, (current / target) * 100);
+
+          // Update progress text
+          progressText.textContent = \`\${current}/\${target}\`;
+
+          // Update progress bar width
+          progressBar.style.width = percentage + '%';
+
+          // Mark as completed if reached target
+          if (current >= target) {
+            progressBar.classList.add('completed');
+          } else {
+            progressBar.classList.remove('completed');
+          }
+        }
+      });
+    } catch (error) {
+      // Silently fail if file doesn't exist or can't be loaded
+      console.warn('Threshold status polling error:', error.message);
+    }
+  }
+
+  // Update immediately on load
+  updateThresholdProgress();
+
+  // Poll every 2 seconds
+  setInterval(updateThresholdProgress, 2000);
+}
 </script>
 </body>
 </html>`;

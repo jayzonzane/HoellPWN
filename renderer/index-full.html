@@ -26,11 +26,24 @@
     <!-- Connection Section -->
     <div class="section connection-section">
       <h2>Connection</h2>
+
+      <!-- Connection Status Indicators -->
+      <div class="connection-status-indicators">
+        <div class="status-indicator">
+          <div class="status-light" id="sni-status-light"></div>
+          <span class="status-label">SNI</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-light" id="hoellstream-status-light"></div>
+          <span class="status-label">HoellStream</span>
+        </div>
+      </div>
+
       <div class="connection-controls">
         <input type="text" id="host" placeholder="localhost" value="localhost">
         <input type="text" id="port" placeholder="8191" value="8191">
         <button id="connect-btn">Connect to SNI</button>
-        <button id="restart-sni-btn" style="background-color: #ff9800;">🔄 Restart SNI</button>
+        <small style="display: block; margin-top: 8px; opacity: 0.7;">Note: SNI must be running externally on port 8191</small>
       </div>
       <div id="status" class="status disconnected">Disconnected</div>
       <select id="device-select" style="display: none;">

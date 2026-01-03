@@ -192,6 +192,7 @@ contextBridge.exposeInMainWorld('sniAPI', {
 
   // Event listeners
   onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data)),
+  onHoellStreamStatus: (callback) => ipcRenderer.on('hoellstream-status', (event, data) => callback(data)),
 
   /* ========================================================================
    * HOELLCC EXTENDED OPERATIONS (120 operations)

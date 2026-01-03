@@ -653,6 +653,53 @@ h3 {
   background: rgba(0,0,0,0.3);
 }
 
+/* Connection Status Indicators */
+.connection-status-indicators {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  justify-content: center;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-light {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  transition: all 0.3s ease;
+}
+
+.status-light.connected {
+  background: #22c55e;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 1);
+  }
+}
+
+.status-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /* Connection Controls */
 .connection-controls {
   display: flex;
