@@ -6,6 +6,8 @@ const controlsSection = document.getElementById('controls-tab');
 const logDiv = document.getElementById('log');
 const sniStatusLight = document.getElementById('sni-status-light');
 const hoellStreamStatusLight = document.getElementById('hoellstream-status-light');
+const hoellStreamControls = document.getElementById('hoellstream-controls');
+const toggleHoellStreamBtn = document.getElementById('toggle-hoellstream-btn');
 
 // State
 let connected = false;
@@ -110,6 +112,7 @@ deviceSelect.addEventListener('change', async (e) => {
       if (result.success) {
         selectedDevice = device;
         controlsSection.style.display = 'block';
+        hoellStreamControls.style.display = 'block';
         log(`Selected device: ${device.displayName || device.uri}`, 'success');
       }
     } catch (error) {
@@ -117,7 +120,34 @@ deviceSelect.addEventListener('change', async (e) => {
     }
   } else {
     controlsSection.style.display = 'none';
+    hoellStreamControls.style.display = 'none';
     selectedDevice = null;
+  }
+});
+
+// HoellStream toggle button
+toggleHoellStreamBtn.addEventListener('click', async () => {
+  try {
+    toggleHoellStreamBtn.disabled = true;
+    const result = await window.sniAPI.toggleHoellStream();
+
+    if (result.success) {
+      if (result.polling) {
+        toggleHoellStreamBtn.textContent = '🎁 Stop HoellStream Polling';
+        toggleHoellStreamBtn.style.background = '#f44336';
+        log('✅ HoellStream polling started', 'success');
+      } else {
+        toggleHoellStreamBtn.textContent = '🎁 Start HoellStream Polling';
+        toggleHoellStreamBtn.style.background = '#2196F3';
+        log('⚠️ HoellStream polling stopped', 'warning');
+      }
+    } else {
+      log(`❌ Failed to toggle HoellStream: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`❌ Error toggling HoellStream: ${error.message}`, 'error');
+  } finally {
+    toggleHoellStreamBtn.disabled = false;
   }
 });
 
@@ -1590,9 +1620,15 @@ window.sniAPI.onSNIAutoConnected((data) => {
 // Listen for HoellStream status changes
 window.sniAPI.onHoellStreamStatus((data) => {
   updateHoellStreamStatus(data.connected);
+
+  // Update toggle button text and color
   if (data.connected) {
     log('✅ HoellStream connected', 'success');
+    toggleHoellStreamBtn.textContent = '🎁 Stop HoellStream Polling';
+    toggleHoellStreamBtn.style.background = '#f44336';
   } else {
     log('⚠️ HoellStream disconnected', 'warning');
+    toggleHoellStreamBtn.textContent = '🎁 Start HoellStream Polling';
+    toggleHoellStreamBtn.style.background = '#2196F3';
   }
 });

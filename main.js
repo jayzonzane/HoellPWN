@@ -24,17 +24,8 @@ async function autoConnectSNI() {
       console.log(`📱 Found ${devices.length} device(s), auto-selecting first one...`);
       sniClient.selectDevice(devices[0]);
 
-      // Start HoellStream polling when device is connected
-      if (hoellPoller && !hoellPoller.isPolling) {
-        hoellPoller.start();
-        console.log('✅ HoellStream polling started');
-        startThresholdStatusWriter();
-
-        // Notify renderer about HoellStream connection
-        if (mainWindow && mainWindow.webContents) {
-          mainWindow.webContents.send('hoellstream-status', { connected: true });
-        }
-      }
+      // HoellStream polling must be started manually via toggle button
+      // (Auto-start removed - user has manual control)
 
       // Start indoors monitoring for stored chicken attacks
       if (expandedOps) {
@@ -193,17 +184,8 @@ ipcMain.handle('select-device', async (event, deviceInfo) => {
   try {
     sniClient.selectDevice(deviceInfo);
 
-    // Start HoellStream polling when device is connected
-    if (hoellPoller && !hoellPoller.isPolling) {
-      hoellPoller.start();
-      console.log('✅ HoellStream polling started');
-      startThresholdStatusWriter();
-
-      // Notify renderer about HoellStream connection
-      if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send('hoellstream-status', { connected: true });
-      }
-    }
+    // HoellStream polling must be started manually via toggle button
+    // (Auto-start removed - user has manual control)
 
     // Start indoors monitoring for stored chicken attacks
     if (expandedOps) {
