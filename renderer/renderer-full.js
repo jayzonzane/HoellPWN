@@ -1557,6 +1557,10 @@ document.addEventListener('click', (e) => {
   // Populate overlay builder - always refresh to show latest mappings
   if (targetSubtab === 'overlay-builder-subtab' && typeof populateOverlayGiftSelection === 'function') {
     populateOverlayGiftSelection();
+    // Load and display the current overlay save path
+    if (typeof loadOverlaySavePath === 'function') {
+      loadOverlaySavePath();
+    }
   }
 
   if (targetSubtab === 'gift-database-subtab' && !giftDatabasePopulated && typeof populateGiftDatabase === 'function') {

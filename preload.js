@@ -162,6 +162,9 @@ contextBridge.exposeInMainWorld('sniAPI', {
 
   // Overlay Builder
   saveOverlayFile: (htmlContent) => ipcRenderer.invoke('save-overlay-file', htmlContent),
+  getOverlaySavePath: () => ipcRenderer.invoke('get-overlay-save-path'),
+  setOverlaySavePath: (savePath) => ipcRenderer.invoke('set-overlay-save-path', savePath),
+  browseOverlayPath: () => ipcRenderer.invoke('browse-overlay-path'),
 
   // Item Restoration System
   disableItemTemp: (itemName, durationSeconds) => ipcRenderer.invoke('disable-item-temp', itemName, durationSeconds),

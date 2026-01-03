@@ -712,6 +712,15 @@
                     </label>
                     <small>Continuously cycle through gifts without stopping</small>
                   </div>
+                  <div class="config-group">
+                    <label for="overlay-save-path">Save Location:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                      <input type="text" id="overlay-save-path" placeholder="Downloads folder" readonly style="flex: 1; cursor: pointer; background: rgba(255,255,255,0.05);">
+                      <button class="btn-secondary" id="browse-overlay-path" style="padding: 8px 15px;">📁 Browse</button>
+                      <button class="btn-secondary" id="reset-overlay-path" style="padding: 8px 15px;">🔄 Reset</button>
+                    </div>
+                    <small>Click Browse to change where overlay files are saved</small>
+                  </div>
                 </div>
 
                 <div class="overlay-gifts">

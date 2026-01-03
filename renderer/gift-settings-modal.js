@@ -817,6 +817,16 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'generate-overlay') {
     generateOverlay();
   }
+
+  // Handle Browse Overlay Path button
+  if (e.target.id === 'browse-overlay-path') {
+    browseOverlayPath();
+  }
+
+  // Handle Reset Overlay Path button
+  if (e.target.id === 'reset-overlay-path') {
+    resetOverlayPath();
+  }
 });
 
 // Function to open modal
@@ -1437,6 +1447,68 @@ async function populateOverlayGiftSelection(forceRefresh = false) {
   } catch (error) {
     console.error('Error loading mappings for overlay:', error);
     container.innerHTML = '<div style="color: #f44; text-align: center; padding: 20px;">Error loading gift mappings.</div>';
+  }
+}
+
+// Load and display current overlay save path
+async function loadOverlaySavePath() {
+  try {
+    const result = await window.sniAPI.getOverlaySavePath();
+    if (result.success) {
+      const pathInput = document.getElementById('overlay-save-path');
+      if (pathInput) {
+        pathInput.value = result.savePath;
+        pathInput.placeholder = result.savePath;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading overlay save path:', error);
+  }
+}
+
+// Browse for overlay save path
+async function browseOverlayPath() {
+  try {
+    const result = await window.sniAPI.browseOverlayPath();
+    if (result.success && result.path) {
+      // Set the new path
+      const setResult = await window.sniAPI.setOverlaySavePath(result.path);
+      if (setResult.success) {
+        // Update the display
+        const pathInput = document.getElementById('overlay-save-path');
+        if (pathInput) {
+          pathInput.value = result.path;
+          pathInput.placeholder = result.path;
+        }
+        log(`Overlay save location updated to: ${result.path}`, 'success');
+      } else {
+        log(`Failed to set path: ${setResult.error}`, 'error');
+      }
+    }
+  } catch (error) {
+    log(`Error browsing for path: ${error.message}`, 'error');
+  }
+}
+
+// Reset overlay save path to default
+async function resetOverlayPath() {
+  try {
+    // Reset to default (empty string deletes the settings file)
+    const result = await window.sniAPI.setOverlaySavePath('');
+
+    if (result.success) {
+      // Update the display with the default path
+      const pathInput = document.getElementById('overlay-save-path');
+      if (pathInput) {
+        pathInput.value = result.savePath;
+        pathInput.placeholder = result.savePath;
+      }
+      log('Overlay save location reset to Downloads folder', 'success');
+    } else {
+      log(`Failed to reset path: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    log(`Error resetting path: ${error.message}`, 'error');
   }
 }
 

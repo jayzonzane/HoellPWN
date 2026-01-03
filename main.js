@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs').promises;
@@ -181,9 +181,25 @@ async function autoConnectSNI() {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  // Load saved window bounds or use defaults
+  let windowBounds = {
     width: 900,
-    height: 850,
+    height: 850
+  };
+
+  try {
+    const savedBounds = require('fs').readFileSync(WINDOW_SETTINGS_FILE, 'utf8');
+    const parsedBounds = JSON.parse(savedBounds);
+    // Merge saved bounds with defaults
+    windowBounds = { ...windowBounds, ...parsedBounds };
+    console.log('📐 Loaded saved window position:', windowBounds);
+  } catch (error) {
+    // File doesn't exist on first run, use defaults
+    console.log('📐 Using default window position');
+  }
+
+  mainWindow = new BrowserWindow({
+    ...windowBounds,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -193,6 +209,25 @@ function createWindow() {
   });
 
   mainWindow.loadFile('renderer/index-full.html');
+
+  // Save window bounds when moved or resized
+  const saveWindowBounds = () => {
+    const bounds = mainWindow.getBounds();
+    require('fs').writeFileSync(WINDOW_SETTINGS_FILE, JSON.stringify(bounds, null, 2), 'utf8');
+  };
+
+  // Debounce to avoid excessive file writes
+  let saveBoundsTimeout;
+  const debouncedSave = () => {
+    clearTimeout(saveBoundsTimeout);
+    saveBoundsTimeout = setTimeout(saveWindowBounds, 500);
+  };
+
+  mainWindow.on('resize', debouncedSave);
+  mainWindow.on('move', debouncedSave);
+
+  // Save immediately on close
+  mainWindow.on('close', saveWindowBounds);
 
   // Initialize SNI client after window is created
   const SNIClient = require('./src/sni/client');
@@ -1134,6 +1169,8 @@ const GIFT_NAME_OVERRIDES_FILE = pathModule.join(app.getPath('userData'), 'gift-
 const CUSTOM_GIFTS_FILE = pathModule.join(app.getPath('userData'), 'custom-gifts.json');
 const GIFT_IMAGE_OVERRIDES_FILE = pathModule.join(app.getPath('userData'), 'gift-image-overrides.json');
 const THRESHOLD_CONFIGS_FILE = pathModule.join(app.getPath('userData'), 'threshold-configs.json');
+const OVERLAY_SETTINGS_FILE = pathModule.join(app.getPath('userData'), 'overlay-settings.json');
+const WINDOW_SETTINGS_FILE = pathModule.join(app.getPath('userData'), 'window-settings.json');
 
 // Load gift mappings on startup
 async function loadGiftMappingsOnStartup() {
@@ -1774,17 +1811,101 @@ ipcMain.handle('download-missing-gift-images', async (event) => {
 
 // ============= OVERLAY BUILDER =============
 
-// Save overlay HTML file to Downloads folder
+// Save overlay HTML file to configured location (or Downloads folder by default)
 ipcMain.handle('save-overlay-file', async (event, htmlContent) => {
   try {
-    const downloadsPath = app.getPath('downloads');
-    const filePath = pathModule.join(downloadsPath, 'TikTok-Gift-Overlay.html');
+    // Load overlay settings to get custom path
+    let savePath = app.getPath('downloads'); // Default
+
+    try {
+      const settingsData = await fs.readFile(OVERLAY_SETTINGS_FILE, 'utf8');
+      const settings = JSON.parse(settingsData);
+      if (settings.savePath) {
+        savePath = settings.savePath;
+      }
+    } catch (error) {
+      // If settings file doesn't exist or can't be read, use default
+      if (error.code !== 'ENOENT') {
+        console.warn('Could not read overlay settings, using default path:', error);
+      }
+    }
+
+    const filePath = pathModule.join(savePath, 'TikTok-Gift-Overlay.html');
 
     await fs.writeFile(filePath, htmlContent, 'utf8');
     console.log(`🎬 Saved overlay file to ${filePath}`);
     return { success: true, path: filePath };
   } catch (error) {
     console.error('Error saving overlay file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Get overlay save path
+ipcMain.handle('get-overlay-save-path', async () => {
+  try {
+    const settingsData = await fs.readFile(OVERLAY_SETTINGS_FILE, 'utf8');
+    const settings = JSON.parse(settingsData);
+    return { success: true, savePath: settings.savePath || app.getPath('downloads') };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist yet - return default downloads path
+      return { success: true, savePath: app.getPath('downloads') };
+    }
+    console.error('Error getting overlay save path:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Set overlay save path
+ipcMain.handle('set-overlay-save-path', async (event, savePath) => {
+  try {
+    // Empty string means reset to default - delete settings file
+    if (!savePath || savePath === '') {
+      try {
+        await fs.unlink(OVERLAY_SETTINGS_FILE);
+        console.log('🔄 Reset overlay path to default (Downloads)');
+      } catch (error) {
+        // File might not exist, that's okay
+        if (error.code !== 'ENOENT') {
+          console.warn('Could not delete overlay settings file:', error);
+        }
+      }
+      return { success: true, savePath: app.getPath('downloads') };
+    }
+
+    // Validate that the path exists and is a directory
+    const stats = await fs.stat(savePath);
+    if (!stats.isDirectory()) {
+      return { success: false, error: 'Path must be a directory' };
+    }
+
+    // Save to settings file
+    const settings = { savePath };
+    await fs.writeFile(OVERLAY_SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
+    console.log(`💾 Saved overlay path setting: ${savePath}`);
+    return { success: true, savePath };
+  } catch (error) {
+    console.error('Error setting overlay save path:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Show folder picker dialog for overlay save path
+ipcMain.handle('browse-overlay-path', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: 'Select Folder for Overlay Files'
+    });
+
+    if (result.canceled) {
+      return { success: false, canceled: true };
+    }
+
+    return { success: true, path: result.filePaths[0] };
+  } catch (error) {
+    console.error('Error showing folder picker:', error);
     return { success: false, error: error.message };
   }
 });
