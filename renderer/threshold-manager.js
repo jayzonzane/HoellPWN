@@ -26,6 +26,9 @@ const THRESHOLD_ACTIONS = [
   { action: 'removeArrow', name: '🎯 Remove 1 Arrow', params: [] }
 ];
 
+// Export for use by other modules
+window.THRESHOLD_ACTIONS = THRESHOLD_ACTIONS;
+
 // Initialize threshold manager
 async function initThresholdManager() {
   console.log('🎯 Initializing Threshold Manager...');
