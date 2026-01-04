@@ -1410,6 +1410,161 @@ function moveGiftDown(giftName) {
   }
 }
 
+// Sync threshold gifts to overlay selection when inline mode is active
+async function syncThresholdGiftsToOverlay() {
+  const thresholdDisplayMode = document.getElementById('overlay-threshold-display-mode')?.value;
+
+  // Only sync when inline mode is selected
+  if (thresholdDisplayMode !== 'inline') {
+    return;
+  }
+
+  try {
+    // Load threshold configs
+    const thresholdResult = await window.sniAPI.loadThresholdConfigs();
+    if (!thresholdResult.success || !thresholdResult.thresholds) {
+      return;
+    }
+
+    // Load gift mappings to check which gifts exist
+    const mappingsResult = await window.sniAPI.loadGiftMappings();
+    if (!mappingsResult.success || !mappingsResult.mappings) {
+      return;
+    }
+
+    const container = document.getElementById('overlay-gift-list');
+    if (!container) return;
+
+    // Get current gifts in overlay selection
+    const currentGiftItems = Array.from(container.querySelectorAll('.overlay-gift-item'));
+    const currentGiftNames = new Set(
+      currentGiftItems.map(item => item.querySelector('.overlay-gift-checkbox')?.value).filter(Boolean)
+    );
+
+    // Find count-based thresholds that need to be added
+    const giftsToAdd = [];
+    Object.entries(thresholdResult.thresholds).forEach(([giftName, config]) => {
+      // Skip value-based thresholds and gifts already in the list
+      if (config.type === 'value' || giftName === '__VALUE_TOTAL__' || currentGiftNames.has(giftName)) {
+        return;
+      }
+
+      // Check if this gift exists in mappings
+      if (mappingsResult.mappings[giftName]) {
+        giftsToAdd.push({ giftName, mapping: mappingsResult.mappings[giftName] });
+      }
+    });
+
+    // Add missing threshold gifts to the overlay selection
+    if (giftsToAdd.length > 0) {
+      console.log(`Adding ${giftsToAdd.length} threshold gifts to overlay selection:`, giftsToAdd.map(g => g.giftName));
+
+      // Save current state
+      saveOverlayState();
+
+      giftsToAdd.forEach(({ giftName, mapping }) => {
+        const item = document.createElement('div');
+        item.className = 'overlay-gift-item';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '8px';
+
+        // Reorder buttons
+        const reorderButtons = document.createElement('div');
+        reorderButtons.className = 'overlay-reorder-buttons';
+        reorderButtons.style.display = 'flex';
+        reorderButtons.style.flexDirection = 'column';
+        reorderButtons.style.gap = '2px';
+
+        const upButton = document.createElement('button');
+        upButton.className = 'btn-reorder btn-reorder-up';
+        upButton.innerHTML = '▲';
+        upButton.title = 'Move up';
+        upButton.style.padding = '2px 8px';
+        upButton.style.fontSize = '10px';
+        upButton.style.background = '#4a5568';
+        upButton.style.border = 'none';
+        upButton.style.color = 'white';
+        upButton.style.cursor = 'pointer';
+        upButton.style.borderRadius = '3px';
+        upButton.onclick = (e) => {
+          e.preventDefault();
+          moveGiftUp(giftName);
+        };
+
+        const downButton = document.createElement('button');
+        downButton.className = 'btn-reorder btn-reorder-down';
+        downButton.innerHTML = '▼';
+        downButton.title = 'Move down';
+        downButton.style.padding = '2px 8px';
+        downButton.style.fontSize = '10px';
+        downButton.style.background = '#4a5568';
+        downButton.style.border = 'none';
+        downButton.style.color = 'white';
+        downButton.style.cursor = 'pointer';
+        downButton.style.borderRadius = '3px';
+        downButton.onclick = (e) => {
+          e.preventDefault();
+          moveGiftDown(giftName);
+        };
+
+        reorderButtons.appendChild(upButton);
+        reorderButtons.appendChild(downButton);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'overlay-gift-checkbox';
+        checkbox.value = giftName;
+        checkbox.id = `overlay-gift-${giftName.replace(/\s+/g, '-')}`;
+        checkbox.checked = true; // Auto-check threshold gifts
+
+        const contentDiv = document.createElement('div');
+        contentDiv.style.flex = '1';
+        contentDiv.style.display = 'flex';
+        contentDiv.style.flexDirection = 'column';
+
+        const label = document.createElement('label');
+        label.className = 'overlay-gift-label';
+        label.htmlFor = checkbox.id;
+        label.textContent = giftName;
+
+        let actionText = mapping.description || mapping.action;
+        actionText = actionText.replace(/^Disable\s+/i, '').replace(/^\W+/, '');
+
+        const textInput = document.createElement('input');
+        textInput.type = 'text';
+        textInput.className = 'overlay-text-input';
+        textInput.dataset.giftName = giftName;
+        textInput.placeholder = actionText;
+        textInput.value = '';
+        textInput.style.marginTop = '4px';
+        textInput.style.padding = '4px 8px';
+        textInput.style.fontSize = '12px';
+        textInput.style.background = 'rgba(0,0,0,0.3)';
+        textInput.style.border = '1px solid rgba(255,255,255,0.2)';
+        textInput.style.borderRadius = '3px';
+        textInput.style.color = 'white';
+
+        contentDiv.appendChild(label);
+        contentDiv.appendChild(textInput);
+
+        item.appendChild(reorderButtons);
+        item.appendChild(checkbox);
+        item.appendChild(contentDiv);
+
+        // Add to end of list
+        container.appendChild(item);
+
+        // Mark as checked in state
+        overlayGiftState[giftName] = { checked: true, customText: '' };
+        overlayGiftOrder.push(giftName);
+      });
+    }
+  } catch (error) {
+    console.error('Error syncing threshold gifts to overlay:', error);
+  }
+}
+
 // Populate overlay gift selection from mapped gifts
 async function populateOverlayGiftSelection(forceRefresh = false) {
   const container = document.getElementById('overlay-gift-list');
@@ -3699,6 +3854,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mappingsBtn) {
     mappingsBtn.addEventListener('click', () => {
       setTimeout(() => tryInitializeCollapsible(), 100);
+    });
+  }
+
+  // Add event listener for threshold display mode changes
+  const thresholdDisplayModeSelect = document.getElementById('overlay-threshold-display-mode');
+  if (thresholdDisplayModeSelect) {
+    thresholdDisplayModeSelect.addEventListener('change', async () => {
+      const mode = thresholdDisplayModeSelect.value;
+      console.log(`Threshold display mode changed to: ${mode}`);
+
+      // When switching to inline mode, sync threshold gifts to overlay selection
+      if (mode === 'inline') {
+        await syncThresholdGiftsToOverlay();
+      }
     });
   }
 });

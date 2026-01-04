@@ -1591,6 +1591,10 @@ document.addEventListener('click', (e) => {
     if (typeof loadOverlaySavePath === 'function') {
       loadOverlaySavePath();
     }
+    // Sync threshold gifts to overlay if inline mode is selected
+    if (typeof syncThresholdGiftsToOverlay === 'function') {
+      setTimeout(() => syncThresholdGiftsToOverlay(), 100);
+    }
   }
 
   if (targetSubtab === 'gift-database-subtab' && !giftDatabasePopulated && typeof populateGiftDatabase === 'function') {
