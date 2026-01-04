@@ -1347,14 +1347,21 @@ window.sniAPI.onImageDownloadProgress((data) => {
 let lastKnownGiftList = null;
 let overlayGiftState = {}; // { giftName: { checked: true/false, customText: "..." } }
 let overlayGiftOrder = []; // Array of gift names in custom order
+let overlayThresholdDisplayMode = 'separate'; // 'separate' or 'inline'
 
 // Save current overlay state
 function saveOverlayState() {
   const checkboxes = document.querySelectorAll('.overlay-gift-checkbox');
   const textInputs = document.querySelectorAll('.overlay-text-input');
+  const thresholdModeSelect = document.getElementById('overlay-threshold-display-mode');
 
   overlayGiftState = {};
   overlayGiftOrder = [];
+
+  // Save threshold display mode
+  if (thresholdModeSelect) {
+    overlayThresholdDisplayMode = thresholdModeSelect.value;
+  }
 
   // Save order based on DOM position
   const items = document.querySelectorAll('.overlay-gift-item');
@@ -1615,6 +1622,22 @@ async function resetOverlayPath() {
 }
 
 // Generate overlay HTML file
+// Get threshold action description
+function getThresholdActionDescription(actionName, params) {
+  const THRESHOLD_ACTIONS = window.THRESHOLD_ACTIONS || [];
+  const actionInfo = THRESHOLD_ACTIONS.find(a => a.action === actionName);
+
+  let desc = actionInfo ? actionInfo.name : actionName;
+
+  // Add params to description if present
+  if (params && Object.keys(params).length > 0) {
+    const paramsText = Object.entries(params).map(([k, v]) => `${k}: ${v}`).join(', ');
+    desc += ` (${paramsText})`;
+  }
+
+  return desc;
+}
+
 async function generateOverlay() {
   try {
     // Get configuration
@@ -1685,8 +1708,88 @@ async function generateOverlay() {
       });
     });
 
+    // Load threshold configurations for overlay
+    let selectedThresholds = [];
+    try {
+      const thresholdResult = await window.sniAPI.loadThresholdConfigs();
+      if (thresholdResult.success && thresholdResult.thresholds) {
+        const allThresholds = thresholdResult.thresholds;
+
+        // Convert threshold configs to overlay format
+        Object.entries(allThresholds).forEach(([key, config]) => {
+          // Skip value-based thresholds for inline mode (they always go in separate section)
+          if (config.type === 'value') {
+            selectedThresholds.push({
+              giftName: '__VALUE_TOTAL__',
+              displayName: 'Total Coin Value',
+              target: config.target,
+              action: config.action,
+              description: getThresholdActionDescription(config.action, config.params),
+              type: 'value'
+            });
+          } else {
+            // Count-based threshold
+            selectedThresholds.push({
+              giftName: key,
+              displayName: config.displayName || key,
+              target: config.target,
+              action: config.action,
+              description: getThresholdActionDescription(config.action, config.params),
+              type: 'count'
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error loading thresholds for overlay:', error);
+    }
+
+    // Get threshold display mode from UI
+    const thresholdDisplayMode = document.getElementById('overlay-threshold-display-mode')?.value || 'separate';
+
+    // Auto-add gifts that have thresholds but aren't in the carousel (INLINE MODE ONLY)
+    if (thresholdDisplayMode === 'inline' && selectedThresholds.length > 0) {
+      const giftNamesInCarousel = new Set(gifts.map(g => g.name));
+
+      // Find count-based thresholds for gifts not in carousel
+      const missingThresholdGifts = selectedThresholds.filter(t =>
+        t.type === 'count' && !giftNamesInCarousel.has(t.giftName)
+      );
+
+      // Auto-add these gifts to the carousel
+      for (const threshold of missingThresholdGifts) {
+        console.log(`Auto-adding gift "${threshold.giftName}" to carousel (has threshold)`);
+
+        // Load mapping to get action description
+        const mapping = result.mappings[threshold.giftName];
+        if (!mapping) {
+          console.warn(`No mapping found for threshold gift: ${threshold.giftName}`);
+          continue;
+        }
+
+        // Get image for the gift
+        const coinValue = findCoinValueForGift(threshold.giftName);
+        let imageUrl = null;
+        if (coinValue) {
+          imageUrl = getCurrentImageUrl(threshold.giftName, coinValue, false);
+        }
+        if (!imageUrl) {
+          imageUrl = './gift-images/rose_1.webp'; // Fallback
+        }
+
+        // Add to gifts array
+        gifts.push({
+          name: threshold.giftName,
+          action: threshold.description || mapping.description || mapping.action,
+          img: imageUrl,
+          hasThreshold: true, // Mark this as auto-added
+          thresholdData: threshold
+        });
+      }
+    }
+
     // Generate HTML content
-    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop, spacing);
+    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop, spacing, selectedThresholds, thresholdDisplayMode);
 
     // Save file via IPC
     const saveResult = await window.sniAPI.saveOverlayFile(html);
@@ -1701,7 +1804,21 @@ async function generateOverlay() {
 }
 
 // Generate overlay HTML content
-function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100, selectedThresholds = []) {
+function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100, selectedThresholds = [], thresholdDisplayMode = 'separate') {
+  // Attach threshold metadata to gifts for inline display
+  if (thresholdDisplayMode === 'inline') {
+    gifts = gifts.map(gift => {
+      const threshold = selectedThresholds.find(t => t.type === 'count' && t.giftName === gift.name);
+      if (threshold) {
+        return {
+          ...gift,
+          thresholdData: threshold
+        };
+      }
+      return gift;
+    });
+  }
+
   const giftsJSON = JSON.stringify(gifts, null, 2);
   const thresholdsJSON = JSON.stringify(selectedThresholds, null, 2);
   const count = gifts.length;
@@ -1791,6 +1908,44 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
       0 0 14px rgba(0,0,0,.55);
   }
 
+  /* Inline Threshold Styles */
+  .threshold-multiplier-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: linear-gradient(135deg, #f59e0b, #dc2626);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 900;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .inline-progress-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+  }
+
+  .inline-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    transition: width 0.3s ease;
+    position: relative;
+  }
+
+  .inline-progress-bar.completed {
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+
   /* Threshold Styles */
   .thresholds-container {
     position: fixed;
@@ -1863,8 +2018,8 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
 <body>
   <div class="lane" id="lane" aria-label="TikTok Gift Actions"></div>
 
-  ${selectedThresholds.length > 0 ? `<div class="thresholds-container" id="thresholds">
-    ${selectedThresholds.map(t => `
+  ${selectedThresholds.filter(t => thresholdDisplayMode === 'separate' || t.type === 'value').length > 0 ? `<div class="thresholds-container" id="thresholds">
+    ${selectedThresholds.filter(t => thresholdDisplayMode === 'separate' || t.type === 'value').map(t => `
     <div class="threshold-item" data-gift="${t.giftName}">
       <div class="threshold-label">
         <span class="threshold-name">${t.displayName}</span>
@@ -1886,6 +2041,7 @@ const CONTINUOUS_LOOP = ${continuousLoop};
 
 /* -------- DATA -------- */
 const gifts = ${giftsJSON};
+const THRESHOLD_DISPLAY_MODE = '${thresholdDisplayMode}';
 
 const lane = document.getElementById('lane');
 const COUNT = gifts.length;
@@ -1895,6 +2051,7 @@ const LOOP_MS   = CONTINUOUS_LOOP ? PERIOD_MS : (PERIOD_MS + PAUSE_MS);
 function makeItem(g) {
   const el = document.createElement('div');
   el.className = 'item';
+  el.dataset.giftName = g.name; // Add data attribute for threshold tracking
 
   const top = document.createElement('div');
   top.className = 'action';
@@ -1902,10 +2059,34 @@ function makeItem(g) {
 
   const pic = document.createElement('div');
   pic.className = 'pic';
+  pic.style.position = 'relative'; // For absolute positioning of badge and progress bar
+
+  // Add threshold multiplier badge if gift has threshold (inline mode)
+  if (g.thresholdData && THRESHOLD_DISPLAY_MODE === 'inline') {
+    const badge = document.createElement('div');
+    badge.className = 'threshold-multiplier-badge';
+    badge.textContent = g.thresholdData.target + 'x';
+    pic.appendChild(badge);
+  }
+
   const img = document.createElement('img');
   img.alt = g.name;
   img.src = g.img;
   pic.appendChild(img);
+
+  // Add inline progress bar if gift has threshold (inline mode)
+  if (g.thresholdData && THRESHOLD_DISPLAY_MODE === 'inline') {
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'inline-progress-container';
+
+    const progressBar = document.createElement('div');
+    progressBar.className = 'inline-progress-bar';
+    progressBar.dataset.bar = g.name; // For threshold polling to target
+    progressBar.style.width = '0%';
+
+    progressContainer.appendChild(progressBar);
+    pic.appendChild(progressContainer);
+  }
 
   const name = document.createElement('div');
   name.className = 'name';
@@ -2007,25 +2188,42 @@ if (thresholds.length > 0) {
 
       // Update each threshold's progress bar
       data.status.forEach(item => {
+        // Try to find separate section elements first
         const progressText = document.querySelector(\`[data-progress="\${item.giftName}"]\`);
         const progressBar = document.querySelector(\`[data-bar="\${item.giftName}"]\`);
 
         if (progressText && progressBar) {
+          // Update separate section (traditional or value-based in inline mode)
           const current = item.current || 0;
           const target = item.target || 1;
           const percentage = Math.min(100, (current / target) * 100);
 
-          // Update progress text
           progressText.textContent = \`\${current}/\${target}\`;
-
-          // Update progress bar width
           progressBar.style.width = percentage + '%';
 
-          // Mark as completed if reached target
           if (current >= target) {
             progressBar.classList.add('completed');
           } else {
             progressBar.classList.remove('completed');
+          }
+        } else if (THRESHOLD_DISPLAY_MODE === 'inline') {
+          // Try to find inline progress bar on carousel item
+          const carouselItem = document.querySelector(\`.item[data-gift-name="\${item.giftName}"]\`);
+          if (carouselItem) {
+            const inlineBar = carouselItem.querySelector('[data-bar]');
+            if (inlineBar) {
+              const current = item.current || 0;
+              const target = item.target || 1;
+              const percentage = Math.min(100, (current / target) * 100);
+
+              inlineBar.style.width = percentage + '%';
+
+              if (current >= target) {
+                inlineBar.classList.add('completed');
+              } else {
+                inlineBar.classList.remove('completed');
+              }
+            }
           }
         }
       });

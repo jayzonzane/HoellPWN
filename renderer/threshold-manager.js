@@ -78,6 +78,9 @@ const THRESHOLD_ACTIONS = [
   { action: 'removeFloorBlocks', name: '🕳️ Floor Hazards', params: [{key: 'amount', label: 'Hazard Count', type: 'number', default: 3}, {key: 'duration', label: 'Duration (sec)', type: 'number', default: 20}] }
 ];
 
+// Export for use by other modules
+window.THRESHOLD_ACTIONS = THRESHOLD_ACTIONS;
+
 // Initialize threshold manager
 async function initThresholdManager() {
   console.log('🎯 Initializing Threshold Manager...');
