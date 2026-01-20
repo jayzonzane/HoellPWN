@@ -6,10 +6,41 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  color: #fff;
+  background: linear-gradient(135deg, var(--bg-gradient-start, #1e3c72), var(--bg-gradient-end, #2a5298));
+  color: var(--text-primary, #fff);
   padding: 0;
+  font-size: calc(12px * var(--ui-scale, 1));
+
+  /* UI scale CSS variable (default 100%) */
+  --ui-scale: 1;
+}
+
+/* Collapsible Sections */
+.toggle-icon {
   font-size: 12px;
+  transition: transform 0.3s ease;
+  user-select: none;
+}
+
+.toggle-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
+.collapsible-content {
+  max-height: 500px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.collapsible-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.section-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 }
 
 /* Menu Bar Styles */
@@ -711,13 +742,13 @@ h3 {
 }
 
 .connection-controls button {
-  padding: 5px 15px;
+  padding: calc(5px * var(--ui-scale)) calc(15px * var(--ui-scale));
   background: #4CAF50;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: calc(4px * var(--ui-scale));
   cursor: pointer;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-scale));
   font-weight: bold;
 }
 
@@ -819,6 +850,31 @@ h3 {
   color: #333;
 }
 
+/* Action Select Button (for Add Action modal) */
+.action-select-btn {
+  padding: 12px;
+  font-size: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.action-select-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action-select-btn:active {
+  transform: translateY(0);
+}
+
 .btn-lg {
   padding: 8px 12px;
   font-size: 12px;
@@ -849,6 +905,220 @@ h3 {
 
 .btn-lg.danger {
   background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+}
+
+/* Action Console - Stream Deck Style */
+.action-console-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(120px * var(--ui-scale)), 1fr));
+  gap: calc(10px * var(--ui-scale));
+  padding: calc(10px * var(--ui-scale));
+}
+
+.action-console-button {
+  position: relative;
+  aspect-ratio: 1;
+  min-height: calc(140px * var(--ui-scale));
+  padding: calc(12px * var(--ui-scale));
+  border: none;
+  border-radius: calc(8px * var(--ui-scale));
+  cursor: pointer;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: bold;
+  font-size: calc(14px * var(--ui-scale));
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(5px * var(--ui-scale));
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.action-console-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  filter: brightness(1.15);
+}
+
+.action-console-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.action-console-button .emoji {
+  font-size: calc(28px * var(--ui-scale));
+  line-height: 1;
+}
+
+.action-console-button .gift-image {
+  width: calc(50px * var(--ui-scale));
+  height: calc(50px * var(--ui-scale));
+  object-fit: contain;
+  border-radius: calc(4px * var(--ui-scale));
+}
+
+.action-console-button .label {
+  font-size: 11px;
+  line-height: 1.2;
+  word-wrap: break-word;
+  max-width: 100%;
+  font-weight: bold;
+}
+
+.action-console-button .action-label {
+  font-size: 9px;
+  line-height: 1.1;
+  word-wrap: break-word;
+  max-width: 100%;
+  opacity: 0.85;
+  font-weight: normal;
+}
+
+.action-console-button.special {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+}
+
+.action-console-button.gold {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #333;
+  animation: shimmer 3s infinite;
+}
+
+.action-console-button.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.action-console-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+/* Action Console Threshold Tracking */
+.action-console-thresholds {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.threshold-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.threshold-item:last-child {
+  margin-bottom: 0;
+}
+
+.threshold-name {
+  flex: 0 0 150px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.threshold-progress {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.threshold-progress-bar-bg {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.threshold-progress-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.threshold-progress-text {
+  color: rgba(255,255,255,0.9);
+  font-weight: bold;
+  min-width: 100px;
+  text-align: right;
+  font-size: 11px;
+}
+
+/* Action Console Activity Log */
+.action-console-activity {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.activity-log-list {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.activity-log-item {
+  background: rgba(255,255,255,0.03);
+  border-left: 3px solid #3b82f6;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-log-item:last-child {
+  margin-bottom: 0;
+}
+
+.activity-log-item.hoellstream {
+  border-left-color: #8b5cf6;
+}
+
+.activity-log-item.tikfinity {
+  border-left-color: #ec4899;
+}
+
+.activity-log-time {
+  color: rgba(255,255,255,0.5);
+  font-size: 10px;
+  flex: 0 0 50px;
+}
+
+.activity-log-source {
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  flex: 0 0 80px;
+}
+
+.activity-log-gift {
+  flex: 1;
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
+}
+
+.activity-log-sender {
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  font-style: italic;
 }
 
 /* Animations */
@@ -1639,7 +1909,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 200px;
+  max-height: 500px;
   overflow-y: auto;
   padding: 10px;
   background: rgba(0,0,0,0.2);

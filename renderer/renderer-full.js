@@ -6,13 +6,19 @@ const controlsSection = document.getElementById('controls-tab');
 const logDiv = document.getElementById('log');
 const sniStatusLight = document.getElementById('sni-status-light');
 const hoellStreamStatusLight = document.getElementById('hoellstream-status-light');
-const hoellStreamControls = document.getElementById('hoellstream-controls');
-const toggleHoellStreamBtn = document.getElementById('toggle-hoellstream-btn');
+const tikfinityStatusLight = document.getElementById('tikfinity-status-light');
+const giftSourceControls = document.getElementById('gift-source-controls');
+const toggleGiftPollingBtn = document.getElementById('toggle-gift-polling-btn');
+const connectionModeRadios = document.getElementsByName('connection-mode');
+const portInput = document.getElementById('port');
+const connectionNote = document.getElementById('connection-note');
+const emulatorConnectionLabel = document.getElementById('emulator-connection-label');
 
 // State
 let connected = false;
 let selectedDevice = null;
 let devices = [];
+let connectionMode = 'sni'; // 'sni' or 'lua'
 
 // Status Light Control
 function updateSNIStatus(isConnected) {
@@ -31,6 +37,14 @@ function updateHoellStreamStatus(isConnected) {
   }
 }
 
+function updateTikFinityStatus(isConnected) {
+  if (isConnected) {
+    tikfinityStatusLight.classList.add('connected');
+  } else {
+    tikfinityStatusLight.classList.remove('connected');
+  }
+}
+
 // Logger
 function log(message, type = 'info') {
   const timestamp = new Date().toLocaleTimeString();
@@ -45,22 +59,66 @@ function log(message, type = 'info') {
   }
 }
 
+// Connection Mode Switching
+connectionModeRadios.forEach(radio => {
+  radio.addEventListener('change', async (e) => {
+    const mode = e.target.value;
+    connectionMode = mode;
+
+    // Update UI based on mode
+    if (mode === 'lua') {
+      connectBtn.textContent = 'Connect to Lua Connector';
+      portInput.value = '65399';
+      connectionNote.textContent = 'Note: HoellPWN-Connector.lua must be running in your emulator';
+      emulatorConnectionLabel.textContent = 'Lua';
+      log('Switched to Lua Connector mode', 'info');
+    } else {
+      connectBtn.textContent = 'Connect to SNI';
+      portInput.value = '8191';
+      connectionNote.textContent = 'Note: SNI must be running externally on port 8191';
+      emulatorConnectionLabel.textContent = 'SNI';
+      log('Switched to SNI mode', 'info');
+    }
+
+    // Notify main process of mode change
+    try {
+      const result = await window.sniAPI.setConnectionMode(mode);
+      if (result.success) {
+        log(`Connection mode set to ${mode.toUpperCase()}`, 'success');
+      } else {
+        log(`Failed to set connection mode: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      log(`Error setting connection mode: ${error.message}`, 'error');
+    }
+  });
+});
+
 // Connection handling
 connectBtn.addEventListener('click', async () => {
   const host = document.getElementById('host').value || 'localhost';
-  const port = document.getElementById('port').value || '8191';
+  const port = document.getElementById('port').value || (connectionMode === 'lua' ? '65399' : '8191');
 
   connectBtn.disabled = true;
   statusDiv.textContent = 'Connecting...';
   statusDiv.className = 'status connecting';
-  log(`Connecting to SNI at ${host}:${port}...`);
+
+  const modeName = connectionMode === 'lua' ? 'Lua Connector' : 'SNI';
+  log(`Connecting to ${modeName} at ${host}:${port}...`);
 
   try {
-    const result = await window.sniAPI.connect(host, port);
+    let result;
+
+    // Call appropriate connection method based on mode
+    if (connectionMode === 'lua') {
+      result = await window.sniAPI.connectLua(host, port);
+    } else {
+      result = await window.sniAPI.connect(host, port);
+    }
 
     if (result.success) {
       connected = true;
-      statusDiv.textContent = 'Connected to SNI';
+      statusDiv.textContent = `Connected to ${modeName}`;
       statusDiv.className = 'status connected';
       log('Connected successfully!', 'success');
       updateSNIStatus(true);
@@ -80,13 +138,13 @@ connectBtn.addEventListener('click', async () => {
 
         log(`Found ${result.devices.length} device(s)`, 'info');
 
-        // Auto-select if only one device
+        // Auto-select if only one device (always true for Lua connector)
         if (result.devices.length === 1) {
           deviceSelect.value = 0;
           deviceSelect.dispatchEvent(new Event('change'));
         }
       } else {
-        log('No devices found. Make sure RetroArch is running with a game loaded.', 'warning');
+        log('No devices found. Make sure the emulator is running with a game loaded.', 'warning');
       }
     } else {
       throw new Error(result.error || 'Connection failed');
@@ -112,7 +170,7 @@ deviceSelect.addEventListener('change', async (e) => {
       if (result.success) {
         selectedDevice = device;
         controlsSection.style.display = 'block';
-        hoellStreamControls.style.display = 'block';
+        giftSourceControls.style.display = 'block';
         log(`Selected device: ${device.displayName || device.uri}`, 'success');
       }
     } catch (error) {
@@ -120,35 +178,54 @@ deviceSelect.addEventListener('change', async (e) => {
     }
   } else {
     controlsSection.style.display = 'none';
-    hoellStreamControls.style.display = 'none';
+    giftSourceControls.style.display = 'none';
     selectedDevice = null;
   }
 });
 
-// HoellStream toggle button
-toggleHoellStreamBtn.addEventListener('click', async () => {
+// Gift polling toggle button (source-aware)
+toggleGiftPollingBtn.addEventListener('click', async () => {
   try {
-    toggleHoellStreamBtn.disabled = true;
-    const result = await window.sniAPI.toggleHoellStream();
+    toggleGiftPollingBtn.disabled = true;
+
+    // Get selected source
+    const selectedSource = document.querySelector('input[name="gift-source"]:checked').value;
+
+    const result = await window.sniAPI.toggleGiftPolling(selectedSource);
 
     if (result.success) {
       if (result.polling) {
-        toggleHoellStreamBtn.textContent = '🎁 Stop HoellStream Polling';
-        toggleHoellStreamBtn.style.background = '#f44336';
-        log('✅ HoellStream polling started', 'success');
+        toggleGiftPollingBtn.textContent = '🎁 Stop Gift Polling';
+        toggleGiftPollingBtn.style.background = '#f44336';
+        toggleGiftPollingBtn.dataset.activeSource = result.source;
+        log(`✅ ${result.source} polling started`, 'success');
       } else {
-        toggleHoellStreamBtn.textContent = '🎁 Start HoellStream Polling';
-        toggleHoellStreamBtn.style.background = '#2196F3';
-        log('⚠️ HoellStream polling stopped', 'warning');
+        toggleGiftPollingBtn.textContent = '🎁 Start Gift Polling';
+        toggleGiftPollingBtn.style.background = '#2196F3';
+        delete toggleGiftPollingBtn.dataset.activeSource;
+        log(`⚠️ ${result.source} polling stopped`, 'warning');
       }
     } else {
-      log(`❌ Failed to toggle HoellStream: ${result.error}`, 'error');
+      log(`❌ Failed to toggle gift polling: ${result.error}`, 'error');
     }
   } catch (error) {
-    log(`❌ Error toggling HoellStream: ${error.message}`, 'error');
+    log(`❌ Error toggling gift polling: ${error.message}`, 'error');
   } finally {
-    toggleHoellStreamBtn.disabled = false;
+    toggleGiftPollingBtn.disabled = false;
   }
+});
+
+// Prevent source switching while polling is active
+document.querySelectorAll('input[name="gift-source"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const pollingActive = toggleGiftPollingBtn.textContent.includes('Stop');
+    if (pollingActive) {
+      alert('Please stop gift polling before switching sources.');
+      // Revert to previous selection
+      const activeSource = toggleGiftPollingBtn.dataset.activeSource || 'hoellstream';
+      document.querySelector(`input[name="gift-source"][value="${activeSource}"]`).checked = true;
+    }
+  });
 });
 
 // Restart SNI button removed - SNI must be run externally
@@ -957,6 +1034,22 @@ async function enableGlassCannon(durationSeconds) {
   }
 }
 
+async function enableInvertControls(durationSeconds) {
+  try {
+    console.log(`[enableInvertControls] Called with duration: ${durationSeconds}`);
+    const result = await window.sniAPI.enableInvertControls(durationSeconds);
+    console.log('[enableInvertControls] Result:', result);
+    if (result.success) {
+      log(result.message || `🔄 Controls inverted for ${durationSeconds}s!`, 'success');
+    } else {
+      log(`Failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('[enableInvertControls] Error:', error);
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
 async function blessingAndCurse() {
   try {
     const result = await window.sniAPI.blessingAndCurse();
@@ -1477,6 +1570,7 @@ document.addEventListener('click', async (e) => {
       case 'spawnBossRush': await spawnBossRush(60); break;
       case 'enableItemLock': await enableItemLock(60); break;
       case 'enableGlassCannon': await enableGlassCannon(60); break;
+      case 'enableInvertControls': await enableInvertControls(30); break;
       case 'blessingAndCurse': await blessingAndCurse(); break;
       case 'deleteAllSaves': await deleteAllSaves(); break;
       case 'spawnBeeSwarm': await spawnBeeSwarm(); break;
@@ -1591,6 +1685,14 @@ document.addEventListener('click', (e) => {
     if (typeof loadOverlaySavePath === 'function') {
       loadOverlaySavePath();
     }
+    // Restore styling settings
+    if (typeof restoreOverlayStyleSettings === 'function') {
+      setTimeout(() => restoreOverlayStyleSettings(), 30);
+    }
+    // Restore threshold display mode toggle state
+    if (typeof restoreThresholdDisplayModeToggle === 'function') {
+      setTimeout(() => restoreThresholdDisplayModeToggle(), 50);
+    }
     // Sync threshold gifts to overlay if inline mode is selected
     if (typeof syncThresholdGiftsToOverlay === 'function') {
       setTimeout(() => syncThresholdGiftsToOverlay(), 100);
@@ -1621,18 +1723,678 @@ window.sniAPI.onSNIAutoConnected((data) => {
   }
 });
 
+// Listen for Lua Connector auto-connection events
+window.sniAPI.onLuaAutoConnected((data) => {
+  if (data.success) {
+    log('✅ Auto-connected to Lua Connector', 'success');
+    updateSNIStatus(true);
+  } else {
+    log(`⚠️ Lua Connector auto-connection failed: ${data.error}`, 'warning');
+  }
+});
+
 // Listen for HoellStream status changes
 window.sniAPI.onHoellStreamStatus((data) => {
   updateHoellStreamStatus(data.connected);
+});
 
-  // Update toggle button text and color
+// Listen for TikFinity status changes
+window.sniAPI.onTikFinityStatus((data) => {
+  updateTikFinityStatus(data.connected);
+
   if (data.connected) {
-    log('✅ HoellStream connected', 'success');
-    toggleHoellStreamBtn.textContent = '🎁 Stop HoellStream Polling';
-    toggleHoellStreamBtn.style.background = '#f44336';
+    log('✅ TikFinity connected', 'success');
   } else {
-    log('⚠️ HoellStream disconnected', 'warning');
-    toggleHoellStreamBtn.textContent = '🎁 Start HoellStream Polling';
-    toggleHoellStreamBtn.style.background = '#2196F3';
+    log('⚠️ TikFinity disconnected', 'warning');
   }
+});
+
+// ============= ACTION CONSOLE =============
+// Load gift images from active-gifts.json
+let activeGiftImages = null;
+async function loadActiveGiftImages() {
+  if (activeGiftImages) return activeGiftImages;
+
+  try {
+    const result = await window.sniAPI.getActiveGifts();
+    if (result.success && result.activeGifts && result.activeGifts.images) {
+      activeGiftImages = result.activeGifts.images;
+      return activeGiftImages;
+    }
+    return {};
+  } catch (error) {
+    console.error('Error loading active gift images:', error);
+    return {};
+  }
+}
+
+// Get gift image URL by name and coin value
+function getGiftImageUrl(giftName, giftImages) {
+  if (!giftImages) return null;
+
+  // Search through all coin values to find this gift
+  for (const coinValue in giftImages) {
+    const coinGifts = giftImages[coinValue];
+    if (coinGifts && coinGifts[giftName]) {
+      const giftData = coinGifts[giftName];
+
+      // Use local image if available
+      if (giftData.local) {
+        return giftData.local;
+      }
+
+      // Fallback to URL
+      if (giftData.url) {
+        return giftData.url;
+      }
+    }
+  }
+
+  return null;
+}
+
+// Populate Action Console with mapped gifts
+async function populateActionConsole() {
+  const grid = document.getElementById('action-console-grid');
+  if (!grid) return;
+
+  try {
+    // Load gift mappings, gift images, and custom actions
+    const [result, giftImages] = await Promise.all([
+      window.sniAPI.loadGiftMappings(),
+      loadActiveGiftImages()
+    ]);
+
+    await loadCustomActions();
+
+    // Clear grid
+    grid.innerHTML = '';
+
+    let hasContent = false;
+
+    // Add gift-mapped actions
+    if (result.success && result.mappings) {
+      const mappings = result.mappings;
+      const mappingsArray = Object.entries(mappings);
+
+      // Create button for each mapped gift
+      for (const [giftName, mapping] of mappingsArray) {
+        hasContent = true;
+      const button = document.createElement('button');
+      button.className = 'action-console-button';
+      button.dataset.giftAction = mapping.action;
+      button.dataset.giftName = giftName;
+
+      // Determine button style based on action type
+      if (mapping.action.includes('Roulette') || mapping.action.includes('Random')) {
+        button.classList.add('special');
+      } else if (mapping.action.includes('Golden') || mapping.action.includes('gold')) {
+        button.classList.add('gold');
+      } else if (mapping.action.includes('kill') || mapping.action.includes('delete') || mapping.action.includes('Cannon')) {
+        button.classList.add('danger');
+      }
+
+      // Get gift image URL or fallback to emoji
+      const imageUrl = getGiftImageUrl(giftName, giftImages);
+      let imageHtml;
+
+      if (imageUrl) {
+        imageHtml = `<img src="${imageUrl}" class="gift-image" alt="${giftName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                     <div class="emoji" style="display:none;">🎁</div>`;
+      } else {
+        // Fallback to emoji if no image found
+        let emoji = '🎁';
+        const emojiMatch = giftName.match(/[\u{1F300}-\u{1F9FF}]/u);
+        if (emojiMatch) {
+          emoji = emojiMatch[0];
+        }
+        imageHtml = `<div class="emoji">${emoji}</div>`;
+      }
+
+      // Get action description
+      const description = mapping.description || mapping.action || 'Unknown action';
+
+      button.innerHTML = `
+        ${imageHtml}
+        <div class="label">${giftName}</div>
+        <div class="action-label">${description}</div>
+      `;
+
+      // Add click handler
+      button.addEventListener('click', async () => {
+        await executeGiftAction(mapping);
+      });
+
+      grid.appendChild(button);
+      }
+    }
+
+    // Add custom action buttons
+    for (const customAction of customActions) {
+      hasContent = true;
+      const button = document.createElement('button');
+      button.className = 'action-console-button';
+      button.dataset.customAction = customAction.id;
+
+      button.innerHTML = `
+        <div class="emoji">⚡</div>
+        <div class="label">${customAction.label}</div>
+        <div class="action-label">Quick Action</div>
+        <button class="remove-custom-action" data-id="${customAction.id}" style="position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.7); border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px;">✕</button>
+      `;
+
+      // Add click handler for the action
+      button.addEventListener('click', async (e) => {
+        // Don't execute if clicking the remove button
+        if (e.target.classList.contains('remove-custom-action')) {
+          return;
+        }
+        await executeCustomAction(customAction);
+      });
+
+      // Add handler for remove button
+      const removeBtn = button.querySelector('.remove-custom-action');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeCustomAction(customAction.id);
+      });
+
+      grid.appendChild(button);
+    }
+
+    // Show empty state if no content
+    if (!hasContent) {
+      grid.innerHTML = '<div class="action-console-empty"><p>No actions added yet. Click "➕ Add Action" to add operations.</p></div>';
+    }
+  } catch (error) {
+    console.error('Error populating action console:', error);
+    grid.innerHTML = '<div class="action-console-empty"><p>Error loading actions.</p></div>';
+  }
+}
+
+// Execute a custom action
+async function executeCustomAction(customAction) {
+  try {
+    // Try to find the element with data-value or data-enemy
+    let element = null;
+    if (customAction.value) {
+      element = document.querySelector(`[data-action="${customAction.action}"][data-value="${customAction.value}"]`);
+      if (!element) {
+        // Try data-enemy for enemy spawning actions
+        element = document.querySelector(`[data-action="${customAction.action}"][data-enemy="${customAction.value}"]`);
+      }
+    } else {
+      element = document.querySelector(`[data-action="${customAction.action}"]`);
+    }
+
+    if (element) {
+      element.click();
+    } else {
+      log(`Action ${customAction.label} executed`, 'success');
+    }
+  } catch (error) {
+    console.error('Error executing custom action:', error);
+    log(`Error executing ${customAction.label}`, 'error');
+  }
+}
+
+// Execute a gift action when action console button is clicked
+async function executeGiftAction(mapping) {
+  try {
+    const action = mapping.action;
+    const params = mapping.params || {};
+
+    // Route to the appropriate function based on action
+    switch (action) {
+      case 'addRupees': await addRupees(params.amount || 50); break;
+      case 'removeRupees': await removeRupees(params.amount || 50); break;
+      case 'addBombs': await addBombs(params.amount || 10); break;
+      case 'removeBombs': await removeBombs(params.amount || 10); break;
+      case 'addArrows': await addArrows(params.amount || 10); break;
+      case 'removeArrows': await removeArrows(params.amount || 10); break;
+      case 'addHeart': await addHeart(); break;
+      case 'removeHeart': await removeHeart(); break;
+      case 'addHeartPiece': await addHeartPiece(); break;
+      case 'addHeartContainer': await addHeartContainer(); break;
+      case 'removeHeartContainer': await removeHeartContainer(); break;
+      case 'killPlayer': await killPlayer(); break;
+      case 'damagePlayer': await damagePlayer(params.hearts || 1); break;
+      case 'toggleWorld': await toggleWorld(); break;
+      case 'triggerChickenAttack': await triggerChickenAttack(params.duration || 60); break;
+      case 'triggerEnemyWaves': await triggerEnemyWaves(params.duration || 60); break;
+      case 'triggerBeeSwarmWaves': await triggerBeeSwarmWaves(params.duration || 60); break;
+      case 'makeEnemiesInvisible': await makeEnemiesInvisible(params.duration || 60); break;
+      case 'spawnBossRush': await spawnBossRush(params.duration || 60); break;
+      case 'enableItemLock': await enableItemLock(params.duration || 60); break;
+      case 'enableGlassCannon': await enableGlassCannon(params.duration || 60); break;
+      case 'enableInvertControls': await enableInvertControls(params.duration || 30); break;
+      case 'blessingAndCurse': await blessingAndCurse(); break;
+      case 'fakeMirror': await fakeMirror(); break;
+      case 'chaosDungeonWarp': await chaosDungeonWarp(); break;
+      case 'deleteAllSaves': await deleteAllSaves(); break;
+      case 'enableInfiniteMagic': await enableInfiniteMagic(params.duration || 60); break;
+      case 'enableIceWorld': await enableIceWorld(params.duration || 60); break;
+      default:
+        log(`Unknown action in action console: ${action}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error executing gift action:', error);
+    log(`Error: ${error.message}`, 'error');
+  }
+}
+
+// Populate action console on page load
+// Activity log storage
+let activityLogEntries = [];
+const MAX_ACTIVITY_LOG_ENTRIES = 20;
+
+// Add gift activity entry
+function addActivityLogEntry(giftData) {
+  const { giftName, amount, displayName, source, timestamp } = giftData;
+
+  // Add to beginning of array
+  activityLogEntries.unshift({
+    giftName,
+    amount: amount || 1,
+    displayName,
+    source,
+    timestamp: timestamp || new Date().toISOString()
+  });
+
+  // Limit to max entries
+  if (activityLogEntries.length > MAX_ACTIVITY_LOG_ENTRIES) {
+    activityLogEntries = activityLogEntries.slice(0, MAX_ACTIVITY_LOG_ENTRIES);
+  }
+
+  // Update display
+  updateActivityLogDisplay();
+}
+
+// Update activity log display
+function updateActivityLogDisplay() {
+  const container = document.getElementById('action-console-activity-list');
+  if (!container) return;
+
+  if (activityLogEntries.length === 0) {
+    container.innerHTML = '<div style="color: rgba(255,255,255,0.4); font-size: 12px;">No gifts received yet</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  activityLogEntries.forEach(entry => {
+    const div = document.createElement('div');
+    div.className = `activity-log-item ${entry.source}`;
+
+    // Format timestamp
+    const time = new Date(entry.timestamp);
+    const timeStr = time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'activity-log-time';
+    timeSpan.textContent = timeStr;
+    div.appendChild(timeSpan);
+
+    // Source
+    const sourceSpan = document.createElement('span');
+    sourceSpan.className = 'activity-log-source';
+    sourceSpan.textContent = entry.source === 'hoellstream' ? 'HoellStream' : entry.source === 'tikfinity' ? 'TikFinity' : entry.source;
+    div.appendChild(sourceSpan);
+
+    // Gift name and amount
+    const giftSpan = document.createElement('span');
+    giftSpan.className = 'activity-log-gift';
+    const amountText = entry.amount > 1 ? ` x${entry.amount}` : '';
+    giftSpan.textContent = `${entry.giftName}${amountText}`;
+    div.appendChild(giftSpan);
+
+    // Sender
+    const senderSpan = document.createElement('span');
+    senderSpan.className = 'activity-log-sender';
+    senderSpan.textContent = `from ${entry.displayName}`;
+    div.appendChild(senderSpan);
+
+    container.appendChild(div);
+  });
+
+  // Auto-scroll to top (newest entry)
+  container.scrollTop = 0;
+}
+
+// Update Action Console threshold display
+async function updateActionConsoleThresholds() {
+  const container = document.getElementById('action-console-threshold-list');
+  if (!container) return;
+
+  try {
+    const result = await window.sniAPI.getThresholdStatus();
+    if (!result.success) return;
+
+    const status = result.status || [];
+
+    if (status.length === 0) {
+      container.innerHTML = '<div style="color: rgba(255,255,255,0.4); font-size: 12px;">No active thresholds</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+
+    status.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'threshold-item';
+
+      const isValueBased = item.giftName === '__VALUE_TOTAL__';
+
+      // Gift name
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'threshold-name';
+      if (isValueBased) {
+        nameDiv.innerHTML = `<span style="color: #a78bfa;">💎 Coin Value</span>`;
+      } else {
+        nameDiv.innerHTML = `<span style="color: #60a5fa;">${item.giftName}</span>`;
+      }
+      div.appendChild(nameDiv);
+
+      // Progress bar
+      const progressDiv = document.createElement('div');
+      progressDiv.className = 'threshold-progress';
+
+      const progressBarBg = document.createElement('div');
+      progressBarBg.className = 'threshold-progress-bar-bg';
+
+      const progressBarFill = document.createElement('div');
+      progressBarFill.className = 'threshold-progress-bar-fill';
+      const percentage = (item.current / item.target) * 100;
+      progressBarFill.style.background = percentage >= 100 ? '#10b981' : (isValueBased ? '#a78bfa' : '#3b82f6');
+      progressBarFill.style.width = `${Math.min(percentage, 100)}%`;
+      progressBarBg.appendChild(progressBarFill);
+      progressDiv.appendChild(progressBarBg);
+
+      const progressText = document.createElement('div');
+      progressText.className = 'threshold-progress-text';
+      if (isValueBased) {
+        progressText.textContent = `${item.current.toLocaleString()} / ${item.target.toLocaleString()} coins`;
+      } else {
+        progressText.textContent = `${item.current} / ${item.target}`;
+      }
+      progressDiv.appendChild(progressText);
+
+      div.appendChild(progressDiv);
+      container.appendChild(div);
+    });
+  } catch (error) {
+    console.error('Error updating action console thresholds:', error);
+  }
+}
+
+// Toggle collapsible sections (main window)
+function toggleMainSection(sectionName) {
+  const content = document.getElementById(`action-console-${sectionName}-list`);
+  const toggle = document.getElementById(`main-${sectionName}-toggle`);
+
+  if (!content || !toggle) return;
+
+  const isCollapsed = content.classList.contains('collapsed');
+
+  if (isCollapsed) {
+    content.classList.remove('collapsed');
+    toggle.classList.remove('collapsed');
+    toggle.textContent = '▼';
+    localStorage.setItem(`mainConsole-${sectionName}-collapsed`, 'false');
+  } else {
+    content.classList.add('collapsed');
+    toggle.classList.add('collapsed');
+    toggle.textContent = '▶';
+    localStorage.setItem(`mainConsole-${sectionName}-collapsed`, 'true');
+  }
+}
+
+// Toggle collapsible control sections
+function toggleControlSection(sectionName) {
+  console.log('toggleControlSection called with:', sectionName);
+  const content = document.getElementById(`${sectionName}-content`);
+  const toggle = document.getElementById(`${sectionName}-toggle`);
+
+  console.log('Elements found:', { content, toggle });
+
+  if (!content || !toggle) {
+    console.warn('Missing elements for section:', sectionName);
+    return;
+  }
+
+  const isCollapsed = content.classList.contains('collapsed');
+  console.log('Current state - isCollapsed:', isCollapsed);
+
+  if (isCollapsed) {
+    content.classList.remove('collapsed');
+    toggle.classList.remove('collapsed');
+    toggle.textContent = '▼';
+    localStorage.setItem(`controlSection-${sectionName}-collapsed`, 'false');
+  } else {
+    content.classList.add('collapsed');
+    toggle.classList.add('collapsed');
+    toggle.textContent = '▶';
+    localStorage.setItem(`controlSection-${sectionName}-collapsed`, 'true');
+  }
+
+  console.log('Toggled to:', content.classList.contains('collapsed') ? 'collapsed' : 'expanded');
+}
+
+// Make functions globally accessible for onclick handlers
+window.toggleControlSection = toggleControlSection;
+window.toggleMainSection = toggleMainSection;
+
+// Custom Action Console Actions Management
+let customActions = [];
+
+async function loadCustomActions() {
+  const saved = localStorage.getItem('customActionConsoleActions');
+  if (saved) {
+    try {
+      customActions = JSON.parse(saved);
+    } catch (error) {
+      console.error('Error loading custom actions:', error);
+      customActions = [];
+    }
+  }
+  return customActions;
+}
+
+function saveCustomActions() {
+  localStorage.setItem('customActionConsoleActions', JSON.stringify(customActions));
+}
+
+function addCustomAction(action, value, label) {
+  const actionId = `${action}-${value || 'novalue'}-${Date.now()}`;
+  customActions.push({
+    id: actionId,
+    action,
+    value,
+    label
+  });
+  saveCustomActions();
+  populateActionConsole();
+}
+
+function removeCustomAction(actionId) {
+  customActions = customActions.filter(a => a.id !== actionId);
+  saveCustomActions();
+  populateActionConsole();
+}
+
+// UI Scaling System
+function initializeUIScaling() {
+  const sizeSlider = document.getElementById('ui-size-slider');
+  const sizeValue = document.getElementById('ui-size-value');
+
+  if (!sizeSlider || !sizeValue) return;
+
+  // Load saved UI size
+  const savedSize = localStorage.getItem('uiSize') || '100';
+  sizeSlider.value = savedSize;
+  applyUISize(parseInt(savedSize));
+
+  // Handle slider changes
+  sizeSlider.addEventListener('input', (e) => {
+    const size = parseInt(e.target.value);
+    applyUISize(size);
+    localStorage.setItem('uiSize', size.toString());
+  });
+}
+
+function applyUISize(size) {
+  const scale = size / 100;
+  document.body.style.setProperty('--ui-scale', scale);
+  const sizeValue = document.getElementById('ui-size-value');
+  if (sizeValue) {
+    sizeValue.textContent = `${size}%`;
+  }
+}
+
+// Theme System
+function initializeThemeSystem() {
+  // Load saved theme or default to deep-blue
+  const savedTheme = localStorage.getItem('hoellpwn-theme') || 'deep-blue';
+  applyTheme(savedTheme);
+
+  // Set up theme option click handlers
+  const themeOptions = document.querySelectorAll('.theme-option');
+  themeOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const theme = option.dataset.theme;
+      applyTheme(theme);
+      localStorage.setItem('hoellpwn-theme', theme);
+
+      // Update active state
+      themeOptions.forEach(opt => opt.classList.remove('active'));
+      option.classList.add('active');
+    });
+  });
+}
+
+function applyTheme(themeName) {
+  // Remove all theme data attributes
+  document.body.removeAttribute('data-theme');
+
+  // Apply new theme (if not default deep-blue)
+  if (themeName !== 'deep-blue') {
+    document.body.setAttribute('data-theme', themeName);
+  }
+
+  // Update active state in dropdown
+  const themeOptions = document.querySelectorAll('.theme-option');
+  themeOptions.forEach(option => {
+    if (option.dataset.theme === themeName) {
+      option.classList.add('active');
+    } else {
+      option.classList.remove('active');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Theme System
+  initializeThemeSystem();
+
+  // UI Scaling System
+  initializeUIScaling();
+
+  populateActionConsole();
+  updateActionConsoleThresholds();
+  updateActivityLogDisplay();
+
+  // Update thresholds every 2 seconds
+  setInterval(updateActionConsoleThresholds, 2000);
+
+  // Listen for gift activity from main process
+  if (window.sniAPI && window.sniAPI.onGiftActivity) {
+    window.sniAPI.onGiftActivity((giftData) => {
+      addActivityLogEntry(giftData);
+    });
+  }
+
+  // Pop-out Action Console button
+  const popoutBtn = document.getElementById('popout-action-console-btn');
+  if (popoutBtn) {
+    popoutBtn.addEventListener('click', async () => {
+      try {
+        await window.sniAPI.openActionConsolePopup();
+      } catch (error) {
+        console.error('Error opening action console popup:', error);
+        log('Error opening action console popup', 'error');
+      }
+    });
+  }
+
+  // Add click event listeners to all collapsible headers
+  const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+  collapsibleHeaders.forEach(header => {
+    const sectionName = header.getAttribute('data-section');
+    if (sectionName) {
+      header.addEventListener('click', (e) => {
+        // Don't toggle if clicking buttons
+        if (e.target.id === 'popout-action-console-btn' || e.target.closest('#popout-action-console-btn') ||
+            e.target.id === 'add-action-btn' || e.target.closest('#add-action-btn')) {
+          return;
+        }
+        toggleControlSection(sectionName);
+      });
+    }
+  });
+
+  // Add Action modal functionality
+  const addActionBtn = document.getElementById('add-action-btn');
+  const addActionModal = document.getElementById('add-action-modal');
+  const closeAddActionModal = document.getElementById('close-add-action-modal');
+  const cancelAddAction = document.getElementById('cancel-add-action');
+
+  if (addActionBtn && addActionModal) {
+    addActionBtn.addEventListener('click', () => {
+      addActionModal.style.display = 'flex';
+    });
+
+    closeAddActionModal.addEventListener('click', () => {
+      addActionModal.style.display = 'none';
+    });
+
+    cancelAddAction.addEventListener('click', () => {
+      addActionModal.style.display = 'none';
+    });
+
+    // Close modal when clicking outside
+    addActionModal.addEventListener('click', (e) => {
+      if (e.target === addActionModal) {
+        addActionModal.style.display = 'none';
+      }
+    });
+
+    // Action select buttons
+    const actionSelectBtns = document.querySelectorAll('.action-select-btn');
+    actionSelectBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        const value = btn.dataset.value;
+        const enemy = btn.dataset.enemy;
+        const label = btn.dataset.label;
+
+        addCustomAction(action, value || enemy, label);
+        addActionModal.style.display = 'none';
+        log(`Added ${label} to Action Console`, 'success');
+      });
+    });
+  }
+
+  // Restore collapsed state for control sections
+  ['action-console', 'core', 'resources', 'equipment', 'toggle-items', 'pendants-crystals', 'dungeon-keys', 'preset-loadouts', 'enemy-spawning', 'item-disable-testing'].forEach(sectionName => {
+    const isCollapsed = localStorage.getItem(`controlSection-${sectionName}-collapsed`) === 'true';
+    if (isCollapsed) {
+      const content = document.getElementById(`${sectionName}-content`);
+      const toggle = document.getElementById(`${sectionName}-toggle`);
+      if (content && toggle) {
+        content.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+        toggle.textContent = '▶';
+      }
+    }
+  });
 });

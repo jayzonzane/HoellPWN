@@ -5,17 +5,60 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' gift-image:;">
   <title>HoellPWN</title>
   <link rel="stylesheet" href="styles-full.css">
+  <link rel="stylesheet" href="themes.css">
 </head>
 <body>
-  <!-- Menu Bar - removed, tabs replace this -->
-  <!-- <div class="menu-bar">
+  <!-- Menu Bar -->
+  <div class="menu-bar">
     <div class="menu-item">
       <span class="menu-label">View</span>
       <div class="menu-dropdown">
         <div class="menu-option" id="menu-gift-settings">🎁 Gift Settings</div>
       </div>
     </div>
-  </div> -->
+    <div class="menu-item">
+      <span class="menu-label">🎨 Theme</span>
+      <div class="menu-dropdown" id="theme-dropdown">
+        <div class="theme-option active" data-theme="deep-blue">
+          <div class="theme-preview deep-blue"></div>
+          <span>Deep Blue</span>
+        </div>
+        <div class="theme-option" data-theme="dark-purple">
+          <div class="theme-preview dark-purple"></div>
+          <span>Dark Purple</span>
+        </div>
+        <div class="theme-option" data-theme="cyberpunk">
+          <div class="theme-preview cyberpunk"></div>
+          <span>Cyberpunk</span>
+        </div>
+        <div class="theme-option" data-theme="forest">
+          <div class="theme-preview forest"></div>
+          <span>Forest</span>
+        </div>
+        <div class="theme-option" data-theme="sunset">
+          <div class="theme-preview sunset"></div>
+          <span>Sunset</span>
+        </div>
+        <div class="theme-option" data-theme="ocean">
+          <div class="theme-preview ocean"></div>
+          <span>Ocean</span>
+        </div>
+        <div class="theme-option" data-theme="midnight">
+          <div class="theme-preview midnight"></div>
+          <span>Midnight</span>
+        </div>
+        <div class="theme-option" data-theme="rose-gold">
+          <div class="theme-preview rose-gold"></div>
+          <span>Rose Gold</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+      <label for="ui-size-slider" style="font-size: 12px;">UI Size:</label>
+      <input type="range" id="ui-size-slider" min="80" max="150" value="100" step="10" style="width: 100px;">
+      <span id="ui-size-value" style="font-size: 12px; min-width: 35px;">100%</span>
+    </div>
+  </div>
 
   <div class="container">
     <h1>🎮 HoellPWN</h1>
@@ -28,11 +71,30 @@
       <div class="connection-status-indicators">
         <div class="status-indicator">
           <div class="status-light" id="sni-status-light"></div>
-          <span class="status-label">SNI</span>
+          <span class="status-label" id="emulator-connection-label">SNI</span>
         </div>
         <div class="status-indicator">
           <div class="status-light" id="hoellstream-status-light"></div>
           <span class="status-label">HoellStream</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-light" id="tikfinity-status-light"></div>
+          <span class="status-label">TikFinity</span>
+        </div>
+      </div>
+
+      <!-- Connection Mode Selection -->
+      <div style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 5px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Connection Mode:</label>
+        <div style="display: flex; gap: 15px;">
+          <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+            <input type="radio" name="connection-mode" value="sni" checked id="mode-sni">
+            <span>SNI (gRPC)</span>
+          </label>
+          <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+            <input type="radio" name="connection-mode" value="lua" id="mode-lua">
+            <span>Lua Connector (TCP)</span>
+          </label>
         </div>
       </div>
 
@@ -40,15 +102,31 @@
         <input type="text" id="host" placeholder="localhost" value="localhost">
         <input type="text" id="port" placeholder="8191" value="8191">
         <button id="connect-btn">Connect to SNI</button>
-        <small style="display: block; margin-top: 8px; opacity: 0.7;">Note: SNI must be running externally on port 8191</small>
+        <small style="display: block; margin-top: 8px; opacity: 0.7;" id="connection-note">Note: SNI must be running externally on port 8191</small>
       </div>
       <div id="status" class="status disconnected">Disconnected</div>
       <select id="device-select" style="display: none;">
         <option value="">Select a device...</option>
       </select>
-      <div style="margin-top: 10px; display: none;" id="hoellstream-controls">
-        <button id="toggle-hoellstream-btn" class="btn-secondary" style="width: 100%; background: #2196F3;">
-          🎁 Start HoellStream Polling
+      <div style="margin-top: 10px; display: none;" id="gift-source-controls">
+        <!-- Source Selection -->
+        <div style="margin-bottom: 10px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Gift Source:</label>
+          <div style="display: flex; gap: 10px;">
+            <label style="flex: 1; cursor: pointer;">
+              <input type="radio" name="gift-source" value="hoellstream" checked>
+              <span>HoellStream</span>
+            </label>
+            <label style="flex: 1; cursor: pointer;">
+              <input type="radio" name="gift-source" value="tikfinity">
+              <span>TikFinity</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Start/Stop Button -->
+        <button id="toggle-gift-polling-btn" class="btn-secondary" style="width: 100%; background: #2196F3;">
+          🎁 Start Gift Polling
         </button>
       </div>
     </div>
@@ -155,11 +233,11 @@
                     <input type="text" class="gift-input" data-action="chaosDungeonWarp" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
-                    <span class="action-name">🌍 Flip World</span>
+                    <span class="action-name">🌀 Fake Portal</span>
                     <input type="text" class="gift-input" data-action="toggleWorld" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
-                    <span class="action-name">🐦 Reset Bird</span>
+                    <span class="action-name">🎵 Reset Flute</span>
                     <input type="text" class="gift-input" data-action="deactivateFlute" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
@@ -731,13 +809,130 @@
                     <small>Continuously cycle through gifts without stopping</small>
                   </div>
                   <div class="config-group">
-                    <label for="overlay-threshold-display-mode" style="display: block; margin-bottom: 6px; color: rgba(255,255,255,0.8);">Threshold Display Mode:</label>
-                    <select id="overlay-threshold-display-mode" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white;">
-                      <option value="separate">Separate Section (Traditional)</option>
-                      <option value="inline">Inline on Gift Images</option>
-                    </select>
+                    <label style="display: block; margin-bottom: 10px; color: rgba(255,255,255,0.8);">Threshold Display Mode:</label>
+                    <div class="threshold-mode-toggle-container" style="display: flex; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);">
+                      <button type="button" class="threshold-mode-btn active" data-mode="separate" style="flex: 1; padding: 10px 20px; background: rgba(255,255,255,0.15); border: none; color: white; cursor: pointer; font-size: 14px; transition: all 0.3s;">
+                        Separate
+                      </button>
+                      <button type="button" class="threshold-mode-btn" data-mode="inline" style="flex: 1; padding: 10px 20px; background: transparent; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 14px; transition: all 0.3s;">
+                        Inline
+                      </button>
+                    </div>
+                    <input type="hidden" id="overlay-threshold-display-mode" value="separate">
                     <small>How to display threshold progress bars in the overlay</small>
                   </div>
+
+                  <!-- Styling & Customization Section -->
+                  <div class="config-group" style="border-top: 2px solid rgba(255,255,255,0.2); padding-top: 15px; margin-top: 15px;">
+                    <h4 style="margin: 0 0 15px 0; color: rgba(255,255,255,0.9); font-size: 16px;">🎨 Styling & Customization</h4>
+
+                    <!-- Preset Selector -->
+                    <div style="margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                      <label for="overlay-style-preset" style="display: block; margin-bottom: 8px; font-weight: 600;">Style Preset:</label>
+                      <select id="overlay-style-preset" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; font-size: 14px; font-weight: 500;">
+                        <option value="custom">🎨 Custom (Manual Settings)</option>
+                        <option value="bold-bright">⚡ Bold & Bright</option>
+                        <option value="elegant-stream">✨ Elegant Stream</option>
+                        <option value="retro-gaming">🕹️ Retro Gaming</option>
+                        <option value="minimal-clean">🔲 Minimal Clean</option>
+                        <option value="neon-pop">💫 Neon Pop</option>
+                      </select>
+                      <small style="opacity: 0.7; display: block; margin-top: 6px;">Choose a preset or customize manually below</small>
+                    </div>
+
+                    <!-- Font Settings -->
+                    <div style="margin-bottom: 15px;">
+                      <label for="overlay-font-family" style="display: block; margin-bottom: 6px;">Font Family:</label>
+                      <select id="overlay-font-family" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white;">
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Arial Black', sans-serif">Arial Black</option>
+                        <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                        <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                        <option value="'Courier New', monospace">Courier New</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+                        <option value="Impact, fantasy">Impact</option>
+                        <option value="'Lucida Console', monospace">Lucida Console</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Open Sans', sans-serif">Open Sans</option>
+                        <option value="'Oswald', sans-serif">Oswald</option>
+                        <option value="'Palatino Linotype', serif">Palatino</option>
+                        <option value="'Permanent Marker', cursive">Permanent Marker</option>
+                        <option value="'Playfair Display', serif">Playfair Display</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Raleway', sans-serif">Raleway</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
+                        <option value="'Tahoma', sans-serif">Tahoma</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                        <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                        <option value="Verdana, sans-serif">Verdana</option>
+                      </select>
+                      <small style="opacity: 0.7;">Google Fonts will auto-load in overlay</small>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                      <label for="overlay-font-size" style="display: block; margin-bottom: 6px;">Font Size (px):</label>
+                      <input type="number" id="overlay-font-size" value="16" min="10" max="48" step="1" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white;">
+                    </div>
+
+                    <!-- Overlay Background -->
+                    <div style="margin-bottom: 15px;">
+                      <label for="overlay-bg-color" style="display: block; margin-bottom: 6px;">Overlay Background Color:</label>
+                      <input type="color" id="overlay-bg-color" value="#1a1a1a" style="width: 100%; height: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">
+                      <label class="checkbox-label" style="margin-top: 6px; display: flex; align-items: center;">
+                        <input type="checkbox" id="overlay-bg-transparent">
+                        <span>Transparent Background</span>
+                      </label>
+                    </div>
+
+                    <!-- Text Color -->
+                    <div style="margin-bottom: 15px;">
+                      <label for="overlay-text-color" style="display: block; margin-bottom: 6px;">Text Color:</label>
+                      <input type="color" id="overlay-text-color" value="#ffffff" style="width: 100%; height: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">
+                    </div>
+
+                    <!-- Text Glow Effect -->
+                    <div style="margin-bottom: 15px;">
+                      <label class="checkbox-label" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <input type="checkbox" id="overlay-text-glow" checked>
+                        <span>Enable Text Glow Effect</span>
+                      </label>
+                      <label for="overlay-glow-color" style="display: block; margin-bottom: 6px;">Glow Color:</label>
+                      <input type="color" id="overlay-glow-color" value="#000000" style="width: 100%; height: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">
+                      <small style="opacity: 0.7;">Creates a glowing shadow around text</small>
+                    </div>
+
+                    <!-- Threshold Styling -->
+                    <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 15px;">
+                      <h5 style="margin: 0 0 10px 0; color: rgba(255,255,255,0.8); font-size: 14px;">Threshold Styling</h5>
+
+                      <div style="margin-bottom: 15px;">
+                        <label for="threshold-bg-color" style="display: block; margin-bottom: 6px;">Threshold Background Color:</label>
+                        <input type="color" id="threshold-bg-color" value="#2d2d2d" style="width: 100%; height: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">
+                        <label class="checkbox-label" style="margin-top: 6px; display: flex; align-items: center;">
+                          <input type="checkbox" id="threshold-bg-transparent" checked>
+                          <span>Transparent Threshold Background</span>
+                        </label>
+                      </div>
+
+                      <div style="margin-bottom: 15px;">
+                        <label for="threshold-text-color" style="display: block; margin-bottom: 6px;">Threshold Text Color:</label>
+                        <input type="color" id="threshold-text-color" value="#ffffff" style="width: 100%; height: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">
+                      </div>
+
+                      <div style="margin-bottom: 15px;">
+                        <label for="threshold-bar-color" style="display: block; margin-bottom: 6px;">Progress Bar Color:</label>
+                        <input type="color" id="threshold-bar-color" value="#4a90e2" style="width: 100%; height: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">
+                      </div>
+
+                      <div style="margin-bottom: 15px;">
+                        <label for="threshold-bar-complete-color" style="display: block; margin-bottom: 6px;">Completed Bar Color:</label>
+                        <input type="color" id="threshold-bar-complete-color" value="#4caf50" style="width: 100%; height: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="config-group">
                     <label for="overlay-save-path">Save Location:</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
@@ -941,12 +1136,53 @@
       <!-- Controls Tab -->
       <div id="controls-tab" class="tab-content active">
 
-      <!-- Row 1: Core Functions & Resources -->
+      <!-- Action Console Section -->
+      <div class="control-row">
+        <div class="control-group wide">
+          <h3 data-section="action-console" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span>🎮 Action Console</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button id="add-action-btn" class="btn-sm" style="background: #10b981;">➕ Add Action</button>
+              <button id="popout-action-console-btn" class="btn-sm" style="background: #667eea;">🗗 Pop Out</button>
+              <span id="action-console-toggle" class="toggle-icon">▼</span>
+            </div>
+          </h3>
+          <div id="action-console-content" class="collapsible-content">
+            <div id="action-console-grid" class="action-console-grid">
+              <!-- Dynamically populated with mapped gift actions and custom actions -->
+              <div class="action-console-empty">
+                <p>No actions added yet. Click "➕ Add Action" to add operations.</p>
+              </div>
+            </div>
+
+            <!-- Threshold Tracking Section -->
+            <div id="action-console-thresholds" class="action-console-thresholds">
+              <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: rgba(255,255,255,0.7);">🎯 Threshold Progress</h4>
+              <div id="action-console-threshold-list">
+                <div style="color: rgba(255,255,255,0.4); font-size: 12px;">No active thresholds</div>
+              </div>
+            </div>
+
+            <!-- Activity Log Section -->
+            <div id="action-console-activity" class="action-console-activity">
+              <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: rgba(255,255,255,0.7);">📜 Gift Activity Log</h4>
+              <div id="action-console-activity-list" class="activity-log-list">
+                <div style="color: rgba(255,255,255,0.4); font-size: 12px;">No gifts received yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 1: Core Functions -->
       <div class="control-row">
         <!-- Core Functions -->
-        <div class="control-group">
-          <h3>Core</h3>
-          <div class="button-grid-compact">
+        <div class="control-group wide">
+          <h3 data-section="core" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Core</span>
+            <span id="core-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="core-content" class="button-grid-compact collapsible-content">
             <button class="btn-sm" data-action="addHeart">❤️+ Add Heart</button>
             <button class="btn-sm" data-action="removeHeart">💔 Remove Heart</button>
             <button class="btn-sm" data-action="addHeartPiece">¼❤️ Heart Piece</button>
@@ -954,13 +1190,28 @@
             <button class="btn-sm danger" data-action="deleteAllSaves">💀 DELETE SAVES</button>
             <button class="btn-sm" data-action="testMemory">🔍 Test Mem</button>
             <button class="btn-sm special" data-action="toggleInvincibility">⭐ GOD MODE</button>
+            <button class="btn-sm danger" data-action="enableInvertControls">🔄 Invert Controls (30s)</button>
+            <button class="btn-sm danger" data-action="fakeMirror">🪞 Fake Mirror</button>
+            <button class="btn-sm danger" data-action="chaosDungeonWarp">🎲 Chaos Warp</button>
+            <button class="btn-sm special" data-action="toggleWorld">🌀 Fake Portal</button>
+            <button class="btn-sm danger" data-action="triggerChickenAttack">🐔 Chicken Attack (60s)</button>
+            <button class="btn-sm danger" data-action="triggerBeeSwarmWaves">🐝 Bee Swarm (60s)</button>
+            <button class="btn-sm danger" data-action="makeEnemiesInvisible">👻 Invisible Enemies (60s)</button>
+            <button class="btn-sm danger" data-action="enableItemLock">🔒 Item Lock (60s)</button>
+            <button class="btn-sm danger" data-action="enableGlassCannon">💀 Glass Cannon (60s)</button>
+            <button class="btn-sm special" data-action="blessingAndCurse">🎲 Effect Roulette</button>
           </div>
         </div>
+      </div>
 
-        <!-- Resources -->
-        <div class="control-group">
-          <h3>Resources</h3>
-          <div class="button-grid-compact">
+      <!-- Row 2: Resources -->
+      <div class="control-row">
+        <div class="control-group wide">
+          <h3 data-section="resources" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Resources</span>
+            <span id="resources-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="resources-content" class="button-grid-compact collapsible-content">
             <button class="btn-sm" data-action="setRupees" data-value="100">💰 100</button>
             <button class="btn-sm" data-action="setRupees" data-value="500">💰 500</button>
             <button class="btn-sm" data-action="setRupees" data-value="9999">💰 MAX</button>
@@ -981,9 +1232,16 @@
 
       <!-- Row 2: Equipment -->
       <div class="control-row">
-        <!-- Swords -->
-        <div class="control-group">
-          <h3>Swords</h3>
+        <div class="control-group wide">
+          <h3 data-section="equipment" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Equipment (Swords, Shields, Armor, Gloves, Flute, Medallions, Magic, Bottles)</span>
+            <span id="equipment-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="equipment-content" class="collapsible-content">
+            <div class="control-row" style="margin: 0;">
+              <!-- Swords -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Swords</h4>
           <div class="button-grid-compact">
             <button class="btn-sm" data-action="setSword" data-value="0">❌ None</button>
             <button class="btn-sm" data-action="setSword" data-value="1">⚔️ Fighter</button>
@@ -991,45 +1249,97 @@
             <button class="btn-sm" data-action="setSword" data-value="3">⚔️ Tempered</button>
             <button class="btn-sm gold" data-action="setSword" data-value="4">⚔️ Golden</button>
           </div>
-        </div>
+              </div>
 
-        <!-- Shields -->
-        <div class="control-group">
-          <h3>Shields</h3>
+              <!-- Shields -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Shields</h4>
           <div class="button-grid-compact">
             <button class="btn-sm" data-action="setShield" data-value="0">❌ None</button>
             <button class="btn-sm" data-action="setShield" data-value="1">🛡️ Blue</button>
             <button class="btn-sm" data-action="setShield" data-value="2">🛡️ Red</button>
             <button class="btn-sm" data-action="setShield" data-value="3">🛡️ Mirror</button>
           </div>
-        </div>
+              </div>
 
-        <!-- Armor -->
-        <div class="control-group">
-          <h3>Armor</h3>
+              <!-- Armor -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Armor</h4>
           <div class="button-grid-compact">
             <button class="btn-sm" data-action="setArmor" data-value="0">👕 Green</button>
             <button class="btn-sm" data-action="setArmor" data-value="1">👕 Blue</button>
             <button class="btn-sm" data-action="setArmor" data-value="2">👕 Red</button>
           </div>
-        </div>
+              </div>
 
-        <!-- Gloves -->
-        <div class="control-group">
-          <h3>Gloves</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="setGloves" data-value="0">❌ None</button>
-            <button class="btn-sm" data-action="setGloves" data-value="1">🧤 Power</button>
-            <button class="btn-sm" data-action="setGloves" data-value="2">🧤 Titan</button>
+              <!-- Gloves -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Gloves</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="setGloves" data-value="0">❌ None</button>
+                  <button class="btn-sm" data-action="setGloves" data-value="1">🧤 Power</button>
+                  <button class="btn-sm" data-action="setGloves" data-value="2">🧤 Titan</button>
+                </div>
+              </div>
+
+              <!-- Flute -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Flute</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="giveFlute">🎵 Add</button>
+                  <button class="btn-sm" data-action="removeFlute">🎵 Remove</button>
+                  <button class="btn-sm" data-action="deactivateFlute">🎵 Reset Flute</button>
+                </div>
+              </div>
+
+              <!-- Medallions -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Medallions</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="toggleMedallion" data-value="bombos">💥 Bombos</button>
+                  <button class="btn-sm" data-action="toggleMedallion" data-value="ether">⚡ Ether</button>
+                  <button class="btn-sm" data-action="toggleMedallion" data-value="quake">🌋 Quake</button>
+                  <button class="btn-sm" data-action="toggleAllMedallions">💫 All</button>
+                </div>
+              </div>
+
+              <!-- Magic -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Magic</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="enableMagic">✨ Enable</button>
+                  <button class="btn-sm danger" data-action="removeMagic">🚫 Remove</button>
+                  <button class="btn-sm" data-action="setMagicUpgrade" data-value="0">🔮 Normal</button>
+                  <button class="btn-sm" data-action="setMagicUpgrade" data-value="1">🔮 ½ Magic</button>
+                  <button class="btn-sm" data-action="setMagicUpgrade" data-value="2">🔮 ¼ Magic</button>
+                  <button class="btn-sm special" data-action="enableInfiniteMagic">✨ INF (60s)</button>
+                </div>
+              </div>
+
+              <!-- Bottles -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Bottles</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addBottle">🍾 Add</button>
+                  <button class="btn-sm" data-action="removeBottle">🍾 Remove</button>
+                  <button class="btn-sm" data-action="fillBottles" data-value="red">🧪 Red</button>
+                  <button class="btn-sm" data-action="fillBottles" data-value="green">🧪 Green</button>
+                  <button class="btn-sm" data-action="fillBottles" data-value="blue">🧪 Blue</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Row 3: Toggle Items & Medallions -->
+      <!-- Row 3: Toggle Items -->
       <div class="control-row">
         <div class="control-group wide">
-          <h3>Toggle Items</h3>
-          <div class="button-grid-compact">
+          <h3 data-section="toggle-items" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Toggle Items</span>
+            <span id="toggle-items-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="toggle-items-content" class="button-grid-compact collapsible-content">
             <button class="btn-sm" data-action="toggleBoots">👟 Boots</button>
             <button class="btn-sm" data-action="toggleFlippers">🏊 Flippers</button>
             <button class="btn-sm" data-action="toggleMoonPearl">🌙 Pearl</button>
@@ -1046,79 +1356,43 @@
             <button class="btn-sm" data-action="toggleIceRod">❄️ Ice Rod</button>
           </div>
         </div>
-
-        <!-- Medallions -->
-        <div class="control-group">
-          <h3>Medallions</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="toggleMedallion" data-value="bombos">💥 Bombos</button>
-            <button class="btn-sm" data-action="toggleMedallion" data-value="ether">⚡ Ether</button>
-            <button class="btn-sm" data-action="toggleMedallion" data-value="quake">🌋 Quake</button>
-            <button class="btn-sm" data-action="toggleAllMedallions">💫 All</button>
-          </div>
-        </div>
       </div>
 
-      <!-- Row 4: Magic & Bottles -->
+      <!-- Row 4: Pendants & Crystals -->
       <div class="control-row">
-        <!-- Magic -->
-        <div class="control-group">
-          <h3>Magic</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="enableMagic">✨ Enable</button>
-            <button class="btn-sm danger" data-action="removeMagic">🚫 Remove</button>
-            <button class="btn-sm" data-action="setMagicUpgrade" data-value="0">🔮 Normal</button>
-            <button class="btn-sm" data-action="setMagicUpgrade" data-value="1">🔮 ½ Magic</button>
-            <button class="btn-sm" data-action="setMagicUpgrade" data-value="2">🔮 ¼ Magic</button>
-            <button class="btn-sm special" data-action="enableInfiniteMagic">✨ INF (60s)</button>
-          </div>
-        </div>
+        <div class="control-group wide">
+          <h3 data-section="pendants-crystals" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Pendants & Crystals</span>
+            <span id="pendants-crystals-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="pendants-crystals-content" class="collapsible-content">
+            <div class="control-row" style="margin: 0;">
+              <!-- Pendants -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Pendants</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="togglePendant" data-value="red">🔴 Red</button>
+                  <button class="btn-sm" data-action="togglePendant" data-value="blue">🔵 Blue</button>
+                  <button class="btn-sm" data-action="togglePendant" data-value="green">🟢 Green</button>
+                  <button class="btn-sm" data-action="toggleAllPendants">💎 All</button>
+                </div>
+              </div>
 
-        <!-- Bottles -->
-        <div class="control-group">
-          <h3>Bottles</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addBottle">🍾 Add</button>
-            <button class="btn-sm" data-action="removeBottle">🍾 Remove</button>
-            <button class="btn-sm" data-action="fillBottles" data-value="red">🧪 Red</button>
-            <button class="btn-sm" data-action="fillBottles" data-value="green">🧪 Green</button>
-            <button class="btn-sm" data-action="fillBottles" data-value="blue">🧪 Blue</button>
-          </div>
-        </div>
-
-        <!-- Flute -->
-        <div class="control-group">
-          <h3>Flute</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="giveFlute">🎵 Add</button>
-            <button class="btn-sm" data-action="removeFlute">🎵 Remove</button>
-            <button class="btn-sm" data-action="deactivateFlute">🐦 Reset Bird</button>
-          </div>
-        </div>
-
-        <!-- Progress -->
-        <div class="control-group">
-          <h3>Pendants</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="togglePendant" data-value="red">🔴 Red</button>
-            <button class="btn-sm" data-action="togglePendant" data-value="blue">🔵 Blue</button>
-            <button class="btn-sm" data-action="togglePendant" data-value="green">🟢 Green</button>
-            <button class="btn-sm" data-action="toggleAllPendants">💎 All</button>
-          </div>
-        </div>
-
-        <!-- Crystals -->
-        <div class="control-group">
-          <h3>Crystals</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="toggleCrystal" data-value="1">💠 1</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="2">💠 2</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="3">💠 3</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="4">💠 4</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="5">💠 5</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="6">💠 6</button>
-            <button class="btn-sm" data-action="toggleCrystal" data-value="7">💠 7</button>
-            <button class="btn-sm" data-action="toggleAllCrystals">💠 All</button>
+              <!-- Crystals -->
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Crystals</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="toggleCrystal" data-value="1">💠 1</button>
+                  <button class="btn-sm" data-action="toggleCrystal" data-value="2">💠 2</button>
+                  <button class="btn-sm" data-action="toggleCrystal" data-value="3">💠 3</button>
+                  <button class="btn-sm" data-action="toggleCrystal" data-value="4">💠 4</button>
+                  <button class="btn-sm" data-action="toggleCrystal" data-value="5">💠 5</button>
+                  <button class="btn-sm" data-action="toggleCrystal" data-value="6">💠 6</button>
+                  <button class="btn-sm" data-action="toggleCrystal" data-value="7">💠 7</button>
+                  <button class="btn-sm" data-action="toggleAllCrystals">💠 All</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1140,118 +1414,130 @@
         </div>
       </div>
 
-      <!-- Row 6: Dungeon Keys Light World -->
+      <!-- Row 6: Dungeon Keys -->
       <div class="control-row">
-        <div class="control-group">
-          <h3>🏰 Eastern</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="eastern">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="eastern">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="eastern">🔑</button>
-          </div>
-        </div>
+        <div class="control-group wide">
+          <h3 data-section="dungeon-keys" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Dungeon Keys (Eastern, Desert, Hera, Tower, Darkness, Swamp, Skull, Thieves, Ice, Misery, Turtle, Ganon)</span>
+            <span id="dungeon-keys-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="dungeon-keys-content" class="collapsible-content">
+            <!-- Light World Dungeons -->
+            <div class="control-row" style="margin: 0 0 10px 0;">
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🏰 Eastern</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="eastern">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="eastern">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="eastern">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>🏜️ Desert</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="desert">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="desert">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="desert">🔑</button>
-          </div>
-        </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🏜️ Desert</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="desert">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="desert">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="desert">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>⛰️ Hera</h3>
-          <button class="btn-sm" data-action="addSmallKey" data-dungeon="hera">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="hera">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="hera">🔑</button>
-          </div>
-        </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">⛰️ Hera</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="hera">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="hera">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="hera">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>👑 Tower</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="tower">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="tower">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="tower">🔑</button>
-          </div>
-        </div>
-      </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">👑 Tower</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="tower">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="tower">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="tower">🔑</button>
+                </div>
+              </div>
+            </div>
 
-      <!-- Row 7: Dungeon Keys Dark World -->
-      <div class="control-row">
-        <div class="control-group">
-          <h3>🌙 Darkness</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="darkness">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="darkness">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="darkness">🔑</button>
-          </div>
-        </div>
+            <!-- Dark World Dungeons -->
+            <div class="control-row" style="margin: 0 0 10px 0;">
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🌙 Darkness</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="darkness">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="darkness">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="darkness">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>🐸 Swamp</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="swamp">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="swamp">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="swamp">🔑</button>
-          </div>
-        </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🐸 Swamp</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="swamp">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="swamp">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="swamp">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>💀 Skull</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="skull">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="skull">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="skull">🔑</button>
-          </div>
-        </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">💀 Skull</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="skull">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="skull">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="skull">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>🏴‍☠️ Thieves</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="thieves">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="thieves">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="thieves">🔑</button>
-          </div>
-        </div>
-      </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🏴‍☠️ Thieves</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="thieves">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="thieves">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="thieves">🔑</button>
+                </div>
+              </div>
+            </div>
 
-      <!-- Row 8: More Dungeon Keys -->
-      <div class="control-row">
-        <div class="control-group">
-          <h3>❄️ Ice</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="ice">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ice">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ice">🔑</button>
-          </div>
-        </div>
+            <!-- More Dark World Dungeons -->
+            <div class="control-row" style="margin: 0;">
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">❄️ Ice</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="ice">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ice">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ice">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>🌫️ Misery</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="misery">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="misery">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="misery">🔑</button>
-          </div>
-        </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🌫️ Misery</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="misery">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="misery">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="misery">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>🐢 Turtle</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="turtle">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="turtle">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="turtle">🔑</button>
-          </div>
-        </div>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🐢 Turtle</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="turtle">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="turtle">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="turtle">🔑</button>
+                </div>
+              </div>
 
-        <div class="control-group">
-          <h3>👹 Ganon</h3>
-          <div class="button-grid-compact">
-            <button class="btn-sm" data-action="addSmallKey" data-dungeon="ganon">🗝️+</button>
-            <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ganon">🗝️-</button>
-            <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ganon">🔑</button>
+              <div class="control-group">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">👹 Ganon</h4>
+                <div class="button-grid-compact">
+                  <button class="btn-sm" data-action="addSmallKey" data-dungeon="ganon">🗝️+</button>
+                  <button class="btn-sm" data-action="removeSmallKey" data-dungeon="ganon">🗝️-</button>
+                  <button class="btn-sm" data-action="toggleBigKey" data-dungeon="ganon">🔑</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1259,8 +1545,11 @@
       <!-- Row 9: Preset Loadouts -->
       <div class="control-row">
         <div class="control-group wide">
-          <h3>Preset Loadouts</h3>
-          <div class="button-grid-compact">
+          <h3 data-section="preset-loadouts" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Preset Loadouts</span>
+            <span id="preset-loadouts-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="preset-loadouts-content" class="button-grid-compact collapsible-content">
             <button class="btn-lg special" data-action="giveStarterPack">📦 STARTER PACK</button>
             <button class="btn-lg gold" data-action="giveEndgamePack">👑 ENDGAME PACK</button>
             <button class="btn-lg" data-action="getInventory">📊 Show Inventory</button>
@@ -1273,8 +1562,11 @@
       <div class="control-row">
         <!-- Enemy Spawning -->
         <div class="control-group wide">
-          <h3>Enemy Spawning</h3>
-          <div class="button-grid-compact">
+          <h3 data-section="enemy-spawning" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>Enemy Spawning</span>
+            <span id="enemy-spawning-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="enemy-spawning-content" class="button-grid-compact collapsible-content">
             <button class="btn-sm" data-action="spawnEnemy" data-enemy="octorok">🐙 Octorok (HP:2)</button>
             <button class="btn-sm" data-action="spawnEnemy" data-enemy="ballandchain">⚔️ Ball & Chain (HP:16)</button>
             <button class="btn-sm" data-action="spawnEnemy" data-enemy="snapdragon">🌺 Snapdragon (HP:12)</button>
@@ -1286,19 +1578,8 @@
             <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier">🗡️ Soldier (HP:6)</button>
             <button class="btn-sm" data-action="spawnEnemy" data-enemy="soldier_green">🟢 Soldier (HP:4)</button>
             <button class="btn-sm special" data-action="spawnRandomEnemy">🎲 Random Enemy</button>
-
-            <button class="btn-sm danger" data-action="fakeMirror">🪞 Fake Mirror</button>
-            <button class="btn-sm danger" data-action="chaosDungeonWarp">🎲 Chaos Dungeon Warp</button>
-            <button class="btn-sm special" data-action="toggleWorld">🌍 Flip World</button>
-
-            <button class="btn-sm danger" data-action="triggerChickenAttack">🐔 Chicken Attack (60s)</button>
             <button class="btn-sm danger" data-action="triggerEnemyWaves">⚔️ Enemy Waves (60s)</button>
-            <button class="btn-sm danger" data-action="triggerBeeSwarmWaves">🐝 Bee Swarm (60s)</button>
-            <button class="btn-sm danger" data-action="makeEnemiesInvisible">👻 Invisible Enemies (60s)</button>
             <button class="btn-sm danger" data-action="spawnBossRush">💀 Boss Rush (60s)</button>
-            <button class="btn-sm danger" data-action="enableItemLock">🔒 Item Lock (60s)</button>
-            <button class="btn-sm danger" data-action="enableGlassCannon">💀 Glass Cannon (60s)</button>
-            <button class="btn-sm special" data-action="blessingAndCurse">🎲 Effect Roulette</button>
           </div>
         </div>
       </div>
@@ -1306,8 +1587,11 @@
       <!-- Row 11: Item Disable Testing -->
       <div class="control-row">
         <div class="control-group wide">
-          <h3>⏱️ Item Disable Testing</h3>
-          <div class="button-grid-compact">
+          <h3 data-section="item-disable-testing" class="collapsible-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>⏱️ Item Disable Testing</span>
+            <span id="item-disable-testing-toggle" class="toggle-icon">▼</span>
+          </h3>
+          <div id="item-disable-testing-content" class="button-grid-compact collapsible-content">
             <button class="btn-sm" data-action="testDisableItem" data-item="bow">🏹 Bow</button>
             <button class="btn-sm" data-action="testDisableItem" data-item="boomerang">🪃 Boomerang</button>
             <button class="btn-sm" data-action="testDisableItem" data-item="hookshot">🪝 Hookshot</button>
@@ -1350,10 +1634,124 @@
     </div>
   </div>
 
+  <!-- Add Action Modal -->
+  <div id="add-action-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h2>➕ Add Action to Console</h2>
+        <button class="modal-close" id="close-add-action-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+        <p style="margin-bottom: 15px; color: rgba(255,255,255,0.7);">
+          Select an operation to add as a quick-action button in the Action Console.
+        </p>
+
+        <!-- Core -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Core</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="addHeart" data-label="❤️+ Add Heart">❤️+ Add Heart</button>
+          <button class="action-select-btn" data-action="removeHeart" data-label="💔 Remove Heart">💔 Remove Heart</button>
+          <button class="action-select-btn" data-action="addHeartPiece" data-label="¼❤️ Heart Piece">¼❤️ Heart Piece</button>
+          <button class="action-select-btn" data-action="killPlayer" data-label="💀 KO">💀 KO</button>
+          <button class="action-select-btn" data-action="toggleInvincibility" data-label="⭐ GOD MODE">⭐ GOD MODE</button>
+          <button class="action-select-btn" data-action="enableInvertControls" data-label="🔄 Invert Controls">🔄 Invert Controls</button>
+          <button class="action-select-btn" data-action="fakeMirror" data-label="🪞 Fake Mirror">🪞 Fake Mirror</button>
+          <button class="action-select-btn" data-action="chaosDungeonWarp" data-label="🎲 Chaos Warp">🎲 Chaos Warp</button>
+          <button class="action-select-btn" data-action="toggleWorld" data-label="🌀 Fake Portal">🌀 Fake Portal</button>
+          <button class="action-select-btn" data-action="triggerChickenAttack" data-label="🐔 Chicken Attack">🐔 Chicken Attack</button>
+          <button class="action-select-btn" data-action="triggerBeeSwarmWaves" data-label="🐝 Bee Swarm">🐝 Bee Swarm</button>
+          <button class="action-select-btn" data-action="makeEnemiesInvisible" data-label="👻 Invisible Enemies">👻 Invisible Enemies</button>
+          <button class="action-select-btn" data-action="enableItemLock" data-label="🔒 Item Lock">🔒 Item Lock</button>
+          <button class="action-select-btn" data-action="enableGlassCannon" data-label="💀 Glass Cannon">💀 Glass Cannon</button>
+          <button class="action-select-btn" data-action="blessingAndCurse" data-label="🎲 Effect Roulette">🎲 Effect Roulette</button>
+        </div>
+
+        <!-- Resources -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Resources</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="setRupees" data-value="100" data-label="💰 100">💰 100</button>
+          <button class="action-select-btn" data-action="setRupees" data-value="500" data-label="💰 500">💰 500</button>
+          <button class="action-select-btn" data-action="setRupees" data-value="9999" data-label="💰 MAX">💰 MAX</button>
+          <button class="action-select-btn" data-action="setBombs" data-value="10" data-label="💣 10">💣 10</button>
+          <button class="action-select-btn" data-action="setBombs" data-value="50" data-label="💣 MAX">💣 MAX</button>
+          <button class="action-select-btn" data-action="setArrows" data-value="30" data-label="🏹 30">🏹 30</button>
+          <button class="action-select-btn" data-action="setArrows" data-value="70" data-label="🏹 MAX">🏹 MAX</button>
+          <button class="action-select-btn" data-action="addRupees" data-value="50" data-label="💰 +50">💰 +50</button>
+          <button class="action-select-btn" data-action="addRupee" data-label="💰 +1">💰 +1</button>
+          <button class="action-select-btn" data-action="removeRupee" data-label="💰 -1">💰 -1</button>
+          <button class="action-select-btn" data-action="addBomb" data-label="💣 +1">💣 +1</button>
+          <button class="action-select-btn" data-action="removeBomb" data-label="💣 -1">💣 -1</button>
+          <button class="action-select-btn" data-action="addArrow" data-label="🏹 +1">🏹 +1</button>
+          <button class="action-select-btn" data-action="removeArrow" data-label="🏹 -1">🏹 -1</button>
+        </div>
+
+        <!-- Equipment -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Equipment</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="setSword" data-value="1" data-label="⚔️ Fighter">⚔️ Fighter</button>
+          <button class="action-select-btn" data-action="setSword" data-value="2" data-label="⚔️ Master">⚔️ Master</button>
+          <button class="action-select-btn" data-action="setSword" data-value="3" data-label="⚔️ Tempered">⚔️ Tempered</button>
+          <button class="action-select-btn" data-action="setSword" data-value="4" data-label="⚔️ Golden">⚔️ Golden</button>
+          <button class="action-select-btn" data-action="setShield" data-value="1" data-label="🛡️ Blue">🛡️ Blue</button>
+          <button class="action-select-btn" data-action="setShield" data-value="2" data-label="🛡️ Red">🛡️ Red</button>
+          <button class="action-select-btn" data-action="setShield" data-value="3" data-label="🛡️ Mirror">🛡️ Mirror</button>
+          <button class="action-select-btn" data-action="setArmor" data-value="1" data-label="👕 Blue">👕 Blue</button>
+          <button class="action-select-btn" data-action="setArmor" data-value="2" data-label="👕 Red">👕 Red</button>
+          <button class="action-select-btn" data-action="setGloves" data-value="1" data-label="🧤 Power">🧤 Power</button>
+          <button class="action-select-btn" data-action="setGloves" data-value="2" data-label="🧤 Titan">🧤 Titan</button>
+          <button class="action-select-btn" data-action="giveFlute" data-label="🎵 Add Flute">🎵 Add Flute</button>
+          <button class="action-select-btn" data-action="toggleAllMedallions" data-label="💫 All Medallions">💫 All Medallions</button>
+          <button class="action-select-btn" data-action="enableMagic" data-label="✨ Enable Magic">✨ Enable Magic</button>
+          <button class="action-select-btn" data-action="setMagicUpgrade" data-value="1" data-label="🔮 ½ Magic">🔮 ½ Magic</button>
+          <button class="action-select-btn" data-action="setMagicUpgrade" data-value="2" data-label="🔮 ¼ Magic">🔮 ¼ Magic</button>
+          <button class="action-select-btn" data-action="addBottle" data-label="🍾 Add Bottle">🍾 Add Bottle</button>
+          <button class="action-select-btn" data-action="giveStarterPack" data-label="📦 STARTER PACK">📦 STARTER PACK</button>
+          <button class="action-select-btn" data-action="giveEndgamePack" data-label="👑 ENDGAME PACK">👑 ENDGAME PACK</button>
+        </div>
+
+        <!-- Toggle Items -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Toggle Items</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="toggleBoots" data-label="👟 Boots">👟 Boots</button>
+          <button class="action-select-btn" data-action="toggleFlippers" data-label="🏊 Flippers">🏊 Flippers</button>
+          <button class="action-select-btn" data-action="toggleMoonPearl" data-label="🌙 Pearl">🌙 Pearl</button>
+          <button class="action-select-btn" data-action="toggleHookshot" data-label="🪝 Hookshot">🪝 Hookshot</button>
+          <button class="action-select-btn" data-action="toggleLamp" data-label="🔦 Lamp">🔦 Lamp</button>
+          <button class="action-select-btn" data-action="toggleHammer" data-label="🔨 Hammer">🔨 Hammer</button>
+          <button class="action-select-btn" data-action="toggleBook" data-label="📖 Book">📖 Book</button>
+          <button class="action-select-btn" data-action="toggleBugNet" data-label="🦋 Net">🦋 Net</button>
+          <button class="action-select-btn" data-action="toggleSomaria" data-label="🟥 Somaria">🟥 Somaria</button>
+          <button class="action-select-btn" data-action="toggleByrna" data-label="🟦 Byrna">🟦 Byrna</button>
+          <button class="action-select-btn" data-action="toggleMirror" data-label="🪞 Mirror">🪞 Mirror</button>
+          <button class="action-select-btn" data-action="toggleBoomerang" data-label="🪃 Boomerang">🪃 Boomerang</button>
+          <button class="action-select-btn" data-action="toggleFireRod" data-label="🔥 Fire Rod">🔥 Fire Rod</button>
+          <button class="action-select-btn" data-action="toggleIceRod" data-label="❄️ Ice Rod">❄️ Ice Rod</button>
+        </div>
+
+        <!-- Enemy Spawning -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Enemy Spawning</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="octorok" data-label="🐙 Octorok">🐙 Octorok</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="ballandchain" data-label="⚔️ Ball & Chain">⚔️ Ball & Chain</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="snapdragon" data-label="🌺 Snapdragon">🌺 Snapdragon</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="cyclops" data-label="👁️ Cyclops">👁️ Cyclops</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="soldier" data-label="🗡️ Soldier">🗡️ Soldier</button>
+          <button class="action-select-btn" data-action="spawnRandomEnemy" data-label="🎲 Random Enemy">🎲 Random Enemy</button>
+          <button class="action-select-btn" data-action="triggerEnemyWaves" data-label="⚔️ Enemy Waves">⚔️ Enemy Waves</button>
+          <button class="action-select-btn" data-action="spawnBossRush" data-label="💀 Boss Rush">💀 Boss Rush</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-sm" id="cancel-add-action">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="tiktok-gifts.js"></script>
   <script src="gift-images.js"></script>
   <script src="toast.js"></script>
   <script src="renderer-full.js"></script>
+  <script src="lua-scripts-ui.js"></script>
   <script src="gift-settings-modal.js"></script>
   <script src="archived-gifts-modal.js"></script>
   <script src="threshold-manager.js"></script>

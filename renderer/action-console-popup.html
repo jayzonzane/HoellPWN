@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Action Console</title>
+  <link rel="stylesheet" href="action-console-popup.css">
+</head>
+<body>
+  <div class="header">
+    <h2>🎮 Action Console</h2>
+    <div class="controls">
+      <div class="size-control">
+        <label for="button-size-slider" style="font-size: 12px; margin-right: 8px;">Size:</label>
+        <input type="range" id="button-size-slider" min="50" max="200" value="100" step="10" style="width: 100px;">
+        <span id="button-size-value" style="font-size: 12px; margin-left: 6px; min-width: 35px; display: inline-block;">100%</span>
+      </div>
+      <div class="layout-control">
+        <label for="layout-selector" style="font-size: 12px; margin-right: 8px;">Layout:</label>
+        <select id="layout-selector" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+          <option value="default">Default</option>
+          <option value="minimal">Minimal Clear</option>
+          <option value="large-touch">Large Touch</option>
+          <option value="compact">Compact</option>
+          <option value="overlay">Overlay Style</option>
+        </select>
+      </div>
+      <button id="add-action-btn" class="header-btn" title="Add action" style="background: #10b981;">➕</button>
+      <button id="refresh-btn" class="header-btn" title="Refresh actions">🔄</button>
+      <button id="show-unmapped-btn" class="header-btn" title="Show all gifts (mapped + unmapped)">🎁</button>
+      <button id="always-on-top-btn" class="header-btn" title="Toggle always on top">📌</button>
+    </div>
+  </div>
+
+  <h3 id="mapped-section-title" style="margin: 12px 16px 0 16px; font-size: 14px; color: rgba(255,255,255,0.8);">📌 Quick Actions</h3>
+  <div id="action-console-grid" class="action-console-grid">
+    <div class="action-console-empty">
+      <p>Loading actions...</p>
+    </div>
+  </div>
+
+  <!-- Unmapped Gifts Section -->
+  <div id="unmapped-gifts-section" style="display: none;">
+    <h3 style="margin: 20px 16px 0 16px; font-size: 14px; color: rgba(255,255,255,0.8);">🎁 All Gifts (Quick Execute)</h3>
+    <div id="unmapped-gifts-grid" class="action-console-grid unmapped-grid">
+      <div class="action-console-empty">
+        <p>Loading gifts...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Threshold Tracking Section -->
+  <div id="action-console-thresholds" class="action-console-thresholds">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSection('threshold')">
+      <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: rgba(255,255,255,0.7);">🎯 Threshold Progress</h4>
+      <span id="threshold-toggle" class="toggle-icon">▼</span>
+    </div>
+    <div id="action-console-threshold-list" class="collapsible-content">
+      <div style="color: rgba(255,255,255,0.4); font-size: 12px;">No active thresholds</div>
+    </div>
+  </div>
+
+  <!-- Activity Log Section -->
+  <div id="action-console-activity" class="action-console-activity">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSection('activity')">
+      <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: rgba(255,255,255,0.7);">📜 Gift Activity Log</h4>
+      <span id="activity-toggle" class="toggle-icon">▼</span>
+    </div>
+    <div id="action-console-activity-list" class="activity-log-list collapsible-content">
+      <div style="color: rgba(255,255,255,0.4); font-size: 12px;">No gifts received yet</div>
+    </div>
+  </div>
+
+  <!-- Add Action Modal (same as main window) -->
+  <div id="add-action-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; background: linear-gradient(135deg, #1e3c72, #2a5298); border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; margin: 2% auto;">
+      <div class="modal-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">➕ Add Action to Console</h2>
+        <button class="modal-close" id="close-add-action-modal" style="background: transparent; border: none; color: white; font-size: 28px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; max-height: 600px; overflow-y: auto;">
+        <p style="margin-bottom: 15px; color: rgba(255,255,255,0.7);">
+          Select an operation to add as a quick-action button.
+        </p>
+
+        <!-- Same content as main window modal -->
+        <!-- Core -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Core</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="addHeart" data-label="❤️+ Add Heart">❤️+ Add Heart</button>
+          <button class="action-select-btn" data-action="removeHeart" data-label="💔 Remove Heart">💔 Remove Heart</button>
+          <button class="action-select-btn" data-action="addHeartPiece" data-label="¼❤️ Heart Piece">¼❤️ Heart Piece</button>
+          <button class="action-select-btn" data-action="killPlayer" data-label="💀 KO">💀 KO</button>
+          <button class="action-select-btn" data-action="toggleInvincibility" data-label="⭐ GOD MODE">⭐ GOD MODE</button>
+          <button class="action-select-btn" data-action="enableInvertControls" data-label="🔄 Invert Controls">🔄 Invert Controls</button>
+          <button class="action-select-btn" data-action="fakeMirror" data-label="🪞 Fake Mirror">🪞 Fake Mirror</button>
+          <button class="action-select-btn" data-action="chaosDungeonWarp" data-label="🎲 Chaos Warp">🎲 Chaos Warp</button>
+          <button class="action-select-btn" data-action="toggleWorld" data-label="🌀 Fake Portal">🌀 Fake Portal</button>
+          <button class="action-select-btn" data-action="triggerChickenAttack" data-label="🐔 Chicken Attack">🐔 Chicken Attack</button>
+          <button class="action-select-btn" data-action="triggerBeeSwarmWaves" data-label="🐝 Bee Swarm">🐝 Bee Swarm</button>
+          <button class="action-select-btn" data-action="makeEnemiesInvisible" data-label="👻 Invisible Enemies">👻 Invisible Enemies</button>
+          <button class="action-select-btn" data-action="enableItemLock" data-label="🔒 Item Lock">🔒 Item Lock</button>
+          <button class="action-select-btn" data-action="enableGlassCannon" data-label="💀 Glass Cannon">💀 Glass Cannon</button>
+          <button class="action-select-btn" data-action="blessingAndCurse" data-label="🎲 Effect Roulette">🎲 Effect Roulette</button>
+        </div>
+
+        <!-- Resources -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Resources</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="setRupees" data-value="100" data-label="💰 100">💰 100</button>
+          <button class="action-select-btn" data-action="setRupees" data-value="500" data-label="💰 500">💰 500</button>
+          <button class="action-select-btn" data-action="setRupees" data-value="9999" data-label="💰 MAX">💰 MAX</button>
+          <button class="action-select-btn" data-action="setBombs" data-value="10" data-label="💣 10">💣 10</button>
+          <button class="action-select-btn" data-action="setBombs" data-value="50" data-label="💣 MAX">💣 MAX</button>
+          <button class="action-select-btn" data-action="setArrows" data-value="30" data-label="🏹 30">🏹 30</button>
+          <button class="action-select-btn" data-action="setArrows" data-value="70" data-label="🏹 MAX">🏹 MAX</button>
+          <button class="action-select-btn" data-action="addRupees" data-value="50" data-label="💰 +50">💰 +50</button>
+          <button class="action-select-btn" data-action="addRupee" data-label="💰 +1">💰 +1</button>
+          <button class="action-select-btn" data-action="removeRupee" data-label="💰 -1">💰 -1</button>
+          <button class="action-select-btn" data-action="addBomb" data-label="💣 +1">💣 +1</button>
+          <button class="action-select-btn" data-action="removeBomb" data-label="💣 -1">💣 -1</button>
+          <button class="action-select-btn" data-action="addArrow" data-label="🏹 +1">🏹 +1</button>
+          <button class="action-select-btn" data-action="removeArrow" data-label="🏹 -1">🏹 -1</button>
+        </div>
+
+        <!-- Equipment -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Equipment</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="setSword" data-value="1" data-label="⚔️ Fighter">⚔️ Fighter</button>
+          <button class="action-select-btn" data-action="setSword" data-value="2" data-label="⚔️ Master">⚔️ Master</button>
+          <button class="action-select-btn" data-action="setSword" data-value="3" data-label="⚔️ Tempered">⚔️ Tempered</button>
+          <button class="action-select-btn" data-action="setSword" data-value="4" data-label="⚔️ Golden">⚔️ Golden</button>
+          <button class="action-select-btn" data-action="setShield" data-value="1" data-label="🛡️ Blue">🛡️ Blue</button>
+          <button class="action-select-btn" data-action="setShield" data-value="2" data-label="🛡️ Red">🛡️ Red</button>
+          <button class="action-select-btn" data-action="setShield" data-value="3" data-label="🛡️ Mirror">🛡️ Mirror</button>
+          <button class="action-select-btn" data-action="setArmor" data-value="1" data-label="👕 Blue">👕 Blue</button>
+          <button class="action-select-btn" data-action="setArmor" data-value="2" data-label="👕 Red">👕 Red</button>
+          <button class="action-select-btn" data-action="setGloves" data-value="1" data-label="🧤 Power">🧤 Power</button>
+          <button class="action-select-btn" data-action="setGloves" data-value="2" data-label="🧤 Titan">🧤 Titan</button>
+          <button class="action-select-btn" data-action="giveFlute" data-label="🎵 Add Flute">🎵 Add Flute</button>
+          <button class="action-select-btn" data-action="toggleAllMedallions" data-label="💫 All Medallions">💫 All Medallions</button>
+          <button class="action-select-btn" data-action="enableMagic" data-label="✨ Enable Magic">✨ Enable Magic</button>
+          <button class="action-select-btn" data-action="setMagicUpgrade" data-value="1" data-label="🔮 ½ Magic">🔮 ½ Magic</button>
+          <button class="action-select-btn" data-action="setMagicUpgrade" data-value="2" data-label="🔮 ¼ Magic">🔮 ¼ Magic</button>
+          <button class="action-select-btn" data-action="addBottle" data-label="🍾 Add Bottle">🍾 Add Bottle</button>
+          <button class="action-select-btn" data-action="giveStarterPack" data-label="📦 STARTER PACK">📦 STARTER PACK</button>
+          <button class="action-select-btn" data-action="giveEndgamePack" data-label="👑 ENDGAME PACK">👑 ENDGAME PACK</button>
+        </div>
+
+        <!-- Toggle Items -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Toggle Items</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="toggleBoots" data-label="👟 Boots">👟 Boots</button>
+          <button class="action-select-btn" data-action="toggleFlippers" data-label="🏊 Flippers">🏊 Flippers</button>
+          <button class="action-select-btn" data-action="toggleMoonPearl" data-label="🌙 Pearl">🌙 Pearl</button>
+          <button class="action-select-btn" data-action="toggleHookshot" data-label="🪝 Hookshot">🪝 Hookshot</button>
+          <button class="action-select-btn" data-action="toggleLamp" data-label="🔦 Lamp">🔦 Lamp</button>
+          <button class="action-select-btn" data-action="toggleHammer" data-label="🔨 Hammer">🔨 Hammer</button>
+          <button class="action-select-btn" data-action="toggleBook" data-label="📖 Book">📖 Book</button>
+          <button class="action-select-btn" data-action="toggleBugNet" data-label="🦋 Net">🦋 Net</button>
+          <button class="action-select-btn" data-action="toggleSomaria" data-label="🟥 Somaria">🟥 Somaria</button>
+          <button class="action-select-btn" data-action="toggleByrna" data-label="🟦 Byrna">🟦 Byrna</button>
+          <button class="action-select-btn" data-action="toggleMirror" data-label="🪞 Mirror">🪞 Mirror</button>
+          <button class="action-select-btn" data-action="toggleBoomerang" data-label="🪃 Boomerang">🪃 Boomerang</button>
+          <button class="action-select-btn" data-action="toggleFireRod" data-label="🔥 Fire Rod">🔥 Fire Rod</button>
+          <button class="action-select-btn" data-action="toggleIceRod" data-label="❄️ Ice Rod">❄️ Ice Rod</button>
+        </div>
+
+        <!-- Enemy Spawning -->
+        <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 16px; color: #60a5fa;">Enemy Spawning</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px;">
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="octorok" data-label="🐙 Octorok">🐙 Octorok</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="ballandchain" data-label="⚔️ Ball & Chain">⚔️ Ball & Chain</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="snapdragon" data-label="🌺 Snapdragon">🌺 Snapdragon</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="cyclops" data-label="👁️ Cyclops">👁️ Cyclops</button>
+          <button class="action-select-btn" data-action="spawnEnemy" data-enemy="soldier" data-label="🗡️ Soldier">🗡️ Soldier</button>
+          <button class="action-select-btn" data-action="spawnRandomEnemy" data-label="🎲 Random Enemy">🎲 Random Enemy</button>
+          <button class="action-select-btn" data-action="triggerEnemyWaves" data-label="⚔️ Enemy Waves">⚔️ Enemy Waves</button>
+          <button class="action-select-btn" data-action="spawnBossRush" data-label="💀 Boss Rush">💀 Boss Rush</button>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: right;">
+        <button class="btn-sm" id="cancel-add-action" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="action-console-popup.js"></script>
+</body>
+</html>

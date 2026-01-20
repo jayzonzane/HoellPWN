@@ -1179,6 +1179,12 @@ saveBtn.addEventListener('click', async () => {
   try {
     const mappings = {};
 
+    // Collect Lua script mappings first (if available)
+    if (window.luaScriptsUI && typeof window.luaScriptsUI.collect === 'function') {
+      const luaMappings = window.luaScriptsUI.collect();
+      Object.assign(mappings, luaMappings);
+    }
+
     // Collect all filled dropdowns
     const selects = document.querySelectorAll('.gift-select');
     selects.forEach(select => {
@@ -1194,6 +1200,7 @@ saveBtn.addEventListener('click', async () => {
 
         // Build mapping object
         const mapping = {
+          type: 'operation', // Explicitly mark as operation
           action: action,
           emoji: emoji,
           description: descriptionText
@@ -1243,9 +1250,14 @@ saveBtn.addEventListener('click', async () => {
       await window.sniAPI.reloadGiftMappings();
       log('Gift mappings reloaded in poller', 'success');
 
-      // Force refresh overlay builder to reflect changes
+      // Refresh overlay builder if gift list changed
       if (typeof populateOverlayGiftSelection === 'function') {
-        await populateOverlayGiftSelection(true); // true = force refresh
+        await populateOverlayGiftSelection(); // Don't force refresh - only update if gift list changed
+      }
+
+      // Refresh action console to show updated mappings
+      if (typeof populateActionConsole === 'function') {
+        await populateActionConsole();
       }
     } else {
       log(`Failed to save: ${result.error}`, 'error');
@@ -1351,6 +1363,103 @@ let overlayThresholdState = {}; // { giftName: { checked: true/false } }
 let lastKnownThresholdList = null;
 let overlayThresholdDisplayMode = 'separate'; // 'separate' or 'inline'
 
+// Style presets
+const STYLE_PRESETS = {
+  'bold-bright': {
+    name: '⚡ Bold & Bright',
+    fontFamily: 'Impact, fantasy',
+    fontSize: 24,
+    bgColor: '#1a1a1a',
+    bgTransparent: true,
+    textColor: '#ffff00',
+    textGlow: true,
+    glowColor: '#000000',
+    thresholdBgColor: '#2d2d2d',
+    thresholdBgTransparent: true,
+    thresholdTextColor: '#ffff00',
+    thresholdBarColor: '#fbbf24',
+    thresholdBarCompleteColor: '#22c55e'
+  },
+  'elegant-stream': {
+    name: '✨ Elegant Stream',
+    fontFamily: "'Playfair Display', serif",
+    fontSize: 18,
+    bgColor: '#0a0a0a',
+    bgTransparent: true,
+    textColor: '#ffffff',
+    textGlow: true,
+    glowColor: '#8b00ff',
+    thresholdBgColor: '#1a1a2e',
+    thresholdBgTransparent: true,
+    thresholdTextColor: '#e0e0ff',
+    thresholdBarColor: '#a78bfa',
+    thresholdBarCompleteColor: '#c084fc'
+  },
+  'retro-gaming': {
+    name: '🕹️ Retro Gaming',
+    fontFamily: "'Permanent Marker', cursive",
+    fontSize: 20,
+    bgColor: '#000000',
+    bgTransparent: true,
+    textColor: '#00ffff',
+    textGlow: true,
+    glowColor: '#0000ff',
+    thresholdBgColor: '#1a0033',
+    thresholdBgTransparent: true,
+    thresholdTextColor: '#ff00ff',
+    thresholdBarColor: '#00ffff',
+    thresholdBarCompleteColor: '#ff00ff'
+  },
+  'minimal-clean': {
+    name: '🔲 Minimal Clean',
+    fontFamily: "'Roboto', sans-serif",
+    fontSize: 16,
+    bgColor: '#ffffff',
+    bgTransparent: true,
+    textColor: '#1f2937',
+    textGlow: true,
+    glowColor: '#ffffff',
+    thresholdBgColor: '#f3f4f6',
+    thresholdBgTransparent: true,
+    thresholdTextColor: '#374151',
+    thresholdBarColor: '#3b82f6',
+    thresholdBarCompleteColor: '#10b981'
+  },
+  'neon-pop': {
+    name: '💫 Neon Pop',
+    fontFamily: "'Bebas Neue', sans-serif",
+    fontSize: 22,
+    bgColor: '#000000',
+    bgTransparent: true,
+    textColor: '#ff006e',
+    textGlow: true,
+    glowColor: '#ff006e',
+    thresholdBgColor: '#0a0014',
+    thresholdBgTransparent: true,
+    thresholdTextColor: '#00f5ff',
+    thresholdBarColor: '#ff006e',
+    thresholdBarCompleteColor: '#00f5ff'
+  }
+};
+
+// Overlay styling settings
+let overlayStyleSettings = {
+  fontFamily: 'Arial, sans-serif',
+  fontSize: 16,
+  bgColor: '#1a1a1a',
+  bgTransparent: false,
+  textColor: '#ffffff',
+  textGlow: true,
+  glowColor: '#000000',
+  thresholdBgColor: '#2d2d2d',
+  thresholdBgTransparent: true,
+  thresholdTextColor: '#ffffff',
+  thresholdBarColor: '#4a90e2',
+  thresholdBarCompleteColor: '#4caf50'
+};
+
+let currentStylePreset = 'custom'; // Track current preset
+
 // Save current overlay state
 function saveOverlayState() {
   const checkboxes = document.querySelectorAll('.overlay-gift-checkbox');
@@ -1364,6 +1473,28 @@ function saveOverlayState() {
   if (thresholdModeSelect) {
     overlayThresholdDisplayMode = thresholdModeSelect.value;
   }
+
+  // Save current preset selection
+  const presetSelect = document.getElementById('overlay-style-preset');
+  if (presetSelect) {
+    currentStylePreset = presetSelect.value;
+  }
+
+  // Save styling settings
+  overlayStyleSettings = {
+    fontFamily: document.getElementById('overlay-font-family')?.value || 'Arial, sans-serif',
+    fontSize: parseInt(document.getElementById('overlay-font-size')?.value) || 16,
+    bgColor: document.getElementById('overlay-bg-color')?.value || '#1a1a1a',
+    bgTransparent: document.getElementById('overlay-bg-transparent')?.checked || false,
+    textColor: document.getElementById('overlay-text-color')?.value || '#ffffff',
+    textGlow: document.getElementById('overlay-text-glow')?.checked || true,
+    glowColor: document.getElementById('overlay-glow-color')?.value || '#000000',
+    thresholdBgColor: document.getElementById('threshold-bg-color')?.value || '#2d2d2d',
+    thresholdBgTransparent: document.getElementById('threshold-bg-transparent')?.checked || true,
+    thresholdTextColor: document.getElementById('threshold-text-color')?.value || '#ffffff',
+    thresholdBarColor: document.getElementById('threshold-bar-color')?.value || '#4a90e2',
+    thresholdBarCompleteColor: document.getElementById('threshold-bar-complete-color')?.value || '#4caf50'
+  };
 
   // Save order based on DOM position
   const items = document.querySelectorAll('.overlay-gift-item');
@@ -1410,30 +1541,159 @@ function moveGiftDown(giftName) {
   }
 }
 
+// Apply a style preset
+function applyStylePreset(presetName) {
+  if (presetName === 'custom') {
+    currentStylePreset = 'custom';
+    return;
+  }
+
+  const preset = STYLE_PRESETS[presetName];
+  if (!preset) {
+    console.warn(`Unknown preset: ${presetName}`);
+    return;
+  }
+
+  console.log(`[applyStylePreset] Applying preset: ${preset.name}`);
+
+  // Update overlayStyleSettings
+  overlayStyleSettings = { ...preset };
+  currentStylePreset = presetName;
+
+  // Update UI controls
+  restoreOverlayStyleSettings();
+}
+
+// Restore styling settings to UI controls
+function restoreOverlayStyleSettings() {
+  console.log('[restoreOverlayStyleSettings] Restoring style settings:', overlayStyleSettings);
+
+  // Restore preset selector
+  const presetSelect = document.getElementById('overlay-style-preset');
+  if (presetSelect) presetSelect.value = currentStylePreset;
+
+  // Font settings
+  const fontFamilySelect = document.getElementById('overlay-font-family');
+  if (fontFamilySelect) fontFamilySelect.value = overlayStyleSettings.fontFamily;
+
+  const fontSizeInput = document.getElementById('overlay-font-size');
+  if (fontSizeInput) fontSizeInput.value = overlayStyleSettings.fontSize;
+
+  // Overlay background
+  const bgColorInput = document.getElementById('overlay-bg-color');
+  if (bgColorInput) bgColorInput.value = overlayStyleSettings.bgColor;
+
+  const bgTransparentCheckbox = document.getElementById('overlay-bg-transparent');
+  if (bgTransparentCheckbox) bgTransparentCheckbox.checked = overlayStyleSettings.bgTransparent;
+
+  // Text color
+  const textColorInput = document.getElementById('overlay-text-color');
+  if (textColorInput) textColorInput.value = overlayStyleSettings.textColor;
+
+  // Text glow settings
+  const textGlowCheckbox = document.getElementById('overlay-text-glow');
+  if (textGlowCheckbox) textGlowCheckbox.checked = overlayStyleSettings.textGlow;
+
+  const glowColorInput = document.getElementById('overlay-glow-color');
+  if (glowColorInput) glowColorInput.value = overlayStyleSettings.glowColor;
+
+  // Threshold background
+  const thresholdBgColorInput = document.getElementById('threshold-bg-color');
+  if (thresholdBgColorInput) thresholdBgColorInput.value = overlayStyleSettings.thresholdBgColor;
+
+  const thresholdBgTransparentCheckbox = document.getElementById('threshold-bg-transparent');
+  if (thresholdBgTransparentCheckbox) thresholdBgTransparentCheckbox.checked = overlayStyleSettings.thresholdBgTransparent;
+
+  // Threshold text color
+  const thresholdTextColorInput = document.getElementById('threshold-text-color');
+  if (thresholdTextColorInput) thresholdTextColorInput.value = overlayStyleSettings.thresholdTextColor;
+
+  // Threshold bar colors
+  const thresholdBarColorInput = document.getElementById('threshold-bar-color');
+  if (thresholdBarColorInput) thresholdBarColorInput.value = overlayStyleSettings.thresholdBarColor;
+
+  const thresholdBarCompleteColorInput = document.getElementById('threshold-bar-complete-color');
+  if (thresholdBarCompleteColorInput) thresholdBarCompleteColorInput.value = overlayStyleSettings.thresholdBarCompleteColor;
+}
+
+// Switch to custom preset when user manually changes settings
+function switchToCustomPreset() {
+  const presetSelect = document.getElementById('overlay-style-preset');
+  if (presetSelect && currentStylePreset !== 'custom') {
+    console.log('[switchToCustomPreset] User modified settings, switching to custom');
+    currentStylePreset = 'custom';
+    presetSelect.value = 'custom';
+  }
+}
+
+// Restore toggle button visual state from hidden input
+function restoreThresholdDisplayModeToggle() {
+  const thresholdDisplayModeInput = document.getElementById('overlay-threshold-display-mode');
+  const thresholdModeButtons = document.querySelectorAll('.threshold-mode-btn');
+
+  if (!thresholdDisplayModeInput || thresholdModeButtons.length === 0) {
+    return;
+  }
+
+  const currentMode = thresholdDisplayModeInput.value || overlayThresholdDisplayMode || 'separate';
+
+  console.log(`[restoreThresholdDisplayModeToggle] Restoring mode: ${currentMode}`);
+
+  // Update button visual states to match
+  thresholdModeButtons.forEach(btn => {
+    const btnMode = btn.getAttribute('data-mode');
+    if (btnMode === currentMode) {
+      btn.classList.add('active');
+      btn.style.background = 'rgba(255,255,255,0.15)';
+      btn.style.color = 'white';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'transparent';
+      btn.style.color = 'rgba(255,255,255,0.6)';
+    }
+  });
+
+  // Update the hidden input to match saved state
+  thresholdDisplayModeInput.value = currentMode;
+}
+
 // Sync threshold gifts to overlay selection when inline mode is active
 async function syncThresholdGiftsToOverlay() {
   const thresholdDisplayMode = document.getElementById('overlay-threshold-display-mode')?.value;
 
+  console.log('[syncThresholdGiftsToOverlay] Called with mode:', thresholdDisplayMode);
+
   // Only sync when inline mode is selected
   if (thresholdDisplayMode !== 'inline') {
+    console.log('[syncThresholdGiftsToOverlay] Not in inline mode, skipping');
     return;
   }
 
   try {
     // Load threshold configs
+    console.log('[syncThresholdGiftsToOverlay] Loading threshold configs...');
     const thresholdResult = await window.sniAPI.loadThresholdConfigs();
     if (!thresholdResult.success || !thresholdResult.thresholds) {
+      console.log('[syncThresholdGiftsToOverlay] No threshold configs found');
       return;
     }
+
+    console.log('[syncThresholdGiftsToOverlay] Loaded thresholds:', Object.keys(thresholdResult.thresholds));
 
     // Load gift mappings to check which gifts exist
     const mappingsResult = await window.sniAPI.loadGiftMappings();
     if (!mappingsResult.success || !mappingsResult.mappings) {
+      console.log('[syncThresholdGiftsToOverlay] No gift mappings found');
       return;
     }
 
+    console.log('[syncThresholdGiftsToOverlay] Available gift mappings:', Object.keys(mappingsResult.mappings));
+
     const container = document.getElementById('overlay-gift-list');
-    if (!container) return;
+    if (!container) {
+      console.log('[syncThresholdGiftsToOverlay] Container not found');
+      return;
+    }
 
     // Get current gifts in overlay selection
     const currentGiftItems = Array.from(container.querySelectorAll('.overlay-gift-item'));
@@ -1441,19 +1701,50 @@ async function syncThresholdGiftsToOverlay() {
       currentGiftItems.map(item => item.querySelector('.overlay-gift-checkbox')?.value).filter(Boolean)
     );
 
+    console.log('[syncThresholdGiftsToOverlay] Current gifts in overlay:', Array.from(currentGiftNames));
+
     // Find count-based thresholds that need to be added
     const giftsToAdd = [];
+    const giftsAlreadyPresent = [];
+    const giftsNotFound = [];
+
     Object.entries(thresholdResult.thresholds).forEach(([giftName, config]) => {
-      // Skip value-based thresholds and gifts already in the list
-      if (config.type === 'value' || giftName === '__VALUE_TOTAL__' || currentGiftNames.has(giftName)) {
+      console.log(`[syncThresholdGiftsToOverlay] Processing threshold: "${giftName}", type: ${config.type}`);
+
+      // Skip value-based thresholds
+      if (config.type === 'value' || giftName === '__VALUE_TOTAL__') {
+        console.log(`[syncThresholdGiftsToOverlay] Skipping "${giftName}" - value-based threshold`);
         return;
       }
 
-      // Check if this gift exists in mappings
-      if (mappingsResult.mappings[giftName]) {
-        giftsToAdd.push({ giftName, mapping: mappingsResult.mappings[giftName] });
+      // Skip if already in overlay
+      if (currentGiftNames.has(giftName)) {
+        console.log(`[syncThresholdGiftsToOverlay] "${giftName}" already in overlay`);
+        giftsAlreadyPresent.push(giftName);
+        return;
       }
+
+      // Add the gift regardless of whether it has a mapping
+      // If it has a mapping, use it; otherwise create a default mapping
+      let mapping;
+      if (mappingsResult.mappings[giftName]) {
+        console.log(`[syncThresholdGiftsToOverlay] Found mapping for "${giftName}"`);
+        mapping = mappingsResult.mappings[giftName];
+      } else {
+        console.log(`[syncThresholdGiftsToOverlay] No mapping found for "${giftName}", creating default`);
+        mapping = {
+          action: giftName,
+          description: giftName
+        };
+        giftsNotFound.push(giftName);
+      }
+
+      giftsToAdd.push({ giftName, mapping });
     });
+
+    console.log('[syncThresholdGiftsToOverlay] Gifts already present:', giftsAlreadyPresent);
+    console.log('[syncThresholdGiftsToOverlay] Gifts not found in mappings:', giftsNotFound);
+    console.log('[syncThresholdGiftsToOverlay] Gifts to add:', giftsToAdd.map(g => g.giftName));
 
     // Add missing threshold gifts to the overlay selection
     if (giftsToAdd.length > 0) {
@@ -1559,9 +1850,13 @@ async function syncThresholdGiftsToOverlay() {
         overlayGiftState[giftName] = { checked: true, customText: '' };
         overlayGiftOrder.push(giftName);
       });
+
+      console.log('[syncThresholdGiftsToOverlay] Successfully added threshold gifts to overlay');
+    } else {
+      console.log('[syncThresholdGiftsToOverlay] No new gifts to add - all threshold gifts already present');
     }
   } catch (error) {
-    console.error('Error syncing threshold gifts to overlay:', error);
+    console.error('[syncThresholdGiftsToOverlay] Error syncing threshold gifts to overlay:', error);
   }
 }
 
@@ -1710,6 +2005,11 @@ async function populateOverlayGiftSelection(forceRefresh = false) {
       item.appendChild(contentDiv);
       container.appendChild(item);
     });
+
+    // Restore threshold display mode toggle state after populating
+    if (typeof restoreThresholdDisplayModeToggle === 'function') {
+      setTimeout(() => restoreThresholdDisplayModeToggle(), 10);
+    }
   } catch (error) {
     console.error('Error loading mappings for overlay:', error);
     container.innerHTML = '<div style="color: #f44; text-align: center; padding: 20px;">Error loading gift mappings.</div>';
@@ -1744,6 +2044,9 @@ async function populateOverlayThresholdSelection() {
       item.className = 'overlay-threshold-item';
       item.style.padding = '8px';
       item.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+      item.style.display = 'flex';
+      item.style.alignItems = 'center';
+      item.style.gap = '8px';
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -1756,21 +2059,62 @@ async function populateOverlayThresholdSelection() {
 
       // Save state when checkbox changes
       checkbox.addEventListener('change', () => {
-        overlayThresholdState[giftName] = { checked: checkbox.checked };
+        if (!overlayThresholdState[giftName]) {
+          overlayThresholdState[giftName] = {};
+        }
+        overlayThresholdState[giftName].checked = checkbox.checked;
       });
+
+      const contentDiv = document.createElement('div');
+      contentDiv.style.flex = '1';
+      contentDiv.style.display = 'flex';
+      contentDiv.style.flexDirection = 'column';
+      contentDiv.style.gap = '4px';
 
       const label = document.createElement('label');
       label.className = 'overlay-threshold-label';
       label.htmlFor = checkbox.id;
-      label.style.marginLeft = '8px';
       label.style.cursor = 'pointer';
 
       const displayName = giftName === '__VALUE_TOTAL__' ? 'Total Coin Value' : giftName;
-      const actionText = config.description || config.action;
-      label.innerHTML = `<strong>${displayName}</strong>: ${config.target} → ${actionText}`;
+      const actionText = getThresholdActionDescription(config.action, config.params);
+      label.innerHTML = `<strong>${displayName}</strong>: ${config.target}x → ${actionText}`;
+
+      // Create custom text input for threshold display
+      const textInput = document.createElement('input');
+      textInput.type = 'text';
+      textInput.className = 'overlay-threshold-text-input';
+      textInput.dataset.thresholdName = giftName;
+      textInput.placeholder = 'Custom overlay text...';
+      textInput.style.padding = '4px 8px';
+      textInput.style.fontSize = '12px';
+      textInput.style.background = 'rgba(0,0,0,0.3)';
+      textInput.style.border = '1px solid rgba(255,255,255,0.2)';
+      textInput.style.borderRadius = '3px';
+      textInput.style.color = 'white';
+
+      // Restore previous custom text or use default
+      textInput.value = overlayThresholdState[giftName]?.customText || '';
+
+      // Save custom text when it changes
+      textInput.addEventListener('input', () => {
+        if (!overlayThresholdState[giftName]) {
+          overlayThresholdState[giftName] = { checked: checkbox.checked };
+        }
+        overlayThresholdState[giftName].customText = textInput.value;
+      });
+
+      const textLabel = document.createElement('small');
+      textLabel.style.display = 'block';
+      textLabel.style.opacity = '0.7';
+      textLabel.textContent = 'Overlay display text:';
+
+      contentDiv.appendChild(label);
+      contentDiv.appendChild(textLabel);
+      contentDiv.appendChild(textInput);
 
       item.appendChild(checkbox);
-      item.appendChild(label);
+      item.appendChild(contentDiv);
       container.appendChild(item);
     });
   } catch (error) {
@@ -1894,8 +2238,15 @@ async function generateOverlay() {
     // Build gifts array for overlay (in DOM order)
     const gifts = [];
     selectedGifts.forEach(giftName => {
-      const mapping = result.mappings[giftName];
-      if (!mapping) return;
+      // Get mapping or create default for unmapped gifts
+      const mapping = result.mappings[giftName] || {
+        action: giftName,
+        description: giftName
+      };
+
+      if (!result.mappings[giftName]) {
+        console.log(`[generateOverlay] No mapping for "${giftName}", using default`);
+      }
 
       // Get custom text from the text input
       const textInput = document.querySelector(`.overlay-text-input[data-gift-name="${giftName}"]`);
@@ -1943,12 +2294,22 @@ async function generateOverlay() {
 
         if (config) {
           const displayName = giftName === '__VALUE_TOTAL__' ? 'Total Coin Value' : (config.displayName || giftName);
+
+          // Get custom text from the text input if available
+          const textInput = document.querySelector(`.overlay-threshold-text-input[data-threshold-name="${giftName}"]`);
+          let description = getThresholdActionDescription(config.action, config.params);
+
+          // Use custom text if provided
+          if (textInput && textInput.value.trim()) {
+            description = textInput.value.trim();
+          }
+
           selectedThresholds.push({
             giftName,
             displayName,
             target: config.target,
             action: config.action,
-            description: getThresholdActionDescription(config.action, config.params),
+            description: description,
             type: config.type || (giftName === '__VALUE_TOTAL__' ? 'value' : 'count')
           });
         }
@@ -1971,11 +2332,14 @@ async function generateOverlay() {
       for (const threshold of missingThresholdGifts) {
         console.log(`Auto-adding gift "${threshold.giftName}" to carousel (has threshold)`);
 
-        // Load mapping to get action description
-        const mapping = result.mappings[threshold.giftName];
-        if (!mapping) {
-          console.warn(`No mapping found for threshold gift: ${threshold.giftName}`);
-          continue;
+        // Load mapping or create default for unmapped gifts
+        const mapping = result.mappings[threshold.giftName] || {
+          action: threshold.giftName,
+          description: threshold.giftName
+        };
+
+        if (!result.mappings[threshold.giftName]) {
+          console.log(`No mapping found for threshold gift "${threshold.giftName}", using default`);
         }
 
         // Get image for the gift
@@ -1999,8 +2363,11 @@ async function generateOverlay() {
       }
     }
 
-    // Generate HTML content
-    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop, spacing, selectedThresholds, thresholdDisplayMode);
+    // Save current style settings before generating
+    saveOverlayState();
+
+    // Generate HTML content with style settings
+    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop, spacing, selectedThresholds, thresholdDisplayMode, overlayStyleSettings);
 
     // Save file via IPC
     const saveResult = await window.sniAPI.saveOverlayFile(html);
@@ -2015,7 +2382,7 @@ async function generateOverlay() {
 }
 
 // Generate overlay HTML content
-function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100, selectedThresholds = [], thresholdDisplayMode = 'separate') {
+function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100, selectedThresholds = [], thresholdDisplayMode = 'separate', styleSettings = {}) {
   // Attach threshold metadata to gifts for inline display
   if (thresholdDisplayMode === 'inline') {
     gifts = gifts.map(gift => {
@@ -2036,19 +2403,55 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
   const period = stagger * count;
   const loop = period + pause;
 
+  // Extract styling settings with defaults
+  const fontFamily = styleSettings.fontFamily || 'Arial, sans-serif';
+  const fontSize = styleSettings.fontSize || 16;
+  const bgColor = styleSettings.bgColor || '#1a1a1a';
+  const bgTransparent = styleSettings.bgTransparent || false;
+  const textColor = styleSettings.textColor || '#ffffff';
+  const textGlow = styleSettings.textGlow !== undefined ? styleSettings.textGlow : true;
+  const glowColor = styleSettings.glowColor || '#000000';
+  const thresholdBgColor = styleSettings.thresholdBgColor || '#2d2d2d';
+  const thresholdBgTransparent = styleSettings.thresholdBgTransparent || true;
+  const thresholdTextColor = styleSettings.thresholdTextColor || '#ffffff';
+  const thresholdBarColor = styleSettings.thresholdBarColor || '#4a90e2';
+  const thresholdBarCompleteColor = styleSettings.thresholdBarCompleteColor || '#4caf50';
+
+  // Calculate responsive font sizes based on user setting
+  const baseFontSize = fontSize;
+  const topTextSize = Math.round(baseFontSize * 1.125);  // 18px default
+  const nameTextSize = Math.round(baseFontSize * 0.875); // 14px default
+
+  // Build text-shadow based on glow settings
+  const textShadow = textGlow
+    ? `0 0 6px ${glowColor}, 0 0 14px ${glowColor}, 0 0 20px ${glowColor}`
+    : `0 0 6px rgba(0,0,0,.85), 0 0 14px rgba(0,0,0,.55)`;
+
+  // Extract font name for Google Fonts
+  const fontName = fontFamily.replace(/['"]/g, '').split(',')[0].trim();
+  const needsGoogleFont = !['Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia', 'Palatino', 'Garamond', 'Comic Sans MS', 'Trebuchet MS', 'Impact', 'Lucida Console', 'Tahoma'].includes(fontName);
+
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>ALttPR TikTok Gift Actions - Animated Overlay</title>
+${needsGoogleFont ? `<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@400;600;700;800;900&display=swap" rel="stylesheet">` : ''}
 <style>
   :root{
     --w: ${width}px;
     --h: ${height}px;
     --img-size: 96px;
-    --top-text-size: 18px;
-    --name-text-size: 14px;
+    --top-text-size: ${topTextSize}px;
+    --name-text-size: ${nameTextSize}px;
+    --font-family: ${fontFamily};
+    --text-color: ${textColor};
+    --threshold-text-color: ${thresholdTextColor};
+    --threshold-bar-color: ${thresholdBarColor};
+    --threshold-bar-complete-color: ${thresholdBarCompleteColor};
   }
 
   html, body {
@@ -2057,9 +2460,9 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
     width: var(--w);
     height: var(--h);
     overflow: hidden;
-    background: transparent;
-    color: #fff;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+    background: ${bgTransparent ? 'transparent' : bgColor};
+    color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   .lane {
@@ -2090,9 +2493,8 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
     font-size: var(--top-text-size);
     line-height: 1.1;
     white-space: nowrap;
-    text-shadow:
-      0 0 6px rgba(0,0,0,.85),
-      0 0 14px rgba(0,0,0,.55);
+    color: var(--text-color);
+    text-shadow: ${textShadow};
   }
 
   .pic {
@@ -2100,6 +2502,7 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
     place-items: center;
     height: calc(var(--img-size) + 8px);
     margin: 6px 0 2px;
+    position: relative;
   }
 
   .pic img {
@@ -2111,12 +2514,11 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
 
   .name {
     font-size: var(--name-text-size);
+    color: var(--text-color);
     opacity: .9;
     letter-spacing: .2px;
     white-space: nowrap;
-    text-shadow:
-      0 0 6px rgba(0,0,0,.85),
-      0 0 14px rgba(0,0,0,.55);
+    text-shadow: ${textShadow};
   }
 
   /* Inline Threshold Styles */
@@ -2148,13 +2550,13 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
 
   .inline-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    background: var(--threshold-bar-color);
     transition: width 0.3s ease;
     position: relative;
   }
 
   .inline-progress-bar.completed {
-    background: linear-gradient(90deg, #10b981, #34d399);
+    background: var(--threshold-bar-complete-color);
   }
 
   /* Threshold Styles */
@@ -2163,11 +2565,11 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
     bottom: 20px;
     left: 20px;
     right: 20px;
-    background: rgba(0, 0, 0, 0.7);
+    background: ${thresholdBgTransparent ? 'transparent' : `${thresholdBgColor}cc`};
     border-radius: 8px;
     padding: 15px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    backdrop-filter: ${thresholdBgTransparent ? 'none' : 'blur(10px)'};
+    box-shadow: ${thresholdBgTransparent ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.5)'};
   }
 
   .threshold-item {
@@ -2183,8 +2585,9 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
     justify-content: space-between;
     align-items: center;
     margin-bottom: 4px;
-    font-size: 14px;
+    font-size: ${Math.round(baseFontSize * 0.875)}px;
     font-weight: 600;
+    color: var(--threshold-text-color);
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   }
 
@@ -2195,7 +2598,7 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
   .threshold-progress-text {
     margin-left: 10px;
     font-weight: 700;
-    color: #4ade80;
+    color: var(--threshold-text-color);
   }
 
   .threshold-bar-container {
@@ -2208,21 +2611,22 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
 
   .threshold-bar {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    background: var(--threshold-bar-color);
     border-radius: 10px;
     transition: width 0.3s ease;
     position: relative;
   }
 
   .threshold-bar.completed {
-    background: linear-gradient(90deg, #10b981, #34d399);
+    background: var(--threshold-bar-complete-color);
   }
 
   .threshold-action {
-    font-size: 12px;
+    font-size: ${Math.round(baseFontSize * 0.75)}px;
     opacity: 0.8;
     margin-top: 2px;
     font-style: italic;
+    color: var(--threshold-text-color);
   }
 </style>
 </head>
@@ -3653,7 +4057,7 @@ function initializeCollapsibleCategories() {
     });
   });
 
-  // Now reorganize: Move Reset Bird to Core and move Item Disable section
+  // Now reorganize: Move Reset Flute to Core and move Item Disable section
   reorganizeActions();
 }
 
@@ -3685,14 +4089,14 @@ function reorganizeActions() {
     return header && header.textContent.includes('Set Hearts');
   });
 
-  // Move Reset Bird from Flute to Core (position after Enemy Swarm)
+  // Move Reset Flute from Flute to Core (position after Enemy Swarm)
   if (coreCategory && fluteCategory) {
-    const resetBirdItem = Array.from(fluteCategory.querySelectorAll('.action-item')).find(item => {
+    const resetFluteItem = Array.from(fluteCategory.querySelectorAll('.action-item')).find(item => {
       const actionName = item.querySelector('.action-name');
-      return actionName && actionName.textContent.includes('Reset Bird');
+      return actionName && actionName.textContent.includes('Reset Flute');
     });
 
-    if (resetBirdItem) {
+    if (resetFluteItem) {
       const coreItems = coreCategory.querySelector('.category-items');
       if (coreItems) {
         // Find Enemy Swarm action
@@ -3702,11 +4106,11 @@ function reorganizeActions() {
         });
 
         if (enemySwarmItem) {
-          // Insert Reset Bird after Enemy Swarm
-          enemySwarmItem.parentNode.insertBefore(resetBirdItem, enemySwarmItem.nextSibling);
+          // Insert Reset Flute after Enemy Swarm
+          enemySwarmItem.parentNode.insertBefore(resetFluteItem, enemySwarmItem.nextSibling);
         } else {
           // Fallback: append to end if Enemy Swarm not found
-          coreItems.appendChild(resetBirdItem);
+          coreItems.appendChild(resetFluteItem);
         }
       }
     }
@@ -3857,17 +4261,74 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Add event listener for threshold display mode changes
-  const thresholdDisplayModeSelect = document.getElementById('overlay-threshold-display-mode');
-  if (thresholdDisplayModeSelect) {
-    thresholdDisplayModeSelect.addEventListener('change', async () => {
-      const mode = thresholdDisplayModeSelect.value;
-      console.log(`Threshold display mode changed to: ${mode}`);
+  // Add event listener for threshold display mode toggle buttons
+  const thresholdModeButtons = document.querySelectorAll('.threshold-mode-btn');
+  const thresholdDisplayModeInput = document.getElementById('overlay-threshold-display-mode');
 
-      // When switching to inline mode, sync threshold gifts to overlay selection
-      if (mode === 'inline') {
-        await syncThresholdGiftsToOverlay();
-      }
+  if (thresholdModeButtons.length > 0 && thresholdDisplayModeInput) {
+    thresholdModeButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const mode = btn.getAttribute('data-mode');
+        console.log(`Threshold display mode toggled to: ${mode}`);
+
+        // Update visual state
+        thresholdModeButtons.forEach(b => {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.color = 'rgba(255,255,255,0.6)';
+        });
+        btn.classList.add('active');
+        btn.style.background = 'rgba(255,255,255,0.15)';
+        btn.style.color = 'white';
+
+        // Update hidden input value
+        thresholdDisplayModeInput.value = mode;
+
+        // When switching to inline mode, sync threshold gifts to overlay selection
+        if (mode === 'inline') {
+          await syncThresholdGiftsToOverlay();
+        } else {
+          // When switching back to separate mode, optionally remove auto-added threshold gifts
+          // For now, we'll just let them stay selected
+          console.log('Switched to separate mode - threshold gifts remain in selection');
+        }
+      });
     });
   }
+
+  // Add event listener for style preset selector
+  const presetSelect = document.getElementById('overlay-style-preset');
+  if (presetSelect) {
+    presetSelect.addEventListener('change', () => {
+      const preset = presetSelect.value;
+      console.log(`Style preset selected: ${preset}`);
+      applyStylePreset(preset);
+    });
+  }
+
+  // Add event listeners to all styling controls to switch to custom when manually changed
+  const stylingControls = [
+    'overlay-font-family',
+    'overlay-font-size',
+    'overlay-bg-color',
+    'overlay-bg-transparent',
+    'overlay-text-color',
+    'overlay-text-glow',
+    'overlay-glow-color',
+    'threshold-bg-color',
+    'threshold-bg-transparent',
+    'threshold-text-color',
+    'threshold-bar-color',
+    'threshold-bar-complete-color'
+  ];
+
+  stylingControls.forEach(controlId => {
+    const control = document.getElementById(controlId);
+    if (control) {
+      const eventType = control.type === 'checkbox' ? 'change' : 'input';
+      control.addEventListener(eventType, () => {
+        switchToCustomPreset();
+      });
+    }
+  });
 });
