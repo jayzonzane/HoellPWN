@@ -1,7 +1,7 @@
 {
   "name": "snes-controller",
   "productName": "SNES Controller",
-  "version": "1.11.0",
+  "version": "1.2.0",
   "main": "main.js",
   "author": "",
   "license": "ISC",
@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.0",
-    "@grpc/proto-loader": "^0.8.0"
+    "@grpc/proto-loader": "^0.8.0",
+    "wasmoon": "^1.16.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "electron": "^38.2.2",

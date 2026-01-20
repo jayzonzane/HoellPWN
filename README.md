@@ -1,4 +1,4 @@
-# HoellPWN 1.1
+# HoellPWN 1.2
 
 A powerful SNES control application for A Link to the Past with gift integration, overlay generation, and advanced game manipulation features.
 
@@ -123,7 +123,7 @@ A powerful SNES control application for A Link to the Past with gift integration
 ## 📦 Installation
 
 1. Download the latest release
-2. Run `SNES Controller Setup 1.11.0.exe` or `SNES_Controller.exe` (portable)
+2. Run `SNES Controller Setup 1.2.0.exe` or `SNES_Controller.exe` (portable)
 3. Ensure SNI is running on port 8191
 4. Configure your gift source connection
 5. Map gifts to actions
@@ -150,12 +150,14 @@ npm run dist
 
 ## 📋 Version History
 
-### v1.11.0 (Current)
+### v1.2.0 (Current)
 - Complete gift update and archival system
 - Overlay auto-refresh and customization
 - Connection status indicators
 - Action console improvements
 - UI organization enhancements
+- Overlay selection persistence fix
+- Enhanced action console popup
 
 ---
 
