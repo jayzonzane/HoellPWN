@@ -6,6 +6,12 @@ A powerful SNES control application for A Link to the Past with gift integration
 
 ### Latest Updates (January 2026)
 
+#### **KO Player Queue System** `[Latest]`
+- ⏱️ **Delayed KO queue** - Back-to-back KO Player gifts now queue with a random delay (45 seconds to 5 minutes) instead of executing immediately
+- 🛡️ **Cooldown protection** - 5-second cooldown between KO executions prevents instant repeated deaths
+- 📊 **Queue notifications** - Log messages show when KO is queued and how long the delay will be
+- 🎯 **Smart execution** - First KO executes immediately, subsequent ones within cooldown period are queued
+
 #### **Action Console & UI Improvements** `b6df269`
 - ✅ **Fixed overlay selection persistence** - Gift overlay selections and custom text now persist when modifying individual gift mappings (no more reset on every change!)
 - 📏 **Increased overlay list visibility** - Overlay gift selection now shows 6-8 items at once (up from 2) with 500px max-height
