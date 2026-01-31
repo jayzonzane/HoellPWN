@@ -6,12 +6,22 @@ const fs = require('fs').promises;
 // We'll initialize these after creating the window
 let mainWindow;
 let sniClient;
+let luaClient;  // Lua connector client for emulator mode
 let gameOps;
 let expandedOps;
 let hoellOps;
+let luaGameOps;      // Lua game operations wrapper
+let luaExpandedOps;  // Lua expanded operations wrapper
+let luaHoellOps;     // Lua HoellCC operations wrapper
 let hoellPoller;
+let tikfinityClient;
 let restorationManager;
 let giftUpdater;
+let eventProcessor;
+let sourceManager;
+let scriptEngine;
+let snesAPI;
+let connectionMode = 'sni';  // 'sni' or 'lua'
 // Built-in SNI controller removed - please run SNI externally on port 8191
 
 // Function to auto-connect to SNI and select first device
@@ -117,15 +127,49 @@ function createWindow() {
   const GameOperations = require('./src/sni/operations');
   const WorkingSMWOperations = require('./src/sni/operations-working');
   const HoellCCOperations = require('./src/sni/operations-hoellcc');
+  const LuaConnectorClient = require('./src/emulator/lua-connector-client');
+  const { LuaGameOperations, LuaExpandedOperations, LuaHoellOperations } = require('./src/emulator/lua-operations');
   const HoellStreamPoller = require('./src/hoellstream/poller');
+  const TikFinityWebSocketClient = require('./src/tikfinity/websocket-client');
   const ItemRestorationManager = require('./src/item-restoration/restoration-manager');
   const GiftUpdater = require('./src/gift-updater');
+  const EventProcessor = require('./src/gift-sources/event-processor');
+  const GiftSourceManager = require('./src/gift-sources/source-manager');
+  const ScriptEngine = require('./src/lua/script-engine');
+  const SNESApi = require('./src/lua/snes-api');
 
+  // Initialize SNI client and operations
   sniClient = new SNIClient();
   gameOps = new GameOperations(sniClient);
   expandedOps = new WorkingSMWOperations(sniClient);
   hoellOps = new HoellCCOperations(sniClient);
-  console.log('🎮 HoellCC operations initialized');
+  console.log('🎮 SNI operations initialized');
+
+  // Initialize Lua connector client (not connected by default)
+  luaClient = new LuaConnectorClient();
+  console.log('🎮 Lua connector client initialized (not connected)');
+
+  // Set up Lua client event listeners
+  luaClient.on('connected', () => {
+    console.log('✅ Lua connector connected');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('lua-connected');
+    }
+  });
+
+  luaClient.on('disconnected', () => {
+    console.log('❌ Lua connector disconnected');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('lua-disconnected');
+    }
+  });
+
+  luaClient.on('error', (err) => {
+    console.error('❌ Lua connector error:', err.message);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('lua-error', { error: err.message });
+    }
+  });
 
   // Initialize ItemRestorationManager
   restorationManager = new ItemRestorationManager(expandedOps);
@@ -150,8 +194,52 @@ function createWindow() {
   });
   console.log('🎁 HoellStream poller initialized (polling will start when device connects)');
 
-  // Connect restoration manager to poller
+  // Connect restoration manager to poller (deprecated - kept for backward compatibility)
   hoellPoller.setRestorationManager(restorationManager);
+
+  // Initialize EventProcessor
+  eventProcessor = new EventProcessor(expandedOps, gameOps, {
+    debugMode: true,
+    giftDatabase: giftDatabase
+  });
+  console.log('🎁 EventProcessor initialized');
+
+  // Connect restoration manager to EventProcessor
+  eventProcessor.setRestorationManager(restorationManager);
+
+  // Connect main window for event emission
+  eventProcessor.setMainWindow(mainWindow);
+
+  // Connect EventProcessor to HoellStream Poller
+  hoellPoller.setEventProcessor(eventProcessor);
+
+  // Initialize TikFinity WebSocket client
+  tikfinityClient = new TikFinityWebSocketClient({
+    url: 'ws://localhost:21213/',
+    debugMode: true
+  });
+  console.log('🎁 TikFinity WebSocket client initialized');
+
+  // Initialize Lua Scripting (SNESApi + ScriptEngine)
+  snesAPI = new SNESApi(sniClient, gameOps, expandedOps, hoellOps);
+  console.log('📜 SNESApi initialized');
+
+  scriptEngine = new ScriptEngine({
+    timeout: 10000, // 10 second timeout
+    scriptsDir: path.join(__dirname, 'scripts'),
+    snesAPI: snesAPI,
+    debugMode: true
+  });
+  console.log('📜 ScriptEngine initialized');
+
+  // Connect ScriptEngine to EventProcessor
+  eventProcessor.setScriptEngine(scriptEngine);
+  console.log('📜 ScriptEngine connected to EventProcessor');
+
+  // Initialize GiftSourceManager
+  sourceManager = new GiftSourceManager();
+  sourceManager.initialize(hoellPoller, tikfinityClient, eventProcessor);
+  console.log('🎁 GiftSourceManager initialized');
 
   // Initialize Gift Updater
   giftUpdater = new GiftUpdater(app.getPath('userData'));
@@ -165,6 +253,9 @@ function createWindow() {
 
   // Load threshold configs from file on startup
   loadThresholdConfigsOnStartup();
+
+  // Load gift name overrides from file on startup
+  loadGiftNameOverridesOnStartup();
 
   // Open DevTools in development
   if (process.env.NODE_ENV === 'development') {
@@ -441,6 +532,15 @@ ipcMain.handle('spawn-random-enemy', async () => {
   try {
     if (!sniClient.deviceURI) throw new Error('No device selected');
     return await expandedOps.spawnRandomEnemy();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('despawn-floor-blocks', async () => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.despawnFloorBlocks();
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -1101,15 +1201,15 @@ async function loadGiftMappingsOnStartup() {
   try {
     const data = await fs.readFile(GIFT_MAPPINGS_FILE, 'utf8');
     const mappings = JSON.parse(data);
-    hoellPoller.updateMappings(mappings);
+    eventProcessor.updateMappings(mappings);
     console.log(`📂 Loaded ${Object.keys(mappings).length} gift mappings on startup`);
   } catch (error) {
     if (error.code === 'ENOENT') {
       console.log('📂 No gift mappings file found, starting with empty mappings');
-      hoellPoller.updateMappings({});
+      eventProcessor.updateMappings({});
     } else {
       console.error('Error loading gift mappings on startup:', error);
-      hoellPoller.updateMappings({});
+      eventProcessor.updateMappings({});
     }
   }
 }
@@ -1119,15 +1219,33 @@ async function loadThresholdConfigsOnStartup() {
   try {
     const data = await fs.readFile(THRESHOLD_CONFIGS_FILE, 'utf8');
     const thresholds = JSON.parse(data);
-    await hoellPoller.loadThresholdConfigs(thresholds);
+    await eventProcessor.loadThresholdConfigs(thresholds);
     console.log(`📂 Loaded ${Object.keys(thresholds).length} threshold configurations on startup`);
   } catch (error) {
     if (error.code === 'ENOENT') {
       console.log('📂 No threshold configs file found, starting with empty thresholds');
-      await hoellPoller.loadThresholdConfigs({});
+      await eventProcessor.loadThresholdConfigs({});
     } else {
       console.error('Error loading threshold configs on startup:', error);
-      await hoellPoller.loadThresholdConfigs({});
+      await eventProcessor.loadThresholdConfigs({});
+    }
+  }
+}
+
+// Load gift name overrides on startup
+async function loadGiftNameOverridesOnStartup() {
+  try {
+    const data = await fs.readFile(GIFT_NAME_OVERRIDES_FILE, 'utf8');
+    const overrides = JSON.parse(data);
+    eventProcessor.loadGiftNameOverrides(overrides);
+    console.log(`📂 Loaded ${Object.keys(overrides).length} gift name overrides on startup`);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.log('📂 No gift name overrides file found, starting with empty overrides');
+      eventProcessor.loadGiftNameOverrides({});
+    } else {
+      console.error('Error loading gift name overrides on startup:', error);
+      eventProcessor.loadGiftNameOverrides({});
     }
   }
 }
@@ -1179,26 +1297,26 @@ ipcMain.handle('load-gift-mappings', async () => {
   }
 });
 
-// Reload gift mappings in the poller
+// Reload gift mappings in the EventProcessor
 ipcMain.handle('reload-gift-mappings', async () => {
   try {
-    if (!hoellPoller) {
-      return { success: false, error: 'HoellStream poller not initialized' };
+    if (!eventProcessor) {
+      return { success: false, error: 'EventProcessor not initialized' };
     }
 
     // Load mappings from file
     const data = await fs.readFile(GIFT_MAPPINGS_FILE, 'utf8');
     const mappings = JSON.parse(data);
 
-    // Update poller with new mappings
-    hoellPoller.updateMappings(mappings);
+    // Update EventProcessor with new mappings
+    eventProcessor.updateMappings(mappings);
 
-    console.log(`🔄 Reloaded ${Object.keys(mappings).length} gift mappings into poller`);
+    console.log(`🔄 Reloaded ${Object.keys(mappings).length} gift mappings into EventProcessor`);
     return { success: true, count: Object.keys(mappings).length };
   } catch (error) {
     if (error.code === 'ENOENT') {
       // File doesn't exist yet - use empty mappings
-      hoellPoller.updateMappings({});
+      eventProcessor.updateMappings({});
       return { success: true, count: 0 };
     }
     console.error('Error reloading gift mappings:', error);
@@ -1238,26 +1356,26 @@ ipcMain.handle('load-threshold-configs', async () => {
   }
 });
 
-// Reload threshold configs in the poller
+// Reload threshold configs in the EventProcessor
 ipcMain.handle('reload-threshold-configs', async () => {
   try {
-    if (!hoellPoller) {
-      return { success: false, error: 'HoellStream poller not initialized' };
+    if (!eventProcessor) {
+      return { success: false, error: 'EventProcessor not initialized' };
     }
 
     // Load threshold configs from file
     const data = await fs.readFile(THRESHOLD_CONFIGS_FILE, 'utf8');
     const thresholds = JSON.parse(data);
 
-    // Update poller with new threshold configs
-    await hoellPoller.loadThresholdConfigs(thresholds);
+    // Update EventProcessor with new threshold configs
+    await eventProcessor.loadThresholdConfigs(thresholds);
 
-    console.log(`🔄 Reloaded ${Object.keys(thresholds).length} threshold configs into poller`);
+    console.log(`🔄 Reloaded ${Object.keys(thresholds).length} threshold configs into EventProcessor`);
     return { success: true, count: Object.keys(thresholds).length };
   } catch (error) {
     if (error.code === 'ENOENT') {
       // File doesn't exist yet - use empty thresholds
-      await hoellPoller.loadThresholdConfigs({});
+      await eventProcessor.loadThresholdConfigs({});
       return { success: true, count: 0 };
     }
     console.error('Error reloading threshold configs:', error);
@@ -1268,10 +1386,10 @@ ipcMain.handle('reload-threshold-configs', async () => {
 // Get current threshold status (progress for all configured thresholds)
 ipcMain.handle('get-threshold-status', async () => {
   try {
-    if (!hoellPoller) {
-      return { success: false, error: 'HoellStream poller not initialized' };
+    if (!eventProcessor) {
+      return { success: false, error: 'EventProcessor not initialized' };
     }
-    const status = hoellPoller.getThresholdStatus();
+    const status = eventProcessor.getThresholdStatus();
     return { success: true, status };
   } catch (error) {
     console.error('Error getting threshold status:', error);
@@ -1284,7 +1402,7 @@ let thresholdStatusInterval = null;
 
 async function writeThresholdStatusFile() {
   try {
-    if (!hoellPoller) return;
+    if (!eventProcessor) return;
 
     // Get current overlay save path
     let savePath = app.getPath('downloads');
@@ -1296,7 +1414,7 @@ async function writeThresholdStatusFile() {
       // Use default downloads path
     }
 
-    const status = hoellPoller.getThresholdStatus();
+    const status = eventProcessor.getThresholdStatus();
     const statusFilePath = pathModule.join(savePath, 'threshold-status.json');
 
     await fs.writeFile(statusFilePath, JSON.stringify({ status }, null, 2), 'utf8');
@@ -1354,6 +1472,33 @@ ipcMain.handle('load-gift-name-overrides', async () => {
       return { success: true, overrides: {} };
     }
     console.error('Error loading gift name overrides:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Reload gift name overrides in the EventProcessor
+ipcMain.handle('reload-gift-name-overrides', async () => {
+  try {
+    if (!eventProcessor) {
+      return { success: false, error: 'EventProcessor not initialized' };
+    }
+
+    // Load gift name overrides from file
+    const data = await fs.readFile(GIFT_NAME_OVERRIDES_FILE, 'utf8');
+    const overrides = JSON.parse(data);
+
+    // Update EventProcessor with new gift name overrides
+    eventProcessor.loadGiftNameOverrides(overrides);
+
+    console.log(`🔄 Reloaded ${Object.keys(overrides).length} gift name overrides into EventProcessor`);
+    return { success: true, count: Object.keys(overrides).length };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist yet - use empty overrides
+      eventProcessor.loadGiftNameOverrides({});
+      return { success: true, count: 0 };
+    }
+    console.error('Error reloading gift name overrides:', error);
     return { success: false, error: error.message };
   }
 });
@@ -1846,14 +1991,203 @@ ipcMain.handle('get-hoellstream-stats', async () => {
 // Clear seen events (useful for testing)
 ipcMain.handle('clear-hoellstream-cache', async () => {
   try {
-    if (!hoellPoller) {
-      return { success: false, error: 'HoellStream poller not initialized' };
+    if (!eventProcessor) {
+      return { success: false, error: 'EventProcessor not initialized' };
     }
-    hoellPoller.clearSeenEvents();
+    eventProcessor.clearSeenEvents();
     return { success: true, message: 'Seen events cache cleared' };
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+// ============= TIKFINITY WEBSOCKET =============
+
+// Connect to TikFinity WebSocket
+ipcMain.handle('connect-tikfinity', async () => {
+  try {
+    if (!tikfinityClient) {
+      return { success: false, error: 'TikFinity client not initialized' };
+    }
+    tikfinityClient.connect();
+    return { success: true, message: 'TikFinity connection initiated' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Disconnect from TikFinity WebSocket
+ipcMain.handle('disconnect-tikfinity', async () => {
+  try {
+    if (!tikfinityClient) {
+      return { success: false, error: 'TikFinity client not initialized' };
+    }
+    tikfinityClient.disconnect();
+    return { success: true, message: 'TikFinity disconnected' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Get TikFinity connection status
+ipcMain.handle('get-tikfinity-status', async () => {
+  try {
+    if (!tikfinityClient) {
+      return { success: false, error: 'TikFinity client not initialized' };
+    }
+    return {
+      success: true,
+      connected: tikfinityClient.isConnected(),
+      url: tikfinityClient.getUrl()
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Start gift polling with selected source (hoellstream or tikfinity)
+ipcMain.handle('start-gift-polling', async (event, source) => {
+  try {
+    if (!sourceManager) {
+      return { success: false, error: 'GiftSourceManager not initialized' };
+    }
+    await sourceManager.startPolling(source);
+    return { success: true, message: `Gift polling started with ${source}` };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Stop gift polling
+ipcMain.handle('stop-gift-polling', async () => {
+  try {
+    if (!sourceManager) {
+      return { success: false, error: 'GiftSourceManager not initialized' };
+    }
+    await sourceManager.stopPolling();
+    return { success: true, message: 'Gift polling stopped' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Get gift polling stats
+ipcMain.handle('get-gift-polling-stats', async () => {
+  try {
+    if (!sourceManager) {
+      return { success: false, error: 'GiftSourceManager not initialized' };
+    }
+    const stats = sourceManager.getStats();
+    return { success: true, stats };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// ============================================================================
+// Lua Connector (Emulator Mode) IPC Handlers
+// ============================================================================
+
+// Connect to Lua connector (emulator mode)
+ipcMain.handle('connect-lua', async (event, host, port) => {
+  try {
+    if (!luaClient) {
+      return { success: false, error: 'Lua client not initialized' };
+    }
+    await luaClient.connect(host || 'localhost', port || 65399);
+    return { success: true, message: 'Connected to Lua connector' };
+  } catch (error) {
+    console.error('Lua connector connection error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Disconnect from Lua connector
+ipcMain.handle('disconnect-lua', async () => {
+  try {
+    if (!luaClient) {
+      return { success: false, error: 'Lua client not initialized' };
+    }
+    luaClient.disconnect();
+    return { success: true, message: 'Disconnected from Lua connector' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Get Lua connector status
+ipcMain.handle('get-lua-status', async () => {
+  try {
+    if (!luaClient) {
+      return { success: false, error: 'Lua client not initialized' };
+    }
+    return {
+      success: true,
+      connected: luaClient.isConnected()
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Set connection mode (SNI or Lua)
+ipcMain.handle('set-connection-mode', async (event, mode) => {
+  try {
+    if (mode !== 'sni' && mode !== 'lua') {
+      return { success: false, error: 'Invalid connection mode. Must be "sni" or "lua"' };
+    }
+
+    connectionMode = mode;
+    console.log(`🔄 Connection mode set to: ${mode}`);
+
+    // Switch operations references based on mode
+    if (mode === 'lua') {
+      // Create Lua operation wrappers
+      luaGameOps = new LuaGameOperations(luaClient);
+      luaExpandedOps = new LuaExpandedOperations(luaClient);
+      luaHoellOps = new LuaHoellOperations(luaClient);
+
+      // Update SNES API to use Lua operations
+      snesAPI = new SNESApi(luaClient, luaGameOps, luaExpandedOps, luaHoellOps);
+
+      // Update ScriptEngine with new API
+      if (scriptEngine) {
+        scriptEngine.snesAPI = snesAPI;
+      }
+
+      // Update EventProcessor with Lua operations
+      if (eventProcessor) {
+        eventProcessor.updateOperations(luaExpandedOps, luaGameOps);
+      }
+
+      console.log('✅ Switched to Lua connector operations');
+    } else {
+      // Switch back to SNI operations
+      snesAPI = new SNESApi(sniClient, gameOps, expandedOps, hoellOps);
+
+      // Update ScriptEngine with new API
+      if (scriptEngine) {
+        scriptEngine.snesAPI = snesAPI;
+      }
+
+      // Update EventProcessor with SNI operations
+      if (eventProcessor) {
+        eventProcessor.updateOperations(expandedOps, gameOps);
+      }
+
+      console.log('✅ Switched to SNI operations');
+    }
+
+    return { success: true, mode: connectionMode };
+  } catch (error) {
+    console.error('Error setting connection mode:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Get current connection mode
+ipcMain.handle('get-connection-mode', async () => {
+  return { success: true, mode: connectionMode };
 });
 
 // ============= ITEM RESTORATION SYSTEM =============

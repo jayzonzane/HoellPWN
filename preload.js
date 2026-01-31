@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld('sniAPI', {
   // Enemy Spawning
   spawnEnemy: (enemyType) => ipcRenderer.invoke('spawn-enemy', enemyType),
   spawnRandomEnemy: () => ipcRenderer.invoke('spawn-random-enemy'),
+  despawnFloorBlocks: () => ipcRenderer.invoke('despawn-floor-blocks'),
   spawnBeeSwarm: (count) => ipcRenderer.invoke('spawn-bee-swarm', count),
   stopBeeSwarm: () => ipcRenderer.invoke('stop-bee-swarm'),
   triggerChickenAttack: (durationSeconds) => ipcRenderer.invoke('trigger-chicken-attack', durationSeconds),
@@ -133,6 +134,23 @@ contextBridge.exposeInMainWorld('sniAPI', {
   getHoellStreamStats: () => ipcRenderer.invoke('get-hoellstream-stats'),
   clearHoellStreamCache: () => ipcRenderer.invoke('clear-hoellstream-cache'),
 
+  // TikFinity Controls
+  connectTikFinity: () => ipcRenderer.invoke('connect-tikfinity'),
+  disconnectTikFinity: () => ipcRenderer.invoke('disconnect-tikfinity'),
+  getTikFinityStatus: () => ipcRenderer.invoke('get-tikfinity-status'),
+
+  // Lua Connector Controls (Emulator Mode)
+  connectLua: (host, port) => ipcRenderer.invoke('connect-lua', host, port),
+  disconnectLua: () => ipcRenderer.invoke('disconnect-lua'),
+  getLuaStatus: () => ipcRenderer.invoke('get-lua-status'),
+  setConnectionMode: (mode) => ipcRenderer.invoke('set-connection-mode', mode),
+  getConnectionMode: () => ipcRenderer.invoke('get-connection-mode'),
+
+  // Unified Gift Source Controls
+  startGiftPolling: (source) => ipcRenderer.invoke('start-gift-polling', source),
+  stopGiftPolling: () => ipcRenderer.invoke('stop-gift-polling'),
+  getGiftPollingStats: () => ipcRenderer.invoke('get-gift-polling-stats'),
+
   // Gift Mappings
   saveGiftMappings: (mappings) => ipcRenderer.invoke('save-gift-mappings', mappings),
   loadGiftMappings: () => ipcRenderer.invoke('load-gift-mappings'),
@@ -147,6 +165,7 @@ contextBridge.exposeInMainWorld('sniAPI', {
   // Gift Name Overrides
   saveGiftNameOverrides: (overrides) => ipcRenderer.invoke('save-gift-name-overrides', overrides),
   loadGiftNameOverrides: () => ipcRenderer.invoke('load-gift-name-overrides'),
+  reloadGiftNameOverrides: () => ipcRenderer.invoke('reload-gift-name-overrides'),
 
   // Custom Gifts
   saveCustomGifts: (customGifts) => ipcRenderer.invoke('save-custom-gifts', customGifts),
@@ -193,6 +212,10 @@ contextBridge.exposeInMainWorld('sniAPI', {
   // Event listeners
   onSNIAutoConnected: (callback) => ipcRenderer.on('sni-auto-connected', (event, data) => callback(data)),
   onHoellStreamStatus: (callback) => ipcRenderer.on('hoellstream-status', (event, data) => callback(data)),
+  onGiftActivity: (callback) => ipcRenderer.on('gift-activity', (event, data) => callback(data)),
+  onLuaConnected: (callback) => ipcRenderer.on('lua-connected', () => callback()),
+  onLuaDisconnected: (callback) => ipcRenderer.on('lua-disconnected', () => callback()),
+  onLuaError: (callback) => ipcRenderer.on('lua-error', (event, data) => callback(data)),
 
   /* ========================================================================
    * HOELLCC EXTENDED OPERATIONS (120 operations)
@@ -255,6 +278,6 @@ contextBridge.exposeInMainWorld('sniAPI', {
     powerUpSpawns: ['spawnStar', 'spawnFeather', 'spawnFireFlower', 'spawnPBalloon', 'spawnItemBox'],
     helperSpawns: ['spawnYoshi', 'spawnBabyYoshi', 'spawnLakituCloud', 'spawnBluePSwitch', 'spawnBeanstalk', 'spawnKey', 'spawnSpringboard', 'spawnPSwitch'],
     marioModBlocks: ['spawnKaizoBlock', 'spawnMuncher', 'spawnMuncherOnJump', 'spawnCustomBlock', 'replaceRandomSprite'],
-    chaos: ['spawnRandomEnemy', 'spawnBulletBillStorm']
+    chaos: ['spawnRandomEnemy', 'spawnBulletBillStorm', 'despawnFloorBlocks']
   }
 });

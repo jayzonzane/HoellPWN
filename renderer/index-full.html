@@ -34,25 +34,66 @@
           <span class="status-label">SNI</span>
         </div>
         <div class="status-indicator">
+          <div class="status-light" id="lua-status-light"></div>
+          <span class="status-label">Lua</span>
+        </div>
+        <div class="status-indicator">
           <div class="status-light" id="hoellstream-status-light"></div>
           <span class="status-label">HoellStream</span>
         </div>
+        <div class="status-indicator">
+          <div class="status-light" id="tikfinity-status-light"></div>
+          <span class="status-label">TikFinity</span>
+        </div>
       </div>
 
-      <div class="connection-controls">
+      <!-- Connection Mode Selector -->
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: bold;">Connection Mode:</label>
+        <select id="connection-mode-select" class="form-control" style="width: 100%; padding: 8px;">
+          <option value="sni">SNI (Network Protocol)</option>
+          <option value="lua">Lua Connector (Emulator)</option>
+        </select>
+        <small style="display: block; margin-top: 6px; opacity: 0.7;">
+          SNI: USB2SNES devices (SD2SNES, FXPAK, etc.)<br>
+          Lua: BizHawk or Snes9x with connector script
+        </small>
+      </div>
+
+      <!-- SNI Connection Controls -->
+      <div class="connection-controls" id="sni-connection-controls">
         <input type="text" id="host" placeholder="localhost" value="localhost">
         <input type="text" id="port" placeholder="8191" value="8191">
         <button id="connect-btn">Connect to SNI</button>
         <small style="display: block; margin-top: 8px; opacity: 0.7;">Note: SNI must be running externally on port 8191</small>
       </div>
+
+      <!-- Lua Connector Controls -->
+      <div class="connection-controls" id="lua-connection-controls" style="display: none;">
+        <input type="text" id="lua-host" placeholder="localhost" value="localhost">
+        <input type="text" id="lua-port" placeholder="65399" value="65399">
+        <button id="connect-lua-btn">Connect to Lua Connector</button>
+        <small style="display: block; margin-top: 8px; opacity: 0.7;">
+          1. Load Zanesworld-Connector.lua in your emulator<br>
+          2. Connector listens on port 65399 by default
+        </small>
+      </div>
       <div id="status" class="status disconnected">Disconnected</div>
       <select id="device-select" style="display: none;">
         <option value="">Select a device...</option>
       </select>
-      <div style="margin-top: 10px; display: none;" id="hoellstream-controls">
-        <button id="toggle-hoellstream-btn" class="btn-secondary" style="width: 100%; background: #2196F3;">
-          🎁 Start HoellStream Polling
+      <div style="margin-top: 10px; display: none;" id="gift-source-controls">
+        <div style="margin-bottom: 8px;">
+          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Gift Source:</label>
+          <select id="gift-source-select" class="form-control" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+            <option value="hoellstream">HoellStream (HTTP Polling)</option>
+            <option value="tikfinity">TikFinity (WebSocket)</option>
+          </select>
+        </div>
+        <button id="toggle-gift-polling-btn" class="btn-secondary" style="width: 100%; background: #2196F3;">
+          🎁 Start Gift Polling
         </button>
+        <div id="gift-polling-status" style="margin-top: 8px; font-size: 12px; opacity: 0.8;"></div>
       </div>
     </div>
 
@@ -163,8 +204,8 @@
                   <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #14b8a6;">
-                  <div style="font-weight: 600; margin-bottom: 6px; color: #14b8a6;">🦕 Helper Spawns (8)</div>
-                  <div style="font-size: 12px; opacity: 0.8;">Yoshi, items, switches</div>
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #14b8a6;">🦕 Helper Spawns (2)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Yoshi eggs only (others disabled)</div>
                   <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #f97316;">
@@ -492,39 +533,17 @@
 
                 <!-- Helper Spawns -->
                 <div class="settings-category">
-                  <h4>🦕 Helper Spawns (HoellCC MarioMod)</h4>
+                  <h4>🦕 Helper Spawns (HoellCC MarioMod) - Limited</h4>
                   <div class="action-item">
-                    <span class="action-name">🦕 Spawn Yoshi</span>
+                    <span class="action-name">🦕 Spawn Yoshi Egg</span>
                     <input type="text" class="gift-input" data-action="spawnYoshi" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item">
-                    <span class="action-name">🥚 Spawn Baby Yoshi</span>
+                    <span class="action-name">🥚 Spawn Baby Yoshi Egg</span>
                     <input type="text" class="gift-input" data-action="spawnBabyYoshi" placeholder="Enter gift name...">
                   </div>
-                  <div class="action-item">
-                    <span class="action-name">☁️ Spawn Lakitu Cloud</span>
-                    <input type="text" class="gift-input" data-action="spawnLakituCloud" placeholder="Enter gift name...">
-                  </div>
-                  <div class="action-item">
-                    <span class="action-name">🔵 Spawn Blue P-Switch</span>
-                    <input type="text" class="gift-input" data-action="spawnBluePSwitch" placeholder="Enter gift name...">
-                  </div>
-                  <div class="action-item">
-                    <span class="action-name">🌱 Spawn Beanstalk</span>
-                    <input type="text" class="gift-input" data-action="spawnBeanstalk" placeholder="Enter gift name...">
-                  </div>
-                  <div class="action-item">
-                    <span class="action-name">🔑 Spawn Key</span>
-                    <input type="text" class="gift-input" data-action="spawnKey" placeholder="Enter gift name...">
-                  </div>
-                  <div class="action-item">
-                    <span class="action-name">🔼 Spawn Springboard</span>
-                    <input type="text" class="gift-input" data-action="spawnSpringboard" placeholder="Enter gift name...">
-                  </div>
-                  <div class="action-item">
-                    <span class="action-name">🔘 Spawn P-Switch</span>
-                    <input type="text" class="gift-input" data-action="spawnPSwitch" placeholder="Enter gift name...">
-                  </div>
+                  <!-- NOTE: Other helper spawns disabled - incorrect MarioMod sprite IDs -->
+                  <!-- Cloud, P-Switch, Beanstalk, Key, Springboard need proper sprite mapping -->
                 </div>
 
                 <!-- MarioMod Block Operations -->
@@ -558,6 +577,10 @@
                   <div class="action-item">
                     <span class="action-name">🎰 Spawn Random Enemy</span>
                     <input type="text" class="gift-input" data-action="spawnRandomEnemy" placeholder="Enter gift name...">
+                  </div>
+                  <div class="action-item">
+                    <span class="action-name">🕳️ Spawn Pit</span>
+                    <input type="text" class="gift-input" data-action="despawnFloorBlocks" placeholder="Enter gift name...">
                   </div>
                   <div class="action-item action-item-with-duration">
                     <span class="action-name">🔫 Bullet Bill Storm</span>
@@ -650,6 +673,15 @@
                       <option value="inline">Inline on Gift Images</option>
                     </select>
                     <small>How to display threshold progress bars in the overlay</small>
+                  </div>
+                  <div class="config-group">
+                    <label for="overlay-save-path">Save Location:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                      <input type="text" id="overlay-save-path" placeholder="Downloads folder" readonly style="flex: 1; cursor: pointer; background: rgba(255,255,255,0.05);">
+                      <button class="btn-secondary" id="browse-overlay-path" style="padding: 8px 15px;">📁 Browse</button>
+                      <button class="btn-secondary" id="reset-overlay-path" style="padding: 8px 15px;">🔄 Reset</button>
+                    </div>
+                    <small>Click Browse to change where overlay files are saved</small>
                   </div>
                 </div>
 
@@ -838,6 +870,38 @@
       <!-- Controls Tab -->
       <div id="controls-tab" class="tab-content active">
 
+      <!-- Action Console Section -->
+      <div class="control-row">
+        <div class="control-group wide">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">🎮 Action Console</h3>
+            <button id="popout-action-console-btn" class="btn-sm" style="background: #667eea;">🗗 Pop Out</button>
+          </div>
+          <div id="action-console-grid" class="action-console-grid">
+            <!-- Dynamically populated with mapped gift actions -->
+            <div class="action-console-empty">
+              <p>No gift actions mapped yet. Configure gifts in the Gift Settings tab.</p>
+            </div>
+          </div>
+
+          <!-- Threshold Tracking Section -->
+          <div id="action-console-thresholds" class="action-console-thresholds">
+            <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: rgba(255,255,255,0.7);">🎯 Threshold Progress</h4>
+            <div id="action-console-threshold-list">
+              <div style="color: rgba(255,255,255,0.4); font-size: 12px;">No active thresholds</div>
+            </div>
+          </div>
+
+          <!-- Activity Log Section -->
+          <div id="action-console-activity" class="action-console-activity">
+            <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: rgba(255,255,255,0.7);">📜 Gift Activity Log</h4>
+            <div id="action-console-activity-list" class="activity-log-list">
+              <div style="color: rgba(255,255,255,0.4); font-size: 12px;">No gifts received yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Row 1: Core Actions & Power-Ups -->
       <div class="control-row">
         <!-- Core Actions -->
@@ -850,6 +914,7 @@
             <button class="btn-sm" data-action="addCoins" data-value="10">🪙 +10 Coins</button>
             <button class="btn-sm" data-action="removeCoins" data-value="10">🪙 -10 Coins</button>
             <button class="btn-sm" data-action="addCoins" data-value="50">🪙 +50 Coins</button>
+            <button class="btn-sm danger" data-action="despawnFloorBlocks">🕳️ Spawn Pit</button>
           </div>
         </div>
 
@@ -1145,16 +1210,11 @@
         </div>
 
         <div class="control-group">
-          <h3>🦕 Spawn: Helpers (HoellCC)</h3>
+          <h3>🦕 Spawn: Helpers (Limited)</h3>
           <div class="button-grid-compact">
-            <button class="btn-sm special" data-action="spawnYoshi">🦕 Yoshi</button>
-            <button class="btn-sm" data-action="spawnBabyYoshi">🥚 Baby Yoshi</button>
-            <button class="btn-sm" data-action="spawnLakituCloud">☁️ Lakitu Cloud</button>
-            <button class="btn-sm" data-action="spawnBluePSwitch">🔵 Blue P-Switch</button>
-            <button class="btn-sm" data-action="spawnBeanstalk">🌱 Beanstalk</button>
-            <button class="btn-sm" data-action="spawnKey">🔑 Key</button>
-            <button class="btn-sm" data-action="spawnSpringboard">🪜 Springboard</button>
-            <button class="btn-sm" data-action="spawnPSwitch">⏱️ P-Switch</button>
+            <button class="btn-sm special" data-action="spawnYoshi">🦕 Yoshi Egg</button>
+            <button class="btn-sm" data-action="spawnBabyYoshi">🥚 Baby Yoshi Egg</button>
+            <!-- Other helpers disabled - wrong MarioMod sprite IDs -->
           </div>
         </div>
       </div>
@@ -1176,6 +1236,7 @@
           <h3>🎲 Chaos Effects (HoellCC)</h3>
           <div class="button-grid-compact">
             <button class="btn-sm special" data-action="spawnRandomEnemy">🎲 Random Enemy</button>
+            <button class="btn-sm danger" data-action="despawnFloorBlocks">🕳️ Spawn Pit</button>
             <button class="btn-sm danger" data-action="spawnBulletBillStorm">💥 Bullet Storm (30s)</button>
           </div>
         </div>
