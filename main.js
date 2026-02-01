@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 
 // We'll initialize these after creating the window
 let mainWindow;
+let actionConsoleWindow = null;
 let sniClient;
 let luaClient;  // Lua connector client for emulator mode
 let gameOps;
@@ -132,7 +133,16 @@ function createWindow() {
   const HoellStreamPoller = require('./src/hoellstream/poller');
   const TikFinityWebSocketClient = require('./src/tikfinity/websocket-client');
   const ItemRestorationManager = require('./src/item-restoration/restoration-manager');
-  const GiftUpdater = require('./src/gift-updater');
+
+  let GiftUpdater;
+  try {
+    GiftUpdater = require('./src/gift-updater');
+    console.log('✅ GiftUpdater module loaded successfully');
+  } catch (error) {
+    console.error('❌ Failed to require GiftUpdater module:', error);
+    console.error('Stack:', error.stack);
+  }
+
   const EventProcessor = require('./src/gift-sources/event-processor');
   const GiftSourceManager = require('./src/gift-sources/source-manager');
   const ScriptEngine = require('./src/lua/script-engine');
@@ -242,8 +252,17 @@ function createWindow() {
   console.log('🎁 GiftSourceManager initialized');
 
   // Initialize Gift Updater
-  giftUpdater = new GiftUpdater(app.getPath('userData'));
-  console.log('🔄 GiftUpdater initialized');
+  try {
+    if (!GiftUpdater) {
+      console.error('❌ GiftUpdater module not loaded - skipping initialization');
+    } else {
+      giftUpdater = new GiftUpdater(app.getPath('userData'));
+      console.log('🔄 GiftUpdater initialized');
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize GiftUpdater:', error);
+    console.error('Stack:', error.stack);
+  }
 
   // Bootstrap gift database on first run
   initializeGiftDatabase();
@@ -541,6 +560,43 @@ ipcMain.handle('despawn-floor-blocks', async () => {
   try {
     if (!sniClient.deviceURI) throw new Error('No device selected');
     return await expandedOps.despawnFloorBlocks();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Physics Modifiers (SMW)
+ipcMain.handle('moon-jump', async (event, durationSeconds = 30) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.moonJump(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('tiny-jump', async (event, durationSeconds = 30) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.tinyJump(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('low-gravity', async (event, durationSeconds = 30) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.lowGravity(durationSeconds);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('high-gravity', async (event, durationSeconds = 30) => {
+  try {
+    if (!sniClient.deviceURI) throw new Error('No device selected');
+    return await expandedOps.highGravity(durationSeconds);
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -2248,12 +2304,96 @@ ipcMain.handle('get-supported-items', async () => {
   }
 });
 
+// ============= ACTION CONSOLE POPUP =============
+
+ipcMain.handle('open-action-console-popup', async () => {
+  if (actionConsoleWindow && !actionConsoleWindow.isDestroyed()) {
+    actionConsoleWindow.focus();
+    return { success: true, message: 'Window already open' };
+  }
+
+  actionConsoleWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    title: 'Action Console',
+    backgroundColor: '#1a1a2e',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  actionConsoleWindow.loadFile(path.join(__dirname, 'renderer', 'action-console-popup.html'));
+
+  // Connect action console window to EventProcessor for event emission
+  if (eventProcessor) {
+    eventProcessor.setActionConsoleWindow(actionConsoleWindow);
+  }
+
+  actionConsoleWindow.on('closed', () => {
+    actionConsoleWindow = null;
+  });
+
+  return { success: true };
+});
+
+ipcMain.handle('set-always-on-top', async (event, enabled) => {
+  if (actionConsoleWindow && !actionConsoleWindow.isDestroyed()) {
+    actionConsoleWindow.setAlwaysOnTop(enabled);
+    return { success: true };
+  }
+  return { success: false, error: 'Action console window not open' };
+});
+
+ipcMain.handle('execute-gift-action', async (event, actionData) => {
+  try {
+    if (!sniClient.deviceURI && !luaClient.isConnected) {
+      return { success: false, error: 'No device connected' };
+    }
+
+    const { action, params } = actionData;
+
+    // Use current connection mode operations
+    const ops = connectionMode === 'lua' ? luaExpandedOps : expandedOps;
+    const basicOps = connectionMode === 'lua' ? luaGameOps : gameOps;
+
+    // Check which operations object has the action
+    let targetOps = null;
+    if (typeof ops[action] === 'function') {
+      targetOps = ops;
+    } else if (typeof basicOps[action] === 'function') {
+      targetOps = basicOps;
+    } else if (typeof hoellOps[action] === 'function') {
+      targetOps = hoellOps;
+    } else {
+      return { success: false, error: `Unknown action: ${action}` };
+    }
+
+    // Execute the action
+    if (params && Object.keys(params).length > 0) {
+      const paramValue = Object.values(params)[0];
+      return await targetOps[action](paramValue);
+    } else {
+      return await targetOps[action]();
+    }
+
+  } catch (error) {
+    console.error('Execute gift action error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ============= GIFT DATABASE UPDATE SYSTEM =============
 
 // Update gift database from streamtoearn.io API
 ipcMain.handle('update-gift-database', async (event, options = {}) => {
   try {
-    if (!giftUpdater) throw new Error('Gift updater not initialized');
+    if (!giftUpdater) {
+      console.error('❌ GiftUpdater is not initialized. Type:', typeof giftUpdater);
+      console.error('Check console logs above for initialization errors.');
+      throw new Error('Gift updater not initialized - check console for initialization errors');
+    }
 
     // Set progress callback to send updates to renderer
     giftUpdater.progressCallback = (progress) => {

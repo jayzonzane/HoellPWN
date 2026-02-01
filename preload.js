@@ -70,6 +70,12 @@ contextBridge.exposeInMainWorld('sniAPI', {
   makeEnemiesInvisible: (durationSeconds) => ipcRenderer.invoke('make-enemies-invisible', durationSeconds),
   enableInfiniteMagic: (durationSeconds) => ipcRenderer.invoke('enable-infinite-magic', durationSeconds),
 
+  // Physics Modifiers (SMW)
+  moonJump: (durationSeconds) => ipcRenderer.invoke('moon-jump', durationSeconds),
+  tinyJump: (durationSeconds) => ipcRenderer.invoke('tiny-jump', durationSeconds),
+  lowGravity: (durationSeconds) => ipcRenderer.invoke('low-gravity', durationSeconds),
+  highGravity: (durationSeconds) => ipcRenderer.invoke('high-gravity', durationSeconds),
+
   // Chaotic Features
   enableIceWorld: (durationSeconds) => ipcRenderer.invoke('enable-ice-world', durationSeconds),
   spawnBossRush: (durationSeconds) => ipcRenderer.invoke('spawn-boss-rush', durationSeconds),
@@ -263,8 +269,11 @@ contextBridge.exposeInMainWorld('sniAPI', {
   // - spawnKaizoBlock, spawnMuncher, spawnMuncherOnJump
   // - spawnCustomBlock, replaceRandomSprite
 
-  // CHAOS/RANDOM (2 operations)
-  // - spawnRandomEnemy, spawnBulletBillStorm
+  // CHAOS/RANDOM (3 operations)
+  // - spawnRandomEnemy, spawnBulletBillStorm, despawnFloorBlocks
+
+  // PHYSICS MODIFIERS (4 operations - No patch required)
+  // - moonJump, tinyJump, lowGravity, highGravity
 
   /* ========================================================================
    * OPERATION CATEGORIES OBJECT
@@ -278,6 +287,21 @@ contextBridge.exposeInMainWorld('sniAPI', {
     powerUpSpawns: ['spawnStar', 'spawnFeather', 'spawnFireFlower', 'spawnPBalloon', 'spawnItemBox'],
     helperSpawns: ['spawnYoshi', 'spawnBabyYoshi', 'spawnLakituCloud', 'spawnBluePSwitch', 'spawnBeanstalk', 'spawnKey', 'spawnSpringboard', 'spawnPSwitch'],
     marioModBlocks: ['spawnKaizoBlock', 'spawnMuncher', 'spawnMuncherOnJump', 'spawnCustomBlock', 'replaceRandomSprite'],
-    chaos: ['spawnRandomEnemy', 'spawnBulletBillStorm', 'despawnFloorBlocks']
-  }
+    chaos: ['spawnRandomEnemy', 'spawnBulletBillStorm', 'despawnFloorBlocks'],
+    physics: ['moonJump', 'tinyJump', 'lowGravity', 'highGravity']
+  },
+
+  // Action Console Popup
+  openActionConsolePopup: () => ipcRenderer.invoke('open-action-console-popup')
+});
+
+// Expose API for popup windows (action console, etc.)
+contextBridge.exposeInMainWorld('electronAPI', {
+  loadGiftMappings: () => ipcRenderer.invoke('load-gift-mappings'),
+  executeGiftAction: (actionData) => ipcRenderer.invoke('execute-gift-action', actionData),
+  setAlwaysOnTop: (enabled) => ipcRenderer.invoke('set-always-on-top', enabled),
+  onActionConsoleUpdate: (callback) => ipcRenderer.on('action-console-update', () => callback()),
+  getActiveGifts: () => ipcRenderer.invoke('get-active-gifts'),
+  getThresholdStatus: () => ipcRenderer.invoke('get-threshold-status'),
+  onGiftActivity: (callback) => ipcRenderer.on('gift-activity', (event, data) => callback(data))
 });
