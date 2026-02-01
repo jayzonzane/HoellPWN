@@ -297,6 +297,7 @@ contextBridge.exposeInMainWorld('sniAPI', {
 
 // Expose API for popup windows (action console, etc.)
 contextBridge.exposeInMainWorld('electronAPI', {
+  openActionConsolePopup: () => ipcRenderer.invoke('open-action-console-popup'),
   loadGiftMappings: () => ipcRenderer.invoke('load-gift-mappings'),
   executeGiftAction: (actionData) => ipcRenderer.invoke('execute-gift-action', actionData),
   setAlwaysOnTop: (enabled) => ipcRenderer.invoke('set-always-on-top', enabled),

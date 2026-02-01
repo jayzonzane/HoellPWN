@@ -1243,9 +1243,9 @@ saveBtn.addEventListener('click', async () => {
       await window.sniAPI.reloadGiftMappings();
       log('Gift mappings reloaded in poller', 'success');
 
-      // Force refresh overlay builder to reflect changes
+      // Refresh overlay builder if gift list changed
       if (typeof populateOverlayGiftSelection === 'function') {
-        await populateOverlayGiftSelection(true); // true = force refresh
+        await populateOverlayGiftSelection(); // Don't force refresh - only update if gift list changed
       }
     } else {
       log(`Failed to save: ${result.error}`, 'error');

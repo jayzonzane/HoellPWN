@@ -5,20 +5,63 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' gift-image:;">
   <title>Zane's World</title>
   <link rel="stylesheet" href="styles-full.css">
+  <link rel="stylesheet" href="themes.css">
 </head>
 <body>
   <!-- Operation Notification Toast Container -->
   <div id="operation-toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; max-width: 400px;"></div>
 
-  <!-- Menu Bar - removed, tabs replace this -->
-  <!-- <div class="menu-bar">
+  <!-- Menu Bar -->
+  <div class="menu-bar">
     <div class="menu-item">
       <span class="menu-label">View</span>
       <div class="menu-dropdown">
         <div class="menu-option" id="menu-gift-settings">🎁 Gift Settings</div>
       </div>
     </div>
-  </div> -->
+    <div class="menu-item">
+      <span class="menu-label">🎨 Theme</span>
+      <div class="menu-dropdown" id="theme-dropdown">
+        <div class="theme-option active" data-theme="deep-blue">
+          <div class="theme-preview deep-blue"></div>
+          <span>Deep Blue</span>
+        </div>
+        <div class="theme-option" data-theme="dark-purple">
+          <div class="theme-preview dark-purple"></div>
+          <span>Dark Purple</span>
+        </div>
+        <div class="theme-option" data-theme="cyberpunk">
+          <div class="theme-preview cyberpunk"></div>
+          <span>Cyberpunk</span>
+        </div>
+        <div class="theme-option" data-theme="forest">
+          <div class="theme-preview forest"></div>
+          <span>Forest</span>
+        </div>
+        <div class="theme-option" data-theme="sunset">
+          <div class="theme-preview sunset"></div>
+          <span>Sunset</span>
+        </div>
+        <div class="theme-option" data-theme="ocean">
+          <div class="theme-preview ocean"></div>
+          <span>Ocean</span>
+        </div>
+        <div class="theme-option" data-theme="midnight">
+          <div class="theme-preview midnight"></div>
+          <span>Midnight</span>
+        </div>
+        <div class="theme-option" data-theme="rose-gold">
+          <div class="theme-preview rose-gold"></div>
+          <span>Rose Gold</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+      <label for="ui-size-slider" style="font-size: 12px;">UI Size:</label>
+      <input type="range" id="ui-size-slider" min="80" max="150" value="100" step="10" style="width: 100px;">
+      <span id="ui-size-value" style="font-size: 12px; min-width: 35px;">100%</span>
+    </div>
+  </div>
 
   <div class="container">
     <h1>🍄 Zane's World</h1>
@@ -167,7 +210,7 @@
                     <div style="opacity: 0.9;">Spawn Ops</div>
                   </div>
                   <div style="text-align: center; padding: 4px 10px; background: rgba(255,255,255,0.15); border-radius: 4px;">
-                    <div style="font-weight: 600;">9</div>
+                    <div style="font-weight: 600;">10</div>
                     <div style="opacity: 0.9;">Categories</div>
                   </div>
                   <button id="toggle-hoellcc-guide" class="btn-secondary" style="background: rgba(255,255,255,0.2); padding: 4px 10px; font-size: 12px; white-space: nowrap;">📖 Quick Guide</button>
@@ -214,9 +257,14 @@
                   <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #ec4899;">
-                  <div style="font-weight: 600; margin-bottom: 6px; color: #ec4899;">🎲 Chaos Effects (2)</div>
-                  <div style="font-size: 12px; opacity: 0.8;">Random enemy, Bullet Bill storm</div>
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #ec4899;">🎲 Chaos Effects (3)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Random enemy, spawn pit, Bullet Bill storm</div>
                   <div style="font-size: 11px; margin-top: 4px; color: #ef4444;">⚠ Requires MarioMod patch</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #a78bfa;">
+                  <div style="font-weight: 600; margin-bottom: 6px; color: #a78bfa;">🌙 Physics Modifiers (4)</div>
+                  <div style="font-size: 12px; opacity: 0.8;">Jump heights, gravity modifiers</div>
+                  <div style="font-size: 11px; margin-top: 4px; color: #10b981;">✓ Works without MarioMod</div>
                 </div>
               </div>
               <div style="margin-top: 12px; padding: 8px 12px; background: rgba(99,102,241,0.1); border-radius: 4px; font-size: 12px;">
@@ -586,6 +634,31 @@
                     <span class="action-name">🔫 Bullet Bill Storm</span>
                     <input type="text" class="gift-input" data-action="spawnBulletBillStorm" placeholder="Gift name...">
                     <input type="number" class="duration-input" data-action="spawnBulletBillStorm" value="30" min="5" max="120" placeholder="Sec">
+                  </div>
+                </div>
+
+                <!-- Physics Modifiers -->
+                <div class="settings-category">
+                  <h4>🌙 Physics Modifiers (HoellCC)</h4>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🌙 Moon Jump</span>
+                    <input type="text" class="gift-input" data-action="moonJump" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="moonJump" value="30" min="5" max="120" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🐜 Tiny Jump</span>
+                    <input type="text" class="gift-input" data-action="tinyJump" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="tinyJump" value="30" min="5" max="120" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🪶 Low Gravity</span>
+                    <input type="text" class="gift-input" data-action="lowGravity" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="lowGravity" value="30" min="5" max="120" placeholder="Sec">
+                  </div>
+                  <div class="action-item action-item-with-duration">
+                    <span class="action-name">🪨 High Gravity</span>
+                    <input type="text" class="gift-input" data-action="highGravity" placeholder="Gift name...">
+                    <input type="number" class="duration-input" data-action="highGravity" value="30" min="5" max="120" placeholder="Sec">
                   </div>
                 </div>
 
@@ -1238,6 +1311,25 @@
             <button class="btn-sm special" data-action="spawnRandomEnemy">🎲 Random Enemy</button>
             <button class="btn-sm danger" data-action="despawnFloorBlocks">🕳️ Spawn Pit</button>
             <button class="btn-sm danger" data-action="spawnBulletBillStorm">💥 Bullet Storm (30s)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row: Physics Modifiers -->
+      <div class="control-row">
+        <div class="control-group">
+          <h3>🌙 Jump Height Modifiers (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="moonJump">🌙 Moon Jump (30s)</button>
+            <button class="btn-sm" data-action="tinyJump">🐜 Tiny Jump (30s)</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>🪶 Gravity Modifiers (HoellCC)</h3>
+          <div class="button-grid-compact">
+            <button class="btn-sm special" data-action="lowGravity">🪶 Low Gravity (30s)</button>
+            <button class="btn-sm danger" data-action="highGravity">🪨 High Gravity (30s)</button>
           </div>
         </div>
       </div>

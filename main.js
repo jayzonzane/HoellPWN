@@ -1328,6 +1328,12 @@ ipcMain.handle('save-gift-mappings', async (event, mappings) => {
   try {
     await fs.writeFile(GIFT_MAPPINGS_FILE, JSON.stringify(mappings, null, 2), 'utf8');
     console.log(`💾 Saved ${Object.keys(mappings).length} gift mappings to ${GIFT_MAPPINGS_FILE}`);
+
+    // Notify action console to refresh
+    if (actionConsoleWindow && !actionConsoleWindow.isDestroyed()) {
+      actionConsoleWindow.webContents.send('action-console-update');
+    }
+
     return { success: true, count: Object.keys(mappings).length };
   } catch (error) {
     console.error('Error saving gift mappings:', error);

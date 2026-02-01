@@ -25,12 +25,14 @@ class MarioModSpawner {
     this.MARIOMOD_SPAWN_SPRITE_Y_OFFSET_POS = 0x7E146E; // Positive Y offset (pixels)
     this.MARIOMOD_SPAWN_SPRITE_Y_OFFSET_NEG = 0x7E146F; // Negative Y offset (pixels)
 
-    this.MARIOMOD_SPAWN_BLOCK_FLAG = 0x7E188A;       // Write 0x01 to trigger block spawn
-    this.MARIOMOD_SPAWN_BLOCK_ID = 0x7E1870;         // Block ID
-    this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_POS = 0x7E1476; // Block X offset (positive)
-    this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_NEG = 0x7E1477; // Block X offset (negative)
-    this.MARIOMOD_SPAWN_BLOCK_Y_OFFSET_POS = 0x7E1478; // Block Y offset (positive)
-    this.MARIOMOD_SPAWN_BLOCK_Y_OFFSET_NEG = 0x7E1479; // Block Y offset (negative)
+    // Block spawning addresses (from HoellCC SmwOperations.cs lines 27-32)
+    this.MARIOMOD_SPAWN_BLOCK_FLAG = 0x7E188A;          // Write 0x01 to trigger immediate block spawn
+    this.MARIOMOD_SPAWN_BLOCK_ID = 0x7E1F2B;            // Map16 block ID (16-bit, 2 bytes)
+    this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_POS = 0x7E1F3B;  // Block X offset (positive)
+    this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_NEG = 0x7E1F48;  // Block X offset (negative)
+    this.MARIOMOD_SPAWN_BLOCK_Y_OFFSET_POS = 0x7E1FFA;  // Block Y offset (positive)
+    this.MARIOMOD_SPAWN_BLOCK_Y_OFFSET_NEG = 0x7E1FFF;  // Block Y offset (negative)
+    this.MARIOMOD_BLOCK_ON_JUMP_FLAG = 0x7E1DEF;        // Write 0x01 to arm block spawn on next jump
   }
 
   /**
@@ -150,8 +152,13 @@ class MarioModSpawner {
     try {
       const { xPos, xNeg, yPos, yNeg } = this.convertSignedOffsets(xOffset, yOffset);
 
-      // Write block parameters
-      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_ID, Buffer.from([blockId & 0xFF]));
+      // Write Map16 block ID (16-bit, little-endian)
+      // CRITICAL: Map16 IDs are 16-bit values, must write 2 bytes!
+      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_ID, Buffer.from([
+        blockId & 0xFF,        // Low byte
+        (blockId >> 8) & 0xFF  // High byte
+      ]));
+
       await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_POS, Buffer.from([xPos]));
       await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_NEG, Buffer.from([xNeg]));
       await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_Y_OFFSET_POS, Buffer.from([yPos]));
@@ -164,6 +171,61 @@ class MarioModSpawner {
     } catch (error) {
       return { success: false, error: error.message };
     }
+  }
+
+  /**
+   * Arms a block to spawn when Mario next jumps (Kaizo trap) - RAW OFFSETS
+   * Block spawns when Mario has upward momentum
+   *
+   * Port from HoellCC SmwOperations.cs:509-529
+   *
+   * @param {number} blockId - Map16 block ID (16-bit)
+   * @param {number} xOffsetPos - Positive X offset (0-255)
+   * @param {number} xOffsetNeg - Negative X offset (0-255)
+   * @param {number} yOffsetPos - Positive Y offset (0-255)
+   * @param {number} yOffsetNeg - Negative Y offset (0-255)
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  async spawnBlockOnJumpRaw(blockId, xOffsetPos = 0, xOffsetNeg = 0, yOffsetPos = 0, yOffsetNeg = 0) {
+    if (!this.client.deviceURI) {
+      return { success: false, error: 'No device connected' };
+    }
+
+    try {
+      // Clear immediate spawn flag first to prevent race condition
+      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_FLAG, Buffer.from([0x00]));
+
+      // Write Map16 block ID (16-bit, little-endian)
+      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_ID, Buffer.from([
+        blockId & 0xFF,        // Low byte
+        (blockId >> 8) & 0xFF  // High byte
+      ]));
+
+      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_POS, Buffer.from([xOffsetPos & 0xFF]));
+      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_X_OFFSET_NEG, Buffer.from([xOffsetNeg & 0xFF]));
+      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_Y_OFFSET_POS, Buffer.from([yOffsetPos & 0xFF]));
+      await this.client.writeMemory(this.MARIOMOD_SPAWN_BLOCK_Y_OFFSET_NEG, Buffer.from([yOffsetNeg & 0xFF]));
+
+      // Arm the on-jump trigger (waits for Mario to jump)
+      await this.client.writeMemory(this.MARIOMOD_BLOCK_ON_JUMP_FLAG, Buffer.from([0x01]));
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Arms a block to spawn when Mario next jumps - convenience wrapper with signed offsets
+   *
+   * @param {number} blockId - Map16 block ID (16-bit)
+   * @param {number} xOffset - Signed X offset (-128 to +127 pixels)
+   * @param {number} yOffset - Signed Y offset (-128 to +127 pixels)
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  async spawnBlockOnJumpViaMarioMod(blockId, xOffset = 0, yOffset = 0) {
+    const { xPos, xNeg, yPos, yNeg } = this.convertSignedOffsets(xOffset, yOffset);
+    return await this.spawnBlockOnJumpRaw(blockId, xPos, xNeg, yPos, yNeg);
   }
 
   /**

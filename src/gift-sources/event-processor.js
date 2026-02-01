@@ -400,7 +400,11 @@ class EventProcessor {
 
       // Special handling for timed event actions (with duration parameter)
       // These are ALTTP-specific, SMW would have different timed events
-      if (action === 'triggerChickenAttack' || action === 'triggerEnemyWaves' || action === 'triggerBeeSwarmWaves' || action === 'makeEnemiesInvisible') {
+      const timedActions = [
+        'triggerChickenAttack', 'triggerEnemyWaves', 'triggerBeeSwarmWaves', 'makeEnemiesInvisible',
+        'moonJump', 'tinyJump', 'lowGravity', 'highGravity', 'modifyJumpHeight', 'modifyGravity'
+      ];
+      if (timedActions.includes(action)) {
         // Check which operations object has the action
         let ops = null;
         if (typeof this.gameOps[action] === 'function') {
@@ -493,7 +497,11 @@ class EventProcessor {
       }
 
       // Special handling for timed event actions (with duration parameter)
-      if (action === 'triggerChickenAttack' || action === 'triggerEnemyWaves' || action === 'triggerBeeSwarmWaves' || action === 'makeEnemiesInvisible') {
+      const timedActions = [
+        'triggerChickenAttack', 'triggerEnemyWaves', 'triggerBeeSwarmWaves', 'makeEnemiesInvisible',
+        'moonJump', 'tinyJump', 'lowGravity', 'highGravity', 'modifyJumpHeight', 'modifyGravity'
+      ];
+      if (timedActions.includes(action)) {
         // Check which operations object has the action
         let ops = null;
         if (typeof this.gameOps[action] === 'function') {

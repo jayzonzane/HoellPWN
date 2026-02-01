@@ -10,7 +10,10 @@ body {
   background: linear-gradient(135deg, #E31C23 0%, #228B22 50%, #5CB85C 100%);
   color: #fff;
   padding: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-scale, 1));
+
+  /* UI Scaling variable */
+  --ui-scale: 1;
 }
 
 /* Menu Bar Styles */
@@ -1646,7 +1649,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 200px;
+  max-height: 500px;
   overflow-y: auto;
   padding: 10px;
   background: rgba(0,0,0,0.2);
@@ -2739,4 +2742,217 @@ select option.archived-option {
 
 .category-items {
   padding: 8px 0;
+}
+/* ============= ACTION CONSOLE STYLES ============= */
+
+.action-console-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.action-console-button {
+  aspect-ratio: 1;
+  min-height: 140px;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.action-console-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  filter: brightness(1.15);
+}
+
+.action-console-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.action-console-button .emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.action-console-button .gift-image {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.action-console-button .label {
+  font-size: 11px;
+  line-height: 1.2;
+  word-wrap: break-word;
+  max-width: 100%;
+  font-weight: bold;
+}
+
+.action-console-button .action-label {
+  font-size: 9px;
+  line-height: 1.1;
+  word-wrap: break-word;
+  max-width: 100%;
+  opacity: 0.85;
+  font-weight: normal;
+}
+
+.action-console-button.special {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+}
+
+.action-console-button.gold {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #333;
+  animation: shimmer 3s infinite;
+}
+
+.action-console-button.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.action-console-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+/* Action Console Threshold Tracking */
+.action-console-thresholds {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.threshold-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.threshold-item:last-child {
+  margin-bottom: 0;
+}
+
+.threshold-name {
+  flex: 0 0 150px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.threshold-progress {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.threshold-progress-bar-bg {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.threshold-progress-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.threshold-progress-text {
+  color: rgba(255,255,255,0.9);
+  font-weight: bold;
+  min-width: 100px;
+  text-align: right;
+  font-size: 11px;
+}
+
+/* Action Console Activity Log */
+.action-console-activity {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.activity-log-list {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.activity-log-item {
+  background: rgba(255,255,255,0.03);
+  border-left: 3px solid #3b82f6;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-log-item:last-child {
+  margin-bottom: 0;
+}
+
+.activity-log-item.hoellstream {
+  border-left-color: #8b5cf6;
+}
+
+.activity-log-item.tikfinity {
+  border-left-color: #ec4899;
+}
+
+.activity-log-time {
+  color: rgba(255,255,255,0.5);
+  font-size: 10px;
+  flex: 0 0 50px;
+}
+
+.activity-log-source {
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  flex: 0 0 80px;
+}
+
+.activity-log-gift {
+  flex: 1;
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
+}
+
+.activity-log-sender {
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  font-style: italic;
 }

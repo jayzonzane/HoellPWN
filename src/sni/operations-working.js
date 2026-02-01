@@ -1,4 +1,4 @@
-const { MEMORY_ADDRESSES, POWERUP_TYPES, RESERVE_ITEMS } = require('./memory-complete');
+const { MEMORY_ADDRESSES, POWERUP_TYPES, RESERVE_ITEMS, CONTROLLER_BUTTONS } = require('./memory-complete');
 
 /**
  * Simplified SMW Operations - Only Direct Memory Manipulation
@@ -288,7 +288,41 @@ class WorkingSMWOperations {
   }
 
   async moonJump(duration = 30) {
-    return await this.modifyJumpHeight(2.0, duration);
+    try {
+      console.log(`[moonJump] Moon jump for ${duration} seconds - caps at screen top`);
+
+      const interval = setInterval(async () => {
+        const ySpeed = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_Y_SPEED, 1);
+        const yScreen = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_Y_SCREEN, 1);
+        let speed = ySpeed[0] << 24 >> 24;
+        let yPos = yScreen[0];
+
+        // If Mario goes off top of screen (not visible)
+        if (yPos < 16) {
+          // Force fall down - Mario went too high
+          speed = 8; // Moderate fall speed to bring Mario back down
+          await this.writeWithRetry(MEMORY_ADDRESSES.PLAYER_Y_SPEED, Buffer.from([speed & 0xFF]));
+        } else if (speed < 0) {
+          // Still jumping up, multiply jump power
+          speed = Math.floor(speed * 2.0);
+          speed = Math.max(-128, Math.min(0, speed));
+          await this.writeWithRetry(MEMORY_ADDRESSES.PLAYER_Y_SPEED, Buffer.from([speed & 0xFF]));
+        }
+      }, 16);
+
+      this.activeTimers.set('jumpMod', interval);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        this.activeTimers.delete('jumpMod');
+        console.log('[moonJump] Moon jump ended');
+      }, duration * 1000);
+
+      return true;
+    } catch (error) {
+      console.error('[moonJump] Error:', error.message);
+      return false;
+    }
   }
 
   async tinyJump(duration = 30) {
@@ -338,11 +372,28 @@ class WorkingSMWOperations {
       console.log(`[reverseControls] Reversing controls for ${duration} seconds`);
 
       const interval = setInterval(async () => {
+        // Read controller to see what player is pressing
+        const controller = await this.readWithRetry(MEMORY_ADDRESSES.CONTROLLER_1_CURRENT, 1);
+        const buttons = controller[0];
+        const pressingLeft = (buttons & CONTROLLER_BUTTONS.LEFT) !== 0;
+        const pressingRight = (buttons & CONTROLLER_BUTTONS.RIGHT) !== 0;
+
+        // Read current X velocity
         const xSpeed = await this.readWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, 1);
-        let speed = xSpeed[0] << 24 >> 24;
-        speed = -speed;
-        speed = Math.max(-128, Math.min(127, speed));
-        await this.writeWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, Buffer.from([speed & 0xFF]));
+        let speed = xSpeed[0] << 24 >> 24; // Convert to signed byte
+
+        // Reverse the velocity based on input
+        // If pressing RIGHT, velocity should be NEGATIVE (moving left)
+        // If pressing LEFT, velocity should be POSITIVE (moving right)
+        if (pressingRight && speed > 0) {
+          // Moving right but should move left - reverse it
+          speed = -speed;
+          await this.writeWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, Buffer.from([speed & 0xFF]));
+        } else if (pressingLeft && speed < 0) {
+          // Moving left but should move right - reverse it
+          speed = -speed;
+          await this.writeWithRetry(MEMORY_ADDRESSES.PLAYER_X_SPEED, Buffer.from([speed & 0xFF]));
+        }
       }, 16);
 
       this.activeTimers.set('reverseControls', interval);
@@ -451,19 +502,69 @@ class WorkingSMWOperations {
   }
 
   async randomPhysicsChaos(duration = 30) {
-    const physicsMods = [
-      () => this.halfSpeed(duration),
-      () => this.doubleSpeed(duration),
-      () => this.moonJump(duration),
-      () => this.tinyJump(duration),
-      () => this.lowGravity(duration),
-      () => this.highGravity(duration),
-      () => this.enableIcePhysics(duration)
-    ];
+    console.log(`[randomPhysicsChaos] Starting chaos for ${duration} seconds - switching effects every 3-5s`);
 
-    const randomMod = physicsMods[Math.floor(Math.random() * physicsMods.length)];
-    console.log('[randomPhysicsChaos] Applying random physics modifier');
-    return await randomMod();
+    let lastEffect = null;
+    let currentTimer = null;
+    const startTime = Date.now();
+    const endTime = startTime + (duration * 1000);
+
+    const pickRandomEffect = () => {
+      const physicsMods = [
+        'halfSpeed',
+        'doubleSpeed',
+        'moonJump',
+        'tinyJump',
+        'lowGravity',
+        'highGravity',
+        'enableIcePhysics'
+      ];
+
+      // Pick a different effect than last time
+      let newEffect;
+      do {
+        newEffect = physicsMods[Math.floor(Math.random() * physicsMods.length)];
+      } while (newEffect === lastEffect && physicsMods.length > 1);
+
+      lastEffect = newEffect;
+      return newEffect;
+    };
+
+    const applyNextEffect = async () => {
+      if (Date.now() >= endTime) {
+        // Duration expired, stop chaos
+        console.log('[randomPhysicsChaos] Chaos ended');
+        if (currentTimer) clearTimeout(currentTimer);
+        this.activeTimers.delete('randomChaos');
+        return;
+      }
+
+      // Clear any existing physics timers before applying new effect
+      const timerKeys = ['speedMod', 'jumpMod', 'gravityMod', 'iceMod'];
+      timerKeys.forEach(key => {
+        if (this.activeTimers.has(key)) {
+          clearInterval(this.activeTimers.get(key));
+          this.activeTimers.delete(key);
+        }
+      });
+
+      // Pick and apply random effect
+      const effect = pickRandomEffect();
+      const effectDuration = 3 + Math.random() * 2; // 3-5 seconds
+      console.log(`[randomPhysicsChaos] Applying ${effect} for ${effectDuration.toFixed(1)}s`);
+
+      // Apply the effect for 3-5 seconds
+      await this[effect](effectDuration);
+
+      // Schedule next effect change
+      currentTimer = setTimeout(applyNextEffect, effectDuration * 1000);
+    };
+
+    // Start the chaos chain
+    await applyNextEffect();
+    this.activeTimers.set('randomChaos', currentTimer);
+
+    return true;
   }
 
   // ============= CLEANUP =============

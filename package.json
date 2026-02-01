@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.0",
-    "@grpc/proto-loader": "^0.8.0"
+    "@grpc/proto-loader": "^0.8.0",
+    "ws": "^8.18.0",
+    "wasmoon": "^1.16.0"
   },
   "devDependencies": {
     "electron": "^38.2.2",
