@@ -2212,6 +2212,7 @@ async function generateOverlay() {
     const pause = (parseFloat(document.getElementById('overlay-pause').value) || 30) * 1000;
     const spacing = parseInt(document.getElementById('overlay-spacing').value) || 150;
     const continuousLoop = document.getElementById('overlay-continuous-loop').checked;
+    const stationaryDisplay = document.getElementById('overlay-stationary-display').checked;
 
     // Get selected gifts in DOM order (respects custom ordering)
     const giftItems = document.querySelectorAll('.overlay-gift-item');
@@ -2367,7 +2368,7 @@ async function generateOverlay() {
     saveOverlayState();
 
     // Generate HTML content with style settings
-    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop, spacing, selectedThresholds, thresholdDisplayMode, overlayStyleSettings);
+    const html = generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop, spacing, selectedThresholds, thresholdDisplayMode, overlayStyleSettings, stationaryDisplay);
 
     // Save file via IPC
     const saveResult = await window.sniAPI.saveOverlayFile(html);
@@ -2382,7 +2383,7 @@ async function generateOverlay() {
 }
 
 // Generate overlay HTML content
-function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100, selectedThresholds = [], thresholdDisplayMode = 'separate', styleSettings = {}) {
+function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoop = true, spacing = 100, selectedThresholds = [], thresholdDisplayMode = 'separate', styleSettings = {}, stationaryDisplay = false) {
   // Attach threshold metadata to gifts for inline display
   if (thresholdDisplayMode === 'inline') {
     gifts = gifts.map(gift => {
@@ -2430,6 +2431,11 @@ function generateOverlayHTML(gifts, width, height, stagger, pause, continuousLoo
   // Extract font name for Google Fonts
   const fontName = fontFamily.replace(/['"]/g, '').split(',')[0].trim();
   const needsGoogleFont = !['Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia', 'Palatino', 'Garamond', 'Comic Sans MS', 'Trebuchet MS', 'Impact', 'Lucida Console', 'Tahoma'].includes(fontName);
+
+  // Generate stationary display if requested
+  if (stationaryDisplay) {
+    return generateStationaryOverlayHTML(gifts, width, height, selectedThresholds, thresholdDisplayMode, styleSettings, fontName, needsGoogleFont, textShadow, topTextSize, nameTextSize);
+  }
 
   return `<!doctype html>
 <html lang="en">
@@ -2852,6 +2858,265 @@ if (thresholds.length > 0) {
   updateThresholdProgress();
 
   // Poll every 2 seconds
+  setInterval(updateThresholdProgress, 2000);
+}
+</script>
+</body>
+</html>`;
+}
+
+// Generate stationary (non-animated) overlay HTML
+function generateStationaryOverlayHTML(gifts, width, height, selectedThresholds, thresholdDisplayMode, styleSettings, fontName, needsGoogleFont, textShadow, topTextSize, nameTextSize) {
+  const fontFamily = styleSettings.fontFamily || 'Arial, sans-serif';
+  const bgColor = styleSettings.bgColor || '#1a1a1a';
+  const bgTransparent = styleSettings.bgTransparent || false;
+  const textColor = styleSettings.textColor || '#ffffff';
+  const thresholdBgColor = styleSettings.thresholdBgColor || '#2d2d2d';
+  const thresholdBgTransparent = styleSettings.thresholdBgTransparent || true;
+  const thresholdTextColor = styleSettings.thresholdTextColor || '#ffffff';
+  const thresholdBarColor = styleSettings.thresholdBarColor || '#4a90e2';
+  const thresholdBarCompleteColor = styleSettings.thresholdBarCompleteColor || '#4caf50';
+
+  const giftsJSON = JSON.stringify(gifts, null, 2);
+  const thresholdsJSON = JSON.stringify(selectedThresholds, null, 2);
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ALttPR TikTok Gift Actions - Stationary Overlay</title>
+${needsGoogleFont ? `<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@400;600;700;800;900&display=swap" rel="stylesheet">` : ''}
+<style>
+  :root {
+    --img-size: 80px;
+    --top-text-size: ${topTextSize}px;
+    --name-text-size: ${nameTextSize}px;
+    --font-family: ${fontFamily};
+    --text-color: ${textColor};
+    --threshold-text-color: ${thresholdTextColor};
+    --threshold-bar-color: ${thresholdBarColor};
+    --threshold-bar-complete-color: ${thresholdBarCompleteColor};
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: ${width}px;
+    height: ${height}px;
+    overflow: hidden;
+    background: ${bgTransparent ? 'transparent' : bgColor};
+    color: var(--text-color);
+    font-family: var(--font-family);
+  }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 15px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .gift-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,.7));
+  }
+
+  .action {
+    font-weight: 800;
+    font-size: var(--top-text-size);
+    line-height: 1.1;
+    color: var(--text-color);
+    text-shadow: ${textShadow};
+    margin-bottom: 8px;
+  }
+
+  .pic {
+    display: grid;
+    place-items: center;
+    height: calc(var(--img-size) + 8px);
+    margin: 6px 0;
+    position: relative;
+  }
+
+  .pic img {
+    height: var(--img-size);
+    width: auto;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+  }
+
+  .name {
+    font-size: var(--name-text-size);
+    color: var(--text-color);
+    opacity: .9;
+    letter-spacing: .2px;
+    text-shadow: ${textShadow};
+    margin-top: 4px;
+  }
+
+  /* Threshold display */
+  .threshold-section {
+    margin-top: 20px;
+    padding: 15px;
+    background: ${thresholdBgTransparent ? 'rgba(0, 0, 0, 0.3)' : thresholdBgColor};
+    border-radius: 8px;
+  }
+
+  .threshold-item {
+    margin-bottom: 12px;
+  }
+
+  .threshold-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .threshold-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--threshold-text-color);
+  }
+
+  .threshold-count {
+    font-size: 13px;
+    color: var(--threshold-text-color);
+    opacity: 0.9;
+  }
+
+  .threshold-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .threshold-bar-fill {
+    height: 100%;
+    background: var(--threshold-bar-color);
+    transition: width 0.3s ease;
+  }
+
+  .threshold-bar-fill.complete {
+    background: var(--threshold-bar-complete-color);
+  }
+</style>
+</head>
+<body>
+<div class="grid-container" id="gifts-grid"></div>
+
+${thresholdDisplayMode === 'separate' && selectedThresholds.length > 0 ? `
+<div class="threshold-section" id="thresholds-section"></div>
+` : ''}
+
+<script>
+const GIFTS = ${giftsJSON};
+const THRESHOLDS = ${thresholdsJSON};
+const THRESHOLD_MODE = '${thresholdDisplayMode}';
+
+// Render gifts grid
+function renderGifts() {
+  const grid = document.getElementById('gifts-grid');
+  grid.innerHTML = '';
+
+  GIFTS.forEach(gift => {
+    const item = document.createElement('div');
+    item.className = 'gift-item';
+
+    item.innerHTML = \`
+      <div class="action">\${gift.action}</div>
+      <div class="pic">
+        <img src="\${gift.image}" alt="\${gift.name}" onerror="this.style.display='none'">
+      </div>
+      <div class="name">\${gift.name}</div>
+    \`;
+
+    grid.appendChild(item);
+  });
+}
+
+// Render thresholds (if separate mode)
+function renderThresholds() {
+  if (THRESHOLD_MODE !== 'separate' || THRESHOLDS.length === 0) return;
+
+  const section = document.getElementById('thresholds-section');
+  if (!section) return;
+
+  section.innerHTML = '';
+
+  THRESHOLDS.forEach(threshold => {
+    const item = document.createElement('div');
+    item.className = 'threshold-item';
+    item.dataset.gift = threshold.giftName;
+
+    const isValueBased = threshold.type === 'value';
+    const displayName = isValueBased ? '💎 Coin Value' : threshold.giftName;
+
+    item.innerHTML = \`
+      <div class="threshold-header">
+        <span class="threshold-name">\${displayName}</span>
+        <span class="threshold-count" data-count="true">0 / \${threshold.target.toLocaleString()}</span>
+      </div>
+      <div class="threshold-bar">
+        <div class="threshold-bar-fill" data-bar="true" style="width: 0%"></div>
+      </div>
+    \`;
+
+    section.appendChild(item);
+  });
+}
+
+// Update threshold progress
+function updateThresholdProgress() {
+  fetch('/threshold-status')
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success || !data.status) return;
+
+      data.status.forEach(status => {
+        const item = document.querySelector(\`[data-gift="\${status.giftName}"]\`);
+        if (!item) return;
+
+        const countEl = item.querySelector('[data-count]');
+        const barEl = item.querySelector('[data-bar]');
+
+        if (countEl) {
+          countEl.textContent = \`\${status.current.toLocaleString()} / \${status.target.toLocaleString()}\`;
+        }
+
+        if (barEl) {
+          const percentage = Math.min((status.current / status.target) * 100, 100);
+          barEl.style.width = percentage + '%';
+
+          if (percentage >= 100) {
+            barEl.classList.add('complete');
+          } else {
+            barEl.classList.remove('complete');
+          }
+        }
+      });
+    })
+    .catch(err => console.error('Failed to fetch threshold status:', err));
+}
+
+// Initialize
+renderGifts();
+renderThresholds();
+
+// Poll for threshold updates
+if (THRESHOLD_MODE === 'separate' && THRESHOLDS.length > 0) {
   setInterval(updateThresholdProgress, 2000);
 }
 </script>

@@ -4,6 +4,10 @@ let isAlwaysOnTop = false;
 let activeGiftImages = null;
 let customActions = [];
 
+// Timer tracking for action console
+let actionTimers = {}; // { giftName: lastExecutionTime }
+let timerUpdateInterval = null;
+
 // Custom Actions Management
 async function loadCustomActions() {
   const saved = localStorage.getItem('customActionConsoleActions');
@@ -46,8 +50,53 @@ async function executeCustomAction(customAction) {
       action: customAction.action,
       params: customAction.value ? { value: customAction.value } : {}
     });
+
+    // Update timer for this custom action
+    updateActionTimer(customAction.id);
   } catch (error) {
     console.error('Error executing custom action:', error);
+  }
+}
+
+// Format elapsed time for timer display
+function formatElapsedTime(timestamp) {
+  const now = Date.now();
+  const elapsed = now - timestamp;
+  const seconds = Math.floor(elapsed / 1000);
+
+  if (seconds < 60) {
+    return `${seconds}s ago`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m ago`;
+  } else if (seconds < 86400) {
+    const hours = Math.floor(seconds / 3600);
+    return `${hours}h ago`;
+  } else {
+    const days = Math.floor(seconds / 86400);
+    return `${days}d ago`;
+  }
+}
+
+// Update timer display for a specific action
+function updateActionTimer(actionKey) {
+  actionTimers[actionKey] = Date.now();
+
+  // Find the timer element and update it
+  const timerElement = document.querySelector(`[data-timer="${actionKey}"]`);
+  if (timerElement) {
+    timerElement.textContent = formatElapsedTime(actionTimers[actionKey]);
+    timerElement.style.display = 'block';
+  }
+}
+
+// Update all timer displays
+function updateAllTimers() {
+  for (const [actionKey, timestamp] of Object.entries(actionTimers)) {
+    const timerElement = document.querySelector(`[data-timer="${actionKey}"]`);
+    if (timerElement) {
+      timerElement.textContent = formatElapsedTime(timestamp);
+    }
   }
 }
 
@@ -231,10 +280,16 @@ async function populateActionConsole() {
       // Get action description
       const description = mapping.description || mapping.action || 'Unknown action';
 
+      // Check if there's a timer for this gift
+      const hasTimer = actionTimers[giftName];
+      const timerText = hasTimer ? formatElapsedTime(actionTimers[giftName]) : '';
+      const timerDisplay = hasTimer ? 'block' : 'none';
+
       button.innerHTML = `
         ${imageHtml}
         <div class="label">${giftName}</div>
         <div class="action-label">${description}</div>
+        <div class="action-timer" data-timer="${giftName}" style="display: ${timerDisplay};">${timerText}</div>
       `;
 
       // Add click handler - execute action via IPC
@@ -244,6 +299,9 @@ async function populateActionConsole() {
             action: mapping.action,
             params: mapping.params || {}
           });
+
+          // Update timer for this gift
+          updateActionTimer(giftName);
         } catch (error) {
           console.error('Error executing action:', error);
         }
@@ -260,10 +318,16 @@ async function populateActionConsole() {
       button.className = 'action-console-button';
       button.dataset.customAction = customAction.id;
 
+      // Check if there's a timer for this custom action
+      const hasTimer = actionTimers[customAction.id];
+      const timerText = hasTimer ? formatElapsedTime(actionTimers[customAction.id]) : '';
+      const timerDisplay = hasTimer ? 'block' : 'none';
+
       button.innerHTML = `
         <div class="emoji">⚡</div>
         <div class="label">${customAction.label}</div>
         <div class="action-label">Quick Action</div>
+        <div class="action-timer" data-timer="${customAction.id}" style="display: ${timerDisplay};">${timerText}</div>
         <button class="remove-custom-action" data-id="${customAction.id}" style="position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.7); border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px;">✕</button>
       `;
 
@@ -487,6 +551,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update thresholds every 2 seconds
   setInterval(updateActionConsoleThresholds, 2000);
 
+  // Update action timers every second
+  timerUpdateInterval = setInterval(updateAllTimers, 1000);
+
   // Refresh button
   document.getElementById('refresh-btn').addEventListener('click', () => {
     populateActionConsole();
@@ -575,6 +642,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.electronAPI && window.electronAPI.onGiftActivity) {
     window.electronAPI.onGiftActivity((giftData) => {
       addActivityLogEntry(giftData);
+
+      // Update timer for this gift
+      if (giftData.giftName) {
+        updateActionTimer(giftData.giftName);
+      }
     });
   }
 

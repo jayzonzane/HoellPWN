@@ -171,6 +171,18 @@ body {
   font-weight: normal;
 }
 
+.action-console-button .action-timer {
+  font-size: calc(8px * var(--button-scale));
+  line-height: 1;
+  padding: calc(2px * var(--button-scale)) calc(4px * var(--button-scale));
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: calc(3px * var(--button-scale));
+  margin-top: calc(2px * var(--button-scale));
+  opacity: 0.9;
+  font-weight: 600;
+  color: #ffeb3b;
+}
+
 .action-console-button.special {
   background: linear-gradient(135deg, #4CAF50, #45a049);
 }
