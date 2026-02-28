@@ -1,0 +1,367 @@
+/* Theme System for HoellPWN Controller */
+
+/* Default Theme: Deep Blue */
+:root {
+  --bg-gradient-start: #1e3c72;
+  --bg-gradient-end: #2a5298;
+  --menu-bg: rgba(0, 0, 0, 0.3);
+  --menu-dropdown-bg: rgba(30, 60, 114, 0.98);
+  --tab-bg: rgba(255, 255, 255, 0.1);
+  --tab-border: rgba(255, 255, 255, 0.2);
+  --tab-active-bg-start: #4CAF50;
+  --tab-active-bg-end: #45a049;
+  --button-primary-bg: rgba(255, 255, 255, 0.1);
+  --button-primary-border: rgba(255, 255, 255, 0.2);
+  --button-primary-hover: rgba(255, 255, 255, 0.2);
+  --button-success-bg: #4CAF50;
+  --button-success-border: #45a049;
+  --button-danger-bg: #ef4444;
+  --button-danger-border: #dc2626;
+  --section-bg: rgba(0, 0, 0, 0.3);
+  --section-border: rgba(255, 255, 255, 0.2);
+  --input-bg: rgba(255, 255, 255, 0.1);
+  --input-border: rgba(255, 255, 255, 0.2);
+  --input-focus-border: rgba(76, 175, 80, 0.6);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --accent-color: #4CAF50;
+  --accent-hover: #45a049;
+}
+
+/* Theme: Dark Purple */
+body[data-theme="dark-purple"] {
+  --bg-gradient-start: #2d1b4e;
+  --bg-gradient-end: #4a2d6b;
+  --menu-bg: rgba(0, 0, 0, 0.4);
+  --menu-dropdown-bg: rgba(45, 27, 78, 0.98);
+  --tab-bg: rgba(138, 92, 246, 0.15);
+  --tab-border: rgba(138, 92, 246, 0.3);
+  --tab-active-bg-start: #8b5cf6;
+  --tab-active-bg-end: #7c3aed;
+  --button-primary-bg: rgba(138, 92, 246, 0.2);
+  --button-primary-border: rgba(138, 92, 246, 0.4);
+  --button-primary-hover: rgba(138, 92, 246, 0.3);
+  --button-success-bg: #8b5cf6;
+  --button-success-border: #7c3aed;
+  --button-danger-bg: #ef4444;
+  --button-danger-border: #dc2626;
+  --section-bg: rgba(0, 0, 0, 0.3);
+  --section-border: rgba(138, 92, 246, 0.3);
+  --input-bg: rgba(138, 92, 246, 0.1);
+  --input-border: rgba(138, 92, 246, 0.3);
+  --input-focus-border: rgba(139, 92, 246, 0.6);
+  --accent-color: #8b5cf6;
+  --accent-hover: #7c3aed;
+}
+
+/* Theme: Cyberpunk */
+body[data-theme="cyberpunk"] {
+  --bg-gradient-start: #0a0e27;
+  --bg-gradient-end: #1a1f3a;
+  --menu-bg: rgba(0, 255, 255, 0.1);
+  --menu-dropdown-bg: rgba(10, 14, 39, 0.98);
+  --tab-bg: rgba(0, 255, 255, 0.1);
+  --tab-border: rgba(0, 255, 255, 0.3);
+  --tab-active-bg-start: #00ffff;
+  --tab-active-bg-end: #00d4ff;
+  --button-primary-bg: rgba(0, 255, 255, 0.15);
+  --button-primary-border: rgba(0, 255, 255, 0.4);
+  --button-primary-hover: rgba(0, 255, 255, 0.25);
+  --button-success-bg: #00ffff;
+  --button-success-border: #00d4ff;
+  --button-danger-bg: #ff0080;
+  --button-danger-border: #d4006b;
+  --section-bg: rgba(0, 0, 0, 0.4);
+  --section-border: rgba(0, 255, 255, 0.3);
+  --input-bg: rgba(0, 255, 255, 0.05);
+  --input-border: rgba(0, 255, 255, 0.3);
+  --input-focus-border: rgba(0, 255, 255, 0.8);
+  --text-primary: #00ffff;
+  --text-secondary: rgba(0, 255, 255, 0.8);
+  --text-muted: rgba(0, 255, 255, 0.5);
+  --accent-color: #00ffff;
+  --accent-hover: #00d4ff;
+}
+
+/* Theme: Forest */
+body[data-theme="forest"] {
+  --bg-gradient-start: #1a3a2a;
+  --bg-gradient-end: #2d5a3d;
+  --menu-bg: rgba(0, 0, 0, 0.3);
+  --menu-dropdown-bg: rgba(26, 58, 42, 0.98);
+  --tab-bg: rgba(74, 222, 128, 0.15);
+  --tab-border: rgba(74, 222, 128, 0.3);
+  --tab-active-bg-start: #4ade80;
+  --tab-active-bg-end: #22c55e;
+  --button-primary-bg: rgba(74, 222, 128, 0.2);
+  --button-primary-border: rgba(74, 222, 128, 0.4);
+  --button-primary-hover: rgba(74, 222, 128, 0.3);
+  --button-success-bg: #4ade80;
+  --button-success-border: #22c55e;
+  --button-danger-bg: #ef4444;
+  --button-danger-border: #dc2626;
+  --section-bg: rgba(0, 0, 0, 0.3);
+  --section-border: rgba(74, 222, 128, 0.3);
+  --input-bg: rgba(74, 222, 128, 0.1);
+  --input-border: rgba(74, 222, 128, 0.3);
+  --input-focus-border: rgba(74, 222, 128, 0.6);
+  --accent-color: #4ade80;
+  --accent-hover: #22c55e;
+}
+
+/* Theme: Sunset */
+body[data-theme="sunset"] {
+  --bg-gradient-start: #4a1942;
+  --bg-gradient-end: #7a2855;
+  --menu-bg: rgba(0, 0, 0, 0.3);
+  --menu-dropdown-bg: rgba(74, 25, 66, 0.98);
+  --tab-bg: rgba(251, 146, 60, 0.15);
+  --tab-border: rgba(251, 146, 60, 0.3);
+  --tab-active-bg-start: #fb923c;
+  --tab-active-bg-end: #f97316;
+  --button-primary-bg: rgba(251, 146, 60, 0.2);
+  --button-primary-border: rgba(251, 146, 60, 0.4);
+  --button-primary-hover: rgba(251, 146, 60, 0.3);
+  --button-success-bg: #fb923c;
+  --button-success-border: #f97316;
+  --button-danger-bg: #dc2626;
+  --button-danger-border: #b91c1c;
+  --section-bg: rgba(0, 0, 0, 0.3);
+  --section-border: rgba(251, 146, 60, 0.3);
+  --input-bg: rgba(251, 146, 60, 0.1);
+  --input-border: rgba(251, 146, 60, 0.3);
+  --input-focus-border: rgba(251, 146, 60, 0.6);
+  --accent-color: #fb923c;
+  --accent-hover: #f97316;
+}
+
+/* Theme: Ocean */
+body[data-theme="ocean"] {
+  --bg-gradient-start: #0c4a6e;
+  --bg-gradient-end: #0369a1;
+  --menu-bg: rgba(0, 0, 0, 0.3);
+  --menu-dropdown-bg: rgba(12, 74, 110, 0.98);
+  --tab-bg: rgba(56, 189, 248, 0.15);
+  --tab-border: rgba(56, 189, 248, 0.3);
+  --tab-active-bg-start: #38bdf8;
+  --tab-active-bg-end: #0ea5e9;
+  --button-primary-bg: rgba(56, 189, 248, 0.2);
+  --button-primary-border: rgba(56, 189, 248, 0.4);
+  --button-primary-hover: rgba(56, 189, 248, 0.3);
+  --button-success-bg: #38bdf8;
+  --button-success-border: #0ea5e9;
+  --button-danger-bg: #ef4444;
+  --button-danger-border: #dc2626;
+  --section-bg: rgba(0, 0, 0, 0.3);
+  --section-border: rgba(56, 189, 248, 0.3);
+  --input-bg: rgba(56, 189, 248, 0.1);
+  --input-border: rgba(56, 189, 248, 0.3);
+  --input-focus-border: rgba(56, 189, 248, 0.6);
+  --accent-color: #38bdf8;
+  --accent-hover: #0ea5e9;
+}
+
+/* Theme: Midnight */
+body[data-theme="midnight"] {
+  --bg-gradient-start: #0f172a;
+  --bg-gradient-end: #1e293b;
+  --menu-bg: rgba(0, 0, 0, 0.5);
+  --menu-dropdown-bg: rgba(15, 23, 42, 0.98);
+  --tab-bg: rgba(148, 163, 184, 0.15);
+  --tab-border: rgba(148, 163, 184, 0.3);
+  --tab-active-bg-start: #94a3b8;
+  --tab-active-bg-end: #64748b;
+  --button-primary-bg: rgba(148, 163, 184, 0.2);
+  --button-primary-border: rgba(148, 163, 184, 0.4);
+  --button-primary-hover: rgba(148, 163, 184, 0.3);
+  --button-success-bg: #94a3b8;
+  --button-success-border: #64748b;
+  --button-danger-bg: #ef4444;
+  --button-danger-border: #dc2626;
+  --section-bg: rgba(0, 0, 0, 0.4);
+  --section-border: rgba(148, 163, 184, 0.3);
+  --input-bg: rgba(148, 163, 184, 0.1);
+  --input-border: rgba(148, 163, 184, 0.3);
+  --input-focus-border: rgba(148, 163, 184, 0.6);
+  --accent-color: #94a3b8;
+  --accent-hover: #64748b;
+}
+
+/* Theme: Rose Gold */
+body[data-theme="rose-gold"] {
+  --bg-gradient-start: #4a1e3a;
+  --bg-gradient-end: #6b2d52;
+  --menu-bg: rgba(0, 0, 0, 0.3);
+  --menu-dropdown-bg: rgba(74, 30, 58, 0.98);
+  --tab-bg: rgba(244, 114, 182, 0.15);
+  --tab-border: rgba(244, 114, 182, 0.3);
+  --tab-active-bg-start: #f472b6;
+  --tab-active-bg-end: #ec4899;
+  --button-primary-bg: rgba(244, 114, 182, 0.2);
+  --button-primary-border: rgba(244, 114, 182, 0.4);
+  --button-primary-hover: rgba(244, 114, 182, 0.3);
+  --button-success-bg: #f472b6;
+  --button-success-border: #ec4899;
+  --button-danger-bg: #dc2626;
+  --button-danger-border: #b91c1c;
+  --section-bg: rgba(0, 0, 0, 0.3);
+  --section-border: rgba(244, 114, 182, 0.3);
+  --input-bg: rgba(244, 114, 182, 0.1);
+  --input-border: rgba(244, 114, 182, 0.3);
+  --input-focus-border: rgba(244, 114, 182, 0.6);
+  --accent-color: #f472b6;
+  --accent-hover: #ec4899;
+}
+
+/* Apply theme colors to existing elements */
+body {
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  color: var(--text-primary);
+}
+
+.menu-bar {
+  background: var(--menu-bg);
+  border-bottom: 2px solid var(--section-border);
+}
+
+.menu-dropdown {
+  background: var(--menu-dropdown-bg);
+  border: 1px solid var(--section-border);
+}
+
+.tab-btn {
+  background: var(--tab-bg);
+  border: 2px solid var(--tab-border);
+  color: var(--text-primary);
+}
+
+.tab-btn:hover {
+  background: var(--button-primary-hover);
+  border-color: var(--tab-border);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--tab-active-bg-start), var(--tab-active-bg-end));
+  border-color: var(--accent-color);
+}
+
+.control-btn {
+  background: var(--button-primary-bg);
+  border: 1px solid var(--button-primary-border);
+  color: var(--text-primary);
+}
+
+.control-btn:hover {
+  background: var(--button-primary-hover);
+}
+
+.control-btn.success {
+  background: var(--button-success-bg);
+  border-color: var(--button-success-border);
+}
+
+.control-btn.danger {
+  background: var(--button-danger-bg);
+  border-color: var(--button-danger-border);
+}
+
+.controls-section {
+  background: var(--section-bg);
+  border: 1px solid var(--section-border);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+select,
+textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+}
+
+select option {
+  background-color: var(--bg-gradient-start);
+  color: var(--text-primary);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--input-focus-border);
+  outline: none;
+}
+
+/* Theme selector button */
+.theme-selector-btn {
+  background: var(--button-primary-bg);
+  border: 1px solid var(--button-primary-border);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.theme-selector-btn:hover {
+  background: var(--button-primary-hover);
+}
+
+.theme-option {
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-option:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.theme-option.active {
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: bold;
+}
+
+.theme-preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.theme-preview.deep-blue {
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+}
+
+.theme-preview.dark-purple {
+  background: linear-gradient(135deg, #2d1b4e, #8b5cf6);
+}
+
+.theme-preview.cyberpunk {
+  background: linear-gradient(135deg, #0a0e27, #00ffff);
+}
+
+.theme-preview.forest {
+  background: linear-gradient(135deg, #1a3a2a, #4ade80);
+}
+
+.theme-preview.sunset {
+  background: linear-gradient(135deg, #4a1942, #fb923c);
+}
+
+.theme-preview.ocean {
+  background: linear-gradient(135deg, #0c4a6e, #38bdf8);
+}
+
+.theme-preview.midnight {
+  background: linear-gradient(135deg, #0f172a, #94a3b8);
+}
+
+.theme-preview.rose-gold {
+  background: linear-gradient(135deg, #4a1e3a, #f472b6);
+}
